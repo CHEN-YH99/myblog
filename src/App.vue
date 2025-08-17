@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import HelloWorld from './components/HelloWorld.vue'
+import NavBar from './components/NavBar.vue';
 </script>
 
 <template>   
-  <HelloWorld  />
+  <div class="min-h-screen bg-gray-100">
+    <NavBar />
+  </div>
 </template>
 
 <style scoped>

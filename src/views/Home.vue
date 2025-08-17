@@ -26,6 +26,6 @@
   import '../assets/style/index.css'
 </script>
 
-<style scoped>
+<style scoped lang="scss">
 
 </style>
