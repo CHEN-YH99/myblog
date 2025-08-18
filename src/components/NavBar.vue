@@ -23,12 +23,12 @@
 
         <el-menu-item index="home">
           <el-icon><House /></el-icon>
-          <span class="menu-text">主页</span>
+          <router-link to="/"><span class="menu-text">主页</span></Router-link>
         </el-menu-item>
 
         <el-menu-item index="timeline">
           <el-icon><Clock /></el-icon>
-          <span class="menu-text">时间轴</span>
+          <router-link to="/timeline"><span class="menu-text">时间轴</span></Router-link>
         </el-menu-item>
 
         <el-menu-item index="more">
@@ -208,7 +208,6 @@ const drawer = ref(false)
 }
 
 .navbar__avatar {
-  // border: 1px solid rgba(255, 255, 255, 0.25);
   box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.35) inset;
   cursor: pointer;
   transform: rotate(0deg);
@@ -219,11 +218,6 @@ const drawer = ref(false)
   transform: rotate(360deg);
   transition: transform 1s ease-in-out;
 }
-// 鼠标离开后，头像图片反向旋转
-// .navbar__avatar:active {
-//   transform: rotate(-360deg);
-//   transition: transform 1s ease-in-out;
-// }
 
 .navbar__logo {
   height: 32px;
@@ -273,7 +267,7 @@ const drawer = ref(false)
 :deep(.el-sub-menu__title) {
   height: 48px;
   line-height: 48px;
-  padding: 0 10px;
+  padding: 0 7px;
   font-size: 13px;
   color: #cfe8ff;
   transition: color 0.2s ease, background-color 0.2s ease;
@@ -293,21 +287,21 @@ const drawer = ref(false)
 
 .navbar__search :deep(.el-icon) {
   font-size: 16px;
-  color: #e0f2ff;
+  color: #f0ff7c;
   opacity: 0.9;
 }
 
 .navbar__switch :deep(.el-switch) {
-  --el-switch-on-color: #1f2937;
+  --el-switch-on-color: #ffffff;
   --el-switch-off-color: #1f2937;
-  background-color: rgba(255, 255, 255, 0.12);
+  // background-color: rgba(255, 255, 255, 0.12);
 }
 .navbar__switch :deep(.el-switch__core) {
   border: 1px solid rgba(255, 255, 255, 0.25);
 }
 .navbar__switch :deep(.el-switch__action) {
   background: #0b1220;
-  color: #ffe082;
+  color: #ffffff;
 }
 
 .menu-text {
