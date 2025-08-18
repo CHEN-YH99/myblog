@@ -1,124 +1,345 @@
 <template>
-  <nav class="sticky top-0 z-40 border-b border-white/10 bg-slate-900/40 backdrop-blur supports-[backdrop-filter]:bg-slate-900/30">
-    <div class="max-w-7xl mx-auto h-12 px-4 flex items-center justify-between">
-      <!-- 左侧：头像 + 搜索图标 -->
-      <div class="flex items-center gap-4">
-        <div class="w-8 h-8 rounded-full overflow-hidden ring-1 ring-white/20">
-          <img src="../assets/images/hui.svg" alt="avatar" class="w-full h-full object-cover" />
-        </div>
-        <button aria-label="搜索" class="text-slate-200 hover:text-white transition-colors">
-          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15z" />
-          </svg>
+  <header class="navbar">
+    <div class="navbar__inner">
+      <el-avatar
+        class="navbar__avatar"
+        :size="32"
+        :src="avatarUrl"
+        alt="avatar"
+      />
+
+      <!-- 桌面端菜单 -->
+      <el-menu
+        mode="horizontal"
+        class="navbar__menu"
+        background-color="transparent"
+        text-color="#cfe8ff"
+        active-text-color="#ffffff"
+        :ellipsis="false"
+      >
+        <el-menu-item index="search" class="navbar__search" title="搜索">
+          <el-icon><Search /></el-icon>
+        </el-menu-item>
+
+        <el-menu-item index="home">
+          <el-icon><House /></el-icon>
+          <span class="menu-text">主页</span>
+        </el-menu-item>
+
+        <el-menu-item index="timeline">
+          <el-icon><Clock /></el-icon>
+          <span class="menu-text">时间轴</span>
+        </el-menu-item>
+
+        <el-menu-item index="more">
+          <el-icon><Grid /></el-icon>
+          <span class="menu-text">更多</span>
+        </el-menu-item>
+
+        <el-menu-item index="category">
+          <el-icon><Collection /></el-icon>
+          <span class="menu-text">分类</span>
+        </el-menu-item>
+
+        <el-menu-item index="photos">
+          <el-icon><Picture /></el-icon>
+          <span class="menu-text">相册</span>
+        </el-menu-item>
+
+        <el-menu-item index="talk">
+          <el-icon><ChatLineRound /></el-icon>
+          <span class="menu-text">说说</span>
+        </el-menu-item>
+
+        <el-menu-item index="links">
+          <el-icon><LinkIcon /></el-icon>
+          <span class="menu-text">友链</span>
+        </el-menu-item>
+
+        <el-menu-item index="board">
+          <el-icon><MessageIcon /></el-icon>
+          <span class="menu-text">留言</span>
+        </el-menu-item>
+
+        <el-menu-item index="login">
+          <el-icon><User /></el-icon>
+          <span class="menu-text">登录</span>
+        </el-menu-item>
+
+        <el-menu-item index="theme" class="navbar__switch" title="主题切换">
+          <el-switch
+            v-model="isDark"
+            :active-action-icon="Moon"
+            :inactive-action-icon="Sunny"
+            size="small"
+          />
+        </el-menu-item>
+      </el-menu>
+
+      <!-- 移动端操作区：搜索 + 菜单按钮 -->
+      <div class="navbar__mobile" aria-label="移动端操作区">
+        <button class="icon-btn" aria-label="搜索">
+          <el-icon><Search /></el-icon>
+        </button>
+        <button class="icon-btn" aria-label="打开菜单" @click="drawer = true">
+          <el-icon><MenuIcon /></el-icon>
         </button>
       </div>
-
-      <!-- 右侧：菜单 -->
-      <ul class="flex items-center gap-5 text-sm text-slate-200">
-        <!-- 主页 -->
-        <li>
-          <a href="#" class="flex items-center gap-1 hover:text-white transition-colors">
-            <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
-              <path d="M10.707 2.293a1 1 0 0 0-1.414 0l-7.5 7.5A1 1 0 0 0 2.5 11H4v6a1 1 0 0 0 1 1h3v-4h4v4h3a1 1 0 0 0 1-1v-6h1.5a1 1 0 0 0 .707-1.707l-7.5-7.5z"/>
-            </svg>
-            <span>主页</span>
-          </a>
-        </li>
-
-        <!-- 时间轴 -->
-        <li>
-          <a href="#" class="flex items-center gap-1 hover:text-white transition-colors">
-            <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
-              <path fill-rule="evenodd" d="M10 18a8 8 1 1 0 0-16 8 8 0 0 0 0 16zm1-12a1 1 0 1 0-2 0v3.586l2.121 2.121a1 1 0 1 0 1.415-1.414L11 8.586V6z" clip-rule="evenodd"/>
-            </svg>
-            <span>时间轴</span>
-          </a>
-        </li>
-
-        <!-- 更多 -->
-        <li>
-          <a href="#" class="flex items-center gap-1 hover:text-white transition-colors">
-            <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
-              <path d="M4 6a2 2 0 1 1 4 0 2 2 0 0 1-4 0zm4 8a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm8-8a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm-2 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/>
-            </svg>
-            <span>更多</span>
-          </a>
-        </li>
-
-        <!-- 分类 -->
-        <li>
-          <a href="#" class="flex items-center gap-1 hover:text-white transition-colors">
-            <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
-              <path d="M4 5a1 1 0 0 1 1-1h10a1 1 0 1 1 0 2H5a1 1 0 0 1-1-1zm-1 5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4z"/>
-            </svg>
-            <span>分类</span>
-          </a>
-        </li>
-
-        <!-- 相册 -->
-        <li>
-          <a href="#" class="flex items-center gap-1 hover:text-white transition-colors">
-            <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
-              <path d="M4 4h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm3 3a2 2 1 1 0 0 4 2 2 0 0 0 0-4zm-3 7l3.5-3.5 2.5 2.5L13 10l3 4H4z"/>
-            </svg>
-            <span>相册</span>
-          </a>
-        </li>
-
-        <!-- 说说 -->
-        <li>
-          <a href="#" class="flex items-center gap-1 hover:text-white transition-colors">
-            <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
-              <path fill-rule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.8 8.8 0 0 1-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7z" clip-rule="evenodd"/>
-            </svg>
-            <span>说说</span>
-          </a>
-        </li>
-
-        <!-- 友链 -->
-        <li>
-          <a href="#" class="flex items-center gap-1 hover:text-white transition-colors">
-            <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
-              <path fill-rule="evenodd" d="M12.586 4.586a2 2 0 1 1 2.828 2.828l-3 3a2 2 0 0 1-2.828 0 1 1 0 0 0-1.414 1.414 4 4 0 0 0 5.656 0l3-3a4 4 0 1 0-5.656-5.656l-1.5 1.5a1 1 0 1 0 1.414 1.414l1.5-1.5z" clip-rule="evenodd"/>
-            </svg>
-            <span>友链</span>
-          </a>
-        </li>
-
-        <!-- 留言 -->
-        <li>
-          <a href="#" class="flex items-center gap-1 hover:text-white transition-colors">
-            <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
-              <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0 0 16 4H4a2 2 0 0 0-1.997 1.884z"/>
-              <path d="M18 8.118l-8 4-8-4V14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8.118z"/>
-            </svg>
-            <span>留言</span>
-          </a>
-        </li>
-
-        <!-- 登录 -->
-        <li>
-          <a href="#" class="flex items-center gap-1 hover:text-white transition-colors">
-            <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
-              <path fill-rule="evenodd" d="M10 2a4 4 0 1 1 0 8 4 4 0 0 1 0-8zM4 15a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v1H4v-1z" clip-rule="evenodd"/>
-            </svg>
-            <span>登录</span>
-          </a>
-        </li>
-
-        <!-- 主题切换 -->
-        <li>
-          <button aria-label="主题" class="text-slate-200 hover:text-white transition-colors">
-            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 1 0 9.79 9.79z"/>
-            </svg>
-          </button>
-        </li>
-      </ul>
     </div>
-  </nav>
+
+    <!-- 右侧抽屉：移动端菜单 -->
+    <el-drawer
+      v-model="drawer"
+      direction="rtl"
+      size="50%"
+      :with-header="false"
+      class="navbar-drawer"
+      append-to-body
+    >
+      <div class="drawer__header">
+        <div class="drawer__title">导航</div>
+        <el-switch
+          v-model="isDark"
+          :active-action-icon="Moon"
+          :inactive-action-icon="Sunny"
+          size="small"
+          aria-label="主题切换"
+        />
+      </div>
+
+      <el-menu
+        class="drawer__menu"
+        background-color="transparent"
+        text-color="#cfe8ff"
+        active-text-color="#ffffff"
+      >
+        <el-menu-item index="m-search">
+          <el-icon><Search /></el-icon>
+          <span>搜索</span>
+        </el-menu-item>
+        <el-menu-item index="m-home">
+          <el-icon><House /></el-icon>
+          <span>主页</span>
+        </el-menu-item>
+        <el-menu-item index="m-timeline">
+          <el-icon><Clock /></el-icon>
+          <span>时间轴</span>
+        </el-menu-item>
+        <el-sub-menu index="m-more">
+          <template #title>
+            <el-icon><Grid /></el-icon>
+            <span>更多</span>
+          </template>
+          <el-menu-item index="m-photos">
+            <el-icon><Picture /></el-icon>
+            <span>相册</span>
+          </el-menu-item>
+          <el-menu-item index="m-talk">
+            <el-icon><ChatLineRound /></el-icon>
+            <span>说说</span>
+          </el-menu-item>
+          <el-menu-item index="m-links">
+            <el-icon><LinkIcon /></el-icon>
+            <span>友链</span>
+          </el-menu-item>
+        </el-sub-menu>
+        <el-menu-item index="m-category">
+          <el-icon><Collection /></el-icon>
+          <span>分类</span>
+        </el-menu-item>
+        <el-menu-item index="m-board">
+          <el-icon><MessageIcon /></el-icon>
+          <span>留言</span>
+        </el-menu-item>
+        <el-menu-item index="m-login">
+          <el-icon><User /></el-icon>
+          <span>登录</span>
+        </el-menu-item>
+      </el-menu>
+    </el-drawer>
+  </header>
+  <RouterView />
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue'
+import {
+  Search,
+  House,
+  Clock,
+  Grid,
+  Collection,
+  Picture,
+  ChatLineRound,
+  Link as LinkIcon,
+  Message as MessageIcon,
+  User,
+  Moon,
+  Sunny,
+  Menu as MenuIcon
+} from '@element-plus/icons-vue'
+
+import avatarUrl from '../assets/images/hui.svg'
+
+const isDark = ref(true)
+const drawer = ref(false)
 </script>
+
+<style scoped lang="scss">
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  height: 48px;
+  background: linear-gradient(180deg, rgba(8, 20, 40, 0.9), rgba(8, 20, 40, 0.75));
+  backdrop-filter: blur(6px);
+  border-bottom: 1px solid rgba(200, 230, 255, 0.12);
+}
+
+.navbar__inner {
+  max-width: 1200px;
+  height: 100%;
+  margin: 0 auto;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+}
+
+.navbar__avatar {
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.35) inset;
+}
+
+/* 桌面端菜单（默认显示） */
+.navbar__menu {
+  margin-left: auto;
+  height: 48px;
+  background: transparent !important;
+  border-bottom: none !important;
+}
+
+/* 移动端操作区（默认隐藏） */
+.navbar__mobile {
+  display: none;
+  margin-left: auto;
+  gap: 6px;
+  align-items: center;
+}
+
+.icon-btn {
+  height: 32px;
+  width: 32px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: #e0f2ff;
+  cursor: pointer;
+  transition: background-color .2s ease, color .2s ease, border-color .2s ease;
+}
+.icon-btn:hover {
+  background: rgba(255,255,255,.08);
+  color: #fff;
+  border-color: rgba(255,255,255,.35);
+}
+
+/* Element Plus 菜单样式微调（桌面端） */
+:deep(.el-menu-item),
+:deep(.el-sub-menu__title) {
+  height: 48px;
+  line-height: 48px;
+  padding: 0 10px;
+  font-size: 13px;
+  color: #cfe8ff;
+  transition: color 0.2s ease, background-color 0.2s ease;
+}
+
+:deep(.el-menu-item:hover),
+:deep(.el-sub-menu__title:hover) {
+  color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.06);
+}
+
+:deep(.el-sub-menu.is-active > .el-sub-menu__title),
+:deep(.el-menu-item.is-active) {
+  color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.navbar__search :deep(.el-icon) {
+  font-size: 16px;
+  color: #e0f2ff;
+  opacity: 0.9;
+}
+
+.navbar__switch :deep(.el-switch) {
+  --el-switch-on-color: #1f2937;
+  --el-switch-off-color: #1f2937;
+  background-color: rgba(255, 255, 255, 0.12);
+}
+.navbar__switch :deep(.el-switch__core) {
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+.navbar__switch :deep(.el-switch__action) {
+  background: #0b1220;
+  color: #ffe082;
+}
+
+.menu-text {
+  margin-left: 6px;
+}
+
+/* 响应式：小屏隐藏横向菜单，显示移动端操作区 */
+@media (max-width: 992px) {
+  .navbar {
+    height: 50px;
+  }
+  .navbar__menu {
+    display: none;
+  }
+  .navbar__mobile {
+    display: inline-flex;
+  }
+}
+
+/* 抽屉样式（全局透传） */
+:deep(.navbar-drawer) {
+  background: rgba(10, 18, 34, 0.96);
+  backdrop-filter: blur(8px);
+  color: #cfe8ff;
+  border-left: 1px solid rgba(200, 230, 255, 0.12);
+}
+.drawer__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px 6px;
+  border-bottom: 1px solid rgba(200, 230, 255, 0.12);
+}
+.drawer__title {
+  font-size: 14px;
+  color: #e6f2ff;
+  letter-spacing: .5px;
+}
+.drawer__menu {
+  padding: 6px 0;
+  border-right: none;
+  border-left: none;
+  background: transparent !important;
+}
+.drawer__menu :deep(.el-menu-item),
+.drawer__menu :deep(.el-sub-menu__title) {
+  height: 44px;
+  line-height: 44px;
+  padding: 0 14px;
+  font-size: 14px;
+  color: #cfe8ff;
+}
+.drawer__menu :deep(.el-menu-item:hover),
+.drawer__menu :deep(.el-sub-menu__title:hover) {
+  color: #fff;
+  background-color: rgba(255, 255, 255, 0.06);
+}
+</style>
