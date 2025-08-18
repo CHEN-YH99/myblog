@@ -1,5 +1,19 @@
-body {
+* {
     margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    overflow-x: hidden;
+}
+
+#app {
+    margin: 0;
+    padding: 0;
 }
  
 h1 {
@@ -21,31 +35,38 @@ p {
 .header {
     position: relative;
     text-align: center;
-    /* 移除背景渐变 */
     color: white;
+    margin: 0 !important;
+    padding: 0 !important;
+    height: 100vh !important;
+    width: 100vw !important;
+    overflow: hidden !important;
 }
 
+/* 移除mask遮罩，让图片完整显示 */
 .inner-header {
-    -webkit-mask: linear-gradient(to bottom, black 82%, transparent 100%);
-    mask: linear-gradient(to bottom, black 82%, transparent 100%);
-} 
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw !important;
+    height: 100vh !important;
+    margin: 0;
+    padding: 0;
+    background: url(../images/shunsea1.jpg) no-repeat center center;
+    background-size: cover;
+    background-attachment: fixed;
+}
 
-/* 在图片底部添加柔和的渐变过渡 */
-.inner-header::after {
-    content: '';
+/* 波浪容器样式 */
+.wave-container {
     position: absolute;
     bottom: 0;
     left: 0;
-    right: 0;
-    height: 80px;
-    background: linear-gradient(to bottom, 
-        transparent 0%, 
-        rgba(135, 206, 235, 0.1) 30%,
-        rgba(135, 206, 235, 0.3) 60%,
-        rgba(135, 206, 235, 0.6) 100%
-    );
-    pointer-events: none;
+    width: 100%;
+    overflow: visible; /* 允许波浪完整显示 */
+    line-height: 0;
 }
+
 
 /* 调整水波浪颜色为海洋色调 */
 .parallax > use:nth-child(1) { fill: rgba(135, 206, 235, 0.4); }
@@ -61,18 +82,6 @@ p {
     vertical-align: middle;
 }
  
-.inner-header {
-    border-radius: 10px;
-    height: 90vh;
-    width: 100%;
-    margin: 0;
-    padding: 0;
-    background: url(../images/shunsea1.jpg);
-    background-size:cover;
-    background-position: center;
-    background-repeat: no-repeat;
-}
- 
 .flex {
     /*Flexbox for containers*/
     display: flex;
@@ -84,10 +93,9 @@ p {
 .waves {
     position: relative;
     width: 100%;
-    height: 15vh;
-    margin-bottom: -7px; /*Fix for safari gap*/
-    min-height: 100px;
-    max-height: 150px;
+    height: 20vh;
+    margin-bottom: 0;
+    min-height: 150px;
 }
  
 .content {
@@ -95,6 +103,7 @@ p {
     height: 20vh;
     text-align: center;
     background-color: white;
+    margin-top: 0;
 }
  
 .content a {
@@ -139,13 +148,26 @@ p {
 /*Shrinking for mobile*/
 @media (max-width: 768px) {
     .waves {
-        height: 40px;
-        min-height: 40px;
+        height: 20vh;
+        min-height: 120px;
     }
     .content {
         height: 30vh;
     }
     h1 {
         font-size: 24px;
+    }
+}
+
+/* 响应式调整导航栏间隙 */
+@media (max-width: 992px) {
+    .header {
+        margin-top: -50px !important; /* 移动端导航栏高度 */
+        padding-top: 50px !important;
+    }
+    
+    .waves {
+        height: 22vh;
+        min-height: 140px;
     }
 }

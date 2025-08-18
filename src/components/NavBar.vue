@@ -158,7 +158,6 @@
       </el-menu>
     </el-drawer>
   </header>
-  <RouterView />
 </template>
 
 <script setup lang="ts">
@@ -187,11 +186,13 @@ const drawer = ref(false)
 
 <style scoped lang="scss">
 .navbar {
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
+  right: 0;
   z-index: 1000;
   height: 48px;
-  background: linear-gradient(180deg, rgba(8, 20, 40, 0.9), rgba(8, 20, 40, 0.75));
+  background: linear-gradient(180deg, rgba(8, 20, 40, 0.2), rgba(8, 20, 40, 0.15));
   backdrop-filter: blur(6px);
   border-bottom: 1px solid rgba(200, 230, 255, 0.12);
 }
@@ -200,19 +201,42 @@ const drawer = ref(false)
   max-width: 1200px;
   height: 100%;
   margin: 0 auto;
-  padding: 0 12px;
-  display: flex;
+  padding: 0 24px;
+  display: flex !important;
   align-items: center;
+  justify-content: space-between !important;
 }
 
 .navbar__avatar {
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  // border: 1px solid rgba(255, 255, 255, 0.25);
   box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.35) inset;
+  cursor: pointer;
+  transform: rotate(0deg);
+  transition: transform 1s ease-in-out;
+}
+// 头像图片旋转动画 */
+.navbar__avatar:hover {
+  transform: rotate(360deg);
+  transition: transform 1s ease-in-out;
+}
+// 鼠标离开后，头像图片反向旋转
+// .navbar__avatar:active {
+//   transform: rotate(-360deg);
+//   transition: transform 1s ease-in-out;
+// }
+
+.navbar__logo {
+  height: 32px;
+  width: 32px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
 }
 
 /* 桌面端菜单（默认显示） */
 .navbar__menu {
-  margin-left: auto;
   height: 48px;
   background: transparent !important;
   border-bottom: none !important;
@@ -221,7 +245,6 @@ const drawer = ref(false)
 /* 移动端操作区（默认隐藏） */
 .navbar__mobile {
   display: none;
-  margin-left: auto;
   gap: 6px;
   align-items: center;
 }
@@ -320,7 +343,7 @@ const drawer = ref(false)
 }
 .drawer__title {
   font-size: 14px;
-  color: #e6f2ff;
+  color: #78b4f5;
   letter-spacing: .5px;
 }
 .drawer__menu {
@@ -335,11 +358,11 @@ const drawer = ref(false)
   line-height: 44px;
   padding: 0 14px;
   font-size: 14px;
-  color: #cfe8ff;
+  color: #7bb9f4;
 }
 .drawer__menu :deep(.el-menu-item:hover),
 .drawer__menu :deep(.el-sub-menu__title:hover) {
-  color: #fff;
+  color: #000000;
   background-color: rgba(255, 255, 255, 0.06);
 }
 </style>
