@@ -1,9 +1,12 @@
 <template>
 	<div class="home-page">
+		<!-- 头部图片 -->
 		<div class="header">
 			<div class="inner-header flex">
 				<h1>小灰个人博客</h1>
 			</div>
+			<el-icon color="#ffffff" size="24px" class="turndown"><arrow-down-bold /></el-icon>
+
 			<!-- 海水波浪 -->
 			<div class="wave-container">
 				<svg class="waves" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
@@ -21,11 +24,21 @@
 				</svg>
 			</div>
 		</div>
+		<!-- 内容 -->
+		 <div class="main-content">
+			<!-- 回到顶部 -->
+			<el-backtop :right="100" :bottom="100" />
+			<!-- 内容区域 -->
+			<div class="content">
+				
+			</div>
+		 </div>
 	</div>
 </template>
 
 <script setup lang="ts">
 import '../assets/style/index.css'
+import { ArrowDownBold, } from '@element-plus/icons-vue'
 </script>
 
 <style scoped lang="scss">

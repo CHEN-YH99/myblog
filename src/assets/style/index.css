@@ -55,6 +55,27 @@ p {
     overflow: hidden !important;
     z-index: 1; /* 在普通内容之上，但在导航栏之下 */
 }
+/* 向下箭头 */
+.turndown {
+    position: absolute;
+    bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    cursor: pointer;
+    z-index: 10;
+    animation: change-down 1.5s ease-in-out infinite alternate;
+}
+
+/* 为向下的箭头添加动画效果 */
+@keyframes change-down {
+    from {
+        transform: translateY(0);
+    }
+    to {
+        transform: translateY(50px);
+        opacity: 0.5;
+    }
+}
 
 /* Inner header 样式 */
 .inner-header {
@@ -221,4 +242,11 @@ p {
         height: 22vh;
         min-height: 140px;
     }
+}
+
+/* 内容区 */
+.main-content {
+    height: 100vh;
+    width: 100%;
+    background-color: aqua;
 }
