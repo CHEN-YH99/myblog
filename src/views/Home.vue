@@ -1,11 +1,10 @@
 <template>
 	<div class="home-page">
-		<!-- 头部图片 -->
 		<div class="header">
 			<div class="inner-header flex">
 				<h1>小灰个人博客</h1>
 			</div>
-			<el-icon color="#ffffff" size="24px" class="turndown"><arrow-down-bold /></el-icon>
+			<el-icon color="#ffffff" size="30px" class="turndown"><arrow-down-bold /></el-icon>
 
 			<!-- 海水波浪 -->
 			<div class="wave-container">
@@ -24,21 +23,47 @@
 				</svg>
 			</div>
 		</div>
-		<!-- 内容 -->
-		 <div class="main-content">
+		
+		<!-- 主要内容区域 -->
+		<div class="main-content">
 			<!-- 回到顶部 -->
 			<el-backtop :right="100" :bottom="100" />
+			
 			<!-- 内容区域 -->
-			<div class="content">
-				
+			<div class="content-list">
+				<el-row>
+					<el-col
+						v-for="(o, index) in 2"
+						:key="o"
+						:span="8"
+						:offset="index > 0 ? 2 : 0"
+					>
+						<el-card :body-style="{ padding: '0px' }">
+							<img
+								src="https://shadow.elemecdn.com/app/element/hamburger.9cf7b091-55e9-11e9-a976-7f4d0b07eef6.png"
+								class="image"
+							/>
+							<div style="padding: 14px">
+								<span>汉堡</span>
+								<div class="bottom">
+									<time class="time">{{ currentDate }}</time>
+									<el-button type="text" class="button">操作</el-button>
+								</div>
+							</div>
+						</el-card>
+					</el-col>
+				</el-row>
 			</div>
-		 </div>
+		</div>
 	</div>
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue'
 import '../assets/style/index.css'
 import { ArrowDownBold, } from '@element-plus/icons-vue'
+
+const currentDate = ref(new Date())
 </script>
 
 <style scoped lang="scss">
