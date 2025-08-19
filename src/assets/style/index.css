@@ -31,30 +31,81 @@ p {
     color: #333333;
 }
 
-/* 移除.header的背景，让图片直接显示 */
-.header {
+/* Home 页面样式 */
+.home-page {
     position: relative;
-    text-align: center;
-    color: white;
-    margin: 0 !important;
-    padding: 0 !important;
-    height: 100vh !important;
-    width: 100vw !important;
-    overflow: hidden !important;
+    width: 100%;
+    height: 100vh;
 }
 
-/* 移除mask遮罩，让图片完整显示 */
-.inner-header {
-    position: absolute;
+/* Header 区域样式 */
+.header {
+    position: fixed;
     top: 0;
     left: 0;
-    width: 100vw !important;
-    height: 100vh !important;
+    height: 100vh;
+    width: 100vw;
+    text-align: center;
+    /* background: linear-gradient(60deg, rgba(84,58,183,1) 0%, rgba(0,172,193,1) 100%); */
+    background: url('../images/shunsea1.jpg');
+    background-size: cover;
+    color: white;
+    margin: 0 !important;
+    padding: 48px 0 0 0 !important; /* 顶部留出导航栏空间 */
+    overflow: hidden !important;
+    z-index: 1; /* 在普通内容之上，但在导航栏之下 */
+}
+
+/* Inner header 样式 */
+.inner-header {
+    height: 65vh;
+    width: 100%;
     margin: 0;
     padding: 0;
-    background: url(../images/shunsea1.jpg) no-repeat center center;
-    background-size: cover;
-    background-attachment: fixed;
+}
+
+.inner-header h1 {
+    color: white;
+    font-family: 'Lato', sans-serif;
+    font-weight: 300;
+    font-size: 3rem;
+    letter-spacing: 10px;
+    margin: 0;
+    transition: font-size 0.3s ease, letter-spacing 0.3s ease;
+}
+
+/* 响应式标题样式 */
+/* 大屏幕 (1200px+) */
+@media (min-width: 1200px) {
+    .inner-header h1 {
+        font-size: 3rem;
+        font-weight: 600;
+        letter-spacing: 12px;
+    }
+}
+
+/* 中等屏幕 (768px - 1199px) */
+@media (max-width: 1199px) and (min-width: 768px) {
+    .inner-header h1 {
+        font-size: 2rem;
+        letter-spacing: 8px;
+    }
+}
+
+/* 小屏幕 (576px - 767px) */
+@media (max-width: 767px) and (min-width: 576px) {
+    .inner-header h1 {
+        font-size: 1.5rem;
+        letter-spacing: 5px;
+    }
+}
+
+/* 超小屏幕 (575px及以下) */
+@media (max-width: 575px) {
+    .inner-header h1 {
+        font-size: 1.5rem;
+        letter-spacing: 3px;
+    }
 }
 
 /* 波浪容器样式 */

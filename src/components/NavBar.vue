@@ -21,14 +21,14 @@
           <el-icon><Search /></el-icon>
         </el-menu-item>
 
-        <el-menu-item index="home">
+        <el-menu-item index="home" @click="$router.push('/')">
           <el-icon><House /></el-icon>
-          <router-link to="/"><span class="menu-text">主页</span></Router-link>
+          <span class="menu-text">主页</span>
         </el-menu-item>
 
-        <el-menu-item index="timeline">
+        <el-menu-item index="timeline" @click="$router.push('/timeline')">
           <el-icon><Clock /></el-icon>
-          <router-link to="/timeline"><span class="menu-text">时间轴</span></Router-link>
+          <span class="menu-text">时间轴</span>
         </el-menu-item>
 
         <el-menu-item index="more">
@@ -117,11 +117,11 @@
           <el-icon><Search /></el-icon>
           <span>搜索</span>
         </el-menu-item>
-        <el-menu-item index="m-home">
+        <el-menu-item index="m-home" @click="handleMobileNavigation('/')">
           <el-icon><House /></el-icon>
           <span>主页</span>
         </el-menu-item>
-        <el-menu-item index="m-timeline">
+        <el-menu-item index="m-timeline" @click="handleMobileNavigation('/timeline')">
           <el-icon><Clock /></el-icon>
           <span>时间轴</span>
         </el-menu-item>
@@ -160,8 +160,9 @@
   </header>
 </template>
 
-<script setup lang="ts">
+<script setup>
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import {
   Search,
   House,
@@ -180,8 +181,15 @@ import {
 
 import avatarUrl from '../assets/images/hui.svg'
 
+const router = useRouter()
 const isDark = ref(true)
 const drawer = ref(false)
+
+// 处理移动端导航
+const handleMobileNavigation = (path) => {
+  drawer.value = false
+  router.push(path)
+}
 </script>
 
 <style scoped lang="scss">
