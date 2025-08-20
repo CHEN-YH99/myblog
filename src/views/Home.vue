@@ -88,6 +88,11 @@
 									My Gitee
 								</button>
 							</div>
+							<div class="my-links">
+								<img src="../assets/images/csdn.svg"/>
+								<img src="../assets/images/github.svg"/>
+								<img src="../assets/images/哔哩哔哩.svg"/>
+							</div>
 						</div>
 					</el-col>
 				</div>	

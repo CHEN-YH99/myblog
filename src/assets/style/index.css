@@ -1,387 +1,244 @@
+/* ========== Reset ========== */
 * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-html, body {
-    margin: 0;
-    padding: 0;
-    height: 100%;
-    overflow-x: hidden;
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow-x: hidden;
 }
 
 #app {
-    margin: 0;
-    padding: 0;
-}
- 
-h1 {
-    font-family: 'Lato', sans-serif;
-    font-weight: 600;
-    letter-spacing: 2px;
-    font-size: 36px;
+  margin: 0;
+  padding: 0;
 }
 
+/* Utility flex helper */
+.flex {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+/* ========== Typography ========== */
+h1 {
+  font-family: 'Lato', sans-serif;
+  font-weight: 600;
+  letter-spacing: 2px;
+  font-size: 36px;
+}
 
 p {
-    font-family: 'Lato', sans-serif;
-    letter-spacing: 1px;
-    font-size: 14px;
-    color: #333333;
+  font-family: 'Lato', sans-serif;
+  letter-spacing: 1px;
+  font-size: 14px;
+  color: #333333;
 }
 
-/* Home 页面样式 */
+/* ========== CSS Variables ========== */
+:root {
+  /* 个人信息卡片顶部横幅高度（桌面默认） */
+  --about-banner-height: 220px;
+  /* Avatar 与横幅底边的相对偏移（近似 Avatar 半高） */
+  --avatar-offset: 40px;
+  /* 海浪高度（用于与内容顶距同步） */
+  --wave-height: 20vh;
+}
+
+/* ========== Home Layout ========== */
 .home-page {
-    position: relative;
-    width: 100%;
-    min-height: 100vh;
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
 }
 
-/* Header 区域样式 */
+/* Header：全屏背景区 */
 .header {
-    position: relative;
-    height: 100vh;
-    width: 100%;
-    text-align: center;
-    /* background: linear-gradient(60deg, rgba(84,58,183,1) 0%, rgba(0,172,193,1) 100%); */
-    background: url('../images/shunsea1.jpg');
-    background-size: cover;
-    background-attachment: fixed; /* 固定背景，防止滚动时跳动 */
-    color: white;
-    margin: 0 !important;
-    padding: 48px 0 0 0 !important; /* 顶部留出导航栏空间 */
-    overflow: hidden !important;
-    transform: translateZ(0); /* 启用硬件加速 */
+  position: relative;
+  width: 100%;
+  text-align: center;
+  background: url('../images/shunsea1.jpg');
+  background-size: cover;
+  background-position: center center;
+  background-attachment: fixed;
+  color: white;
+  margin: 0 !important;
+  padding: 48px 0 calc(var(--wave-height) + 10px) 0 !important; /* 顶部留出导航栏空间 + 预留海浪高度(含缓冲) */
+  overflow: hidden !important;
+  transform: translateZ(0);
+  /* 视口高度兼容：优先使用动态视口单位，其次传统 100vh */
+  height: 100vh;
+  height: 100dvh;
+  min-height: 100svh;
 }
+
 /* 向下箭头 */
 .turndown {
-    position: absolute;
-    bottom: 100px;
-    left: 50%;
-    transform: translateX(-50%);
-    cursor: pointer;
-    z-index: 10;
-    animation: change-down 1.5s ease-in-out infinite alternate;
+  position: absolute;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  cursor: pointer;
+  z-index: 10;
+  animation: change-down 1.5s ease-in-out infinite alternate;
 }
 
-/* 为向下的箭头添加动画效果 */
 @keyframes change-down {
-    from {
-        transform: translateY(0);
-    }
-    to {
-        transform: translateY(50px);
-        opacity: 0.5;
-    }
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(50px);
+    opacity: 0.5;
+  }
 }
 
-/* Inner header 样式 */
+/* 顶部内层 */
 .inner-header {
-    height: 65vh;
-    width: 100%;
-    margin: 0;
-    padding: 0;
+  height: 65vh;
+  width: 100%;
+  margin: 0;
+  padding: 0;
 }
 
 .inner-header h1 {
-    color: white;
-    font-family: 'Lato', sans-serif;
-    font-weight: 300;
-    font-size: 3rem;
-    letter-spacing: 10px;
-    margin: 0;
-    transition: font-size 0.3s ease, letter-spacing 0.3s ease;
+  color: white;
+  font-family: 'Lato', sans-serif;
+  font-weight: 300;
+  font-size: 3rem;
+  letter-spacing: 10px;
+  margin: 0;
+  transition: font-size 0.3s ease, letter-spacing 0.3s ease;
 }
 
-/* 响应式标题样式 */
-/* 大屏幕 (1200px+) */
-@media (min-width: 1200px) {
-    .inner-header h1 {
-        font-size: 3rem;
-        font-weight: 600;
-        letter-spacing: 12px;
-    }
-}
-
-/* 中等屏幕 (768px - 1199px) */
-@media (max-width: 1199px) and (min-width: 768px) {
-    .inner-header h1 {
-        font-size: 2rem;
-        letter-spacing: 8px;
-    }
-}
-
-/* 小屏幕 (576px - 767px) */
-@media (max-width: 767px) and (min-width: 576px) {
-    .inner-header h1 {
-        font-size: 1.5rem;
-        letter-spacing: 5px;
-    }
-}
-
-/* 超小屏幕 (575px及以下) */
-@media (max-width: 575px) {
-    .inner-header h1 {
-        font-size: 1.5rem;
-        letter-spacing: 3px;
-    }
-}
-
-/* 波浪容器样式 */
+/* ========== Waves ========== */
 .wave-container {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    overflow: hidden; /* 防止波浪溢出导致跳动 */
-    line-height: 0;
-    transform: translateZ(0); /* 启用硬件加速，减少重绘 */
-    will-change: transform; /* 优化动画性能 */
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  overflow: hidden;
+  line-height: 0;
+  transform: translateZ(0);
+  will-change: transform;
+  pointer-events: none;
 }
 
-
-/* 调整水波浪颜色为海洋色调 */
-.parallax > use:nth-child(1) { fill: rgba(135, 206, 235, 0.4); }
-.parallax > use:nth-child(2) { fill: rgba(135, 206, 235, 0.6); }
-.parallax > use:nth-child(3) { fill: rgba(135, 206, 235, 0.8); }
-.parallax > use:nth-child(4) { fill: rgba(176, 224, 230, 1); }
-
-.logo {
-    width: 50px;
-    fill: white;
-    padding-right: 15px;
-    display: inline-block;
-    vertical-align: middle;
-}
- 
-.flex {
-    /*Flexbox for containers*/
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-}
- 
 .waves {
-    position: relative;
-    width: 100%;
-    height: 20vh;
-    margin-bottom: 0;
-    min-height: 150px;
-    transform: translateZ(0); /* 启用硬件加速 */
-    backface-visibility: hidden; /* 防止闪烁 */
+  position: relative;
+  width: 100%;
+  height: var(--wave-height);
+  min-height: 0;
+  margin-bottom: 0;
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
- 
-.content {
-    position: relative;
-    height: 20vh;
-    text-align: center;
-    background-color: white;
-    margin-top: 0;
-}
- 
-.content a {
-    margin: 0 5px;
-    font-size: 12px;
-    color: #333;
-}
- 
-.content a:hover {
-    color: #000;
-}
- 
-/* Animation */
- 
-.parallax > use {
-    animation: move-forever 25s cubic-bezier(0.55, 0.5, 0.45, 0.5) infinite;
-}
+
+/* 海浪色调 */
 .parallax > use:nth-child(1) {
-    animation-delay: -2s;
-    animation-duration: 7s;
+  fill: rgba(135, 206, 235, 0.4);
 }
 .parallax > use:nth-child(2) {
-    animation-delay: -3s;
-    animation-duration: 10s;
+  fill: rgba(135, 206, 235, 0.6);
 }
 .parallax > use:nth-child(3) {
-    animation-delay: -4s;
-    animation-duration: 13s;
+  fill: rgba(135, 206, 235, 0.8);
 }
 .parallax > use:nth-child(4) {
-    animation-delay: -5s;
-    animation-duration: 20s;
+  fill: rgba(176, 224, 230, 1);
+}
+
+/* 海浪动画 */
+.parallax > use {
+  animation: move-forever 25s cubic-bezier(0.55, 0.5, 0.45, 0.5) infinite;
+  transform-origin: center;
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+.parallax > use:nth-child(1) {
+  animation-delay: -2s;
+  animation-duration: 7s;
+}
+.parallax > use:nth-child(2) {
+  animation-delay: -3s;
+  animation-duration: 10s;
+}
+.parallax > use:nth-child(3) {
+  animation-delay: -4s;
+  animation-duration: 13s;
+}
+.parallax > use:nth-child(4) {
+  animation-delay: -5s;
+  animation-duration: 20s;
 }
 @keyframes move-forever {
-    0% {
-        transform: translate3d(-90px, 0, 0);
-    }
-    100% {
-        transform: translate3d(85px, 0, 0);
-    }
+  0% {
+    transform: translate3d(-90px, 0, 0);
+  }
+  100% {
+    transform: translate3d(85px, 0, 0);
+  }
 }
 
-/* 优化动画性能 */
-.parallax > use {
-    transform-origin: center;
-    backface-visibility: hidden;
-    perspective: 1000px;
-}
-/*Shrinking for mobile*/
-@media (max-width: 768px) {
-    .waves {
-        height: 20vh;
-        min-height: 120px;
-    }
-    .content {
-        height: 30vh;
-    }
-    h1 {
-        font-size: 24px;
-    }
-}
-
-/* 响应式调整导航栏间隙 */
-@media (max-width: 992px) {
-    .header {
-        margin-top: -50px !important; /* 移动端导航栏高度 */
-        padding-top: 50px !important;
-    }
-    
-    .waves {
-        height: 22vh;
-        min-height: 140px;
-    }
-}
-
-/* 内容区 */
+/* ========== Main Content ========== */
 .main-content {
-    position: relative;
-    width: 100%;
-    /* min-height: 50vh; */
-    padding: 40px 20px;
-}
-
-/* 内容列表样式 */
-.content-list {
-    max-width: 1100px;
-    margin: 0 auto;
-    padding: 20px;
-    display: flex;
-    align-items: flex-start; /* 确保容器顶部对齐 */
-    gap: 20px; /* 容器之间的间距 */
-}
-
-/* 关于我容器样式 */
-.about-me {
-    position: relative;
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    transition: box-shadow 0.3s ease;
-    height: fit-content; /* 高度自适应内容 */
-}
-
-.about-me:hover {
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-}
-.about-me img {
-    width: 100%;
-    border-radius: 12px 12px 0 0;
-}
-.about-me .avatar {
-    position: absolute;
-    top:120px;
-    left: 20px;
-}
-.about-me h5 {
-    margin: 0 0 16px 0;
-    color: #333;
-    font-weight: 600;
-}
-
-.about-me .pub p {
-    margin: 8px 0;
-    padding: 0px 10px;
-    color: #666;
-    font-size: 10px;
-    line-height: 1.6;
-    text-align: left;
-}
-.about-me .my-data {
-    border-top: 1px solid #eee;
-     display: flex;
-     align-items: center;
-    /* align-items: center; */
-    justify-content: space-between;
-    padding: 10px 0;
-}
-.about-me .my-data .pub-item p{
-    text-align: center;
-}
-/* 内容卡片区 */
-.time {
-  font-size: 12px;
-  color: #999;
-}
-
-.bottom {
-  margin-top: 13px;
-  line-height: 12px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.button {
-  padding: 0;
-  min-height: auto;
-}
-
-.image {
+  position: relative;
   width: 100%;
-  display: block;
+  padding: 40px 20px;
+  margin-top: 0;
+  z-index: 0; /* 确保不覆盖 Header/Waves */
 }
 
-/* el-col 边框阴影样式 */
+/* 内容列表 */
+.content-list {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 5px; /* 卡片容器之间间距 5px */
+}
+
+/* ========== Cards ========== */
+/* el-col 容器通用阴影卡 */
 .grid-content {
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   transition: box-shadow 0.3s ease;
   background: white;
   margin: 10px 5px;
-  overflow: hidden; /* 裁剪超出圆角的内容，保持圆角效果 */
-  padding: 0; /* 移除内边距，让图片完全填充 */
+  overflow: hidden;
+  padding: 0;
 }
-
 .grid-content:hover {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
 }
 
-/* 确保图片也遵循圆角，与容器完美贴合 */
 .grid-content .el-image {
   border-radius: 8px;
   display: block;
   width: 100%;
-  height: 100%;
 }
-
-/* 图片内部的img标签也需要圆角 */
 .grid-content .el-image img {
   border-radius: 8px;
 }
 
-/* 文章卡片样式 */
+/* 文章卡片 */
 .article-card {
   display: flex;
   background: white;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   overflow: hidden;
-  margin-bottom: 20px;
+  margin-bottom: 5px; /* 统一 5px 间距 */
   transition: box-shadow 0.3s ease, transform 0.3s ease;
 }
-
 .article-card:hover {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
   transform: translateY(-2px);
@@ -394,13 +251,10 @@ p {
   display: flex;
   align-items: stretch;
 }
-
 .card-image .el-image {
   width: 100%;
-  height: 100%;
   border-radius: 0;
 }
-
 .card-image .el-image img {
   border-radius: 0;
 }
@@ -431,7 +285,6 @@ p {
   gap: 12px;
   margin-bottom: 12px;
 }
-
 .meta-item {
   font-size: 12px;
   color: #666;
@@ -439,14 +292,13 @@ p {
   align-items: center;
 }
 
-/* 标签样式 */
+/* 标签 */
 .article-tags {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   margin-bottom: 12px;
 }
-
 .tag {
   background: #f0f0f0;
   color: #666;
@@ -455,7 +307,7 @@ p {
   font-size: 12px;
 }
 
-/* 文章统计 */
+/* 统计 */
 .article-stats {
   display: flex;
   gap: 16px;
@@ -464,7 +316,7 @@ p {
   color: #666;
 }
 
-/* 文章摘要 */
+/* 摘要 */
 .article-excerpt {
   color: #666;
   font-size: 14px;
@@ -477,141 +329,291 @@ p {
   text-align: left;
 }
 
-/* 响应式设计 */
-@media (max-width: 768px) {
-  /* 主内容区域调整 */
-  .main-content {
-    padding: 20px 10px;
-  }
-  
-  /* 内容列表变为垂直布局 */
-  .content-list {
-    flex-direction: column;
-    gap: 20px;
-    padding: 10px;
-  }
-  
-  /* 文章卡片移动端优化 */
-  .article-card {
-    flex-direction: column;
-    margin-bottom: 15px;
-  }
-  
-  /* 卡片图片区域 */
-  .card-image {
-    width: 100%;
-    height: 200px;
-    flex-shrink: 0;
-  }
-  
-  /* 卡片内容区域 */
-  .card-content {
-    padding: 15px;
-  }
-  
-  /* 文章标题 */
-  .article-title {
-    font-size: 16px;
-    margin-bottom: 10px;
-  }
-  
-  /* 文章元信息 */
-  .article-meta {
-    flex-direction: column;
-    gap: 5px;
-    margin-bottom: 10px;
-  }
-  
-  .meta-item {
-    font-size: 11px;
-  }
-  
-  /* 标签区域 */
-  .article-tags {
-    margin-bottom: 10px;
-  }
-  
-  .tag {
-    font-size: 11px;
-    padding: 3px 6px;
-  }
-  
-  /* 文章统计 */
-  .article-stats {
-    font-size: 12px;
-    margin-bottom: 10px;
-  }
-  
-  /* 文章摘要 */
-  .article-excerpt {
-    font-size: 13px;
-    -webkit-line-clamp: 3;
-  }
-  
-  /* 关于我卡片移动端优化 */
-  .about-me {
-    margin-top: 0;
-  }
-  
-  .about-me h5 {
-    font-size: 16px;
-    margin-bottom: 10px;
-  }
-  
-  .about-me .pub p {
-    font-size: 12px;
-  }
-  
-  .about-me .my-data {
-    padding: 8px 0;
-  }
-  
-  .about-me .my-data .pub-item p {
-    font-size: 11px;
-  }
-  
-  /* 按钮移动端优化 */
-  .custom-gitee-btn {
-    height: 36px;
-    font-size: 13px;
-  }
-  
-  .custom-gitee-btn img {
-    width: 16px;
-    height: 16px;
-    margin-right: 4px;
-    vertical-align: middle;
-    display: inline-block;
-  }
+/* ========== About Me Card ========== */
+.about-me {
+  position: relative;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: box-shadow 0.3s ease;
+  height: fit-content;
+  padding-bottom: 16px;
+}
+.about-me:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
 }
 
-/* 自定义Gitee按钮样式 - 完全居中 */
+/* 顶部横幅图（Element Plus el-image 输出 img） */
+.about-me .el-image,
+.about-me img {
+  width: 100%;
+  height: var(--about-banner-height);
+  display: block;
+  object-fit: cover;
+  border-radius: 12px 12px 0 0;
+}
+
+/* 头像固定在横幅图下缘的同一相对位置（跨设备一致） */
+.about-me .avatar {
+  position: absolute;
+  left: 20px;
+  top: calc(var(--about-banner-height) - var(--avatar-offset));
+}
+
+.about-me h5 {
+  margin: 0 0 16px 0;
+  color: #333;
+  font-weight: 600;
+}
+
+.about-me .pub p {
+  margin: 8px 0;
+  padding: 0 10px;
+  color: #666;
+  font-size: 10px;
+  line-height: 1.6;
+  text-align: left;
+}
+
+/* my-tags 按钮容器居中与按钮样式（还原） */
+.about-me .my-tags {
+  display: flex;
+  justify-content: center;
+}
 .custom-gitee-btn {
-    width: 100%;
-    height: 40px;
-    padding: 0;
-    border: 1px solid #f56c6c;
-    background: transparent;
-    color: #f56c6c;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 14px;
-    font-family: inherit;
-    outline: none;
-    margin: 8px 0;
-    
-    /* 完全居中的关键样式 */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    line-height: 1;
+  width: 80%;
+  height: 40px;
+  border: 1px solid #f56c6c;
+  background: transparent;
+  color: #f56c6c;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  margin: 8px auto;
+  transition: background-color 0.3s ease-in-out;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  line-height: 1;
 }
 .custom-gitee-btn .icon {
-    margin: 0 4px;
+  margin: 0 4px;
+}
+.custom-gitee-btn:hover {
+  background: #f56c6c;
+  color: white;
 }
 
-.custom-gitee-btn:hover {
-    background: #f56c6c;
-    color: white;
+/* 个人数据区 */
+.about-me .my-data {
+  border-top: 1px solid #eee;
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* 桌面左右铺开 */
+  padding: 10px 0;
+}
+.about-me .my-data .pub-item p {
+  text-align: center;
+}
+
+/* ========== Links ========== */
+.my-links {
+  display: flex;
+  gap: 16px;
+  margin: 16px 0;
+  justify-content: center;
+}
+.my-links img {
+  width: 20px;  /* 固定为 20px */
+  height: 20px; /* 固定为 20px */
+  transition: transform 0.3s ease;
+}
+.my-links img:hover {
+  transform: scale(1.1);
+  cursor: pointer;
+}
+
+/* ========== Responsive ========== */
+/* 头部标题尺寸 */
+@media (min-width: 1200px) {
+  .inner-header h1 {
+    font-size: 3rem;
+    font-weight: 600;
+    letter-spacing: 12px;
+  }
+}
+@media (max-width: 1199px) and (min-width: 768px) {
+  .inner-header h1 {
+    font-size: 2rem;
+    letter-spacing: 8px;
+  }
+}
+@media (max-width: 767px) and (min-width: 576px) {
+  .inner-header h1 {
+    font-size: 1.5rem;
+    letter-spacing: 5px;
+  }
+}
+@media (max-width: 575px) {
+  .inner-header h1 {
+    font-size: 1.5rem;
+    letter-spacing: 3px;
+  }
+}
+
+/* 平板以下：调整海浪高度 */
+@media (max-width: 992px) {
+  :root {
+    --wave-height: 22vh;
+  }
+  .waves {
+    height: var(--wave-height);
+  }
+  .main-content {
+    margin-top: 0 !important;
+  }
+}
+
+/* 移动端（<=768px） */
+@media (max-width: 768px) {
+  /* 修复移动端 100vh 抖动与覆盖问题 */
+  .header {
+    background-attachment: scroll; /* iOS/Safari 避免 fixed 导致视口高度不准 */
+    height: 100vh;
+    height: 100dvh;
+    min-height: 100svh;
+    margin-top: 0 !important;
+    padding-top: 48px !important;
+  }
+
+  .main-content {
+    position: relative !important;
+    z-index: 0 !important;
+    margin-top: 0 !important;
+    padding: 12px 12px !important;
+    width: 100% !important;
+  }
+
+  /* 内容列表纵向堆叠，右栏(about-me)置顶 */
+  .content-list {
+    flex-direction: column !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    gap: 5px !important;   /* 容器间距保持 5px */
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  .content-list > * {
+    margin: 0 !important; /* 移除子项外边距，间距仅由 gap 控制 */
+  }
+  .content-list > .el-col {
+    width: 100% !important;
+    max-width: 100% !important;
+    flex: 0 0 100% !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+  /* 将右侧列(第二个/最后一个 el-col)置顶 */
+  .content-list > .el-col:last-child {
+    order: -1 !important;
+  }
+
+  /* 个人信息卡片：移动端全宽出血（让顶部图 100vw） */
+  :root {
+    --about-banner-height: 200px; /* 移动端横幅高度 */
+  }
+  .about-me {
+    order: -1 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    border-radius: 12px !important;
+    overflow: visible !important;
+    display: block !important;
+  }
+  .about-me .el-image,
+  .about-me img {
+    width: 100% !important;
+    height: var(--about-banner-height) !important;
+    object-fit: cover !important;
+    display: block !important;
+    border-radius: 12px 12px 0 0 !important;
+  }
+  /* 头像在移动端保持与横幅的相同相对位置 */
+  .about-me .avatar {
+    left: 16px !important;
+    top: calc(var(--about-banner-height) - var(--avatar-offset)) !important;
+  }
+
+  /* 文章卡片：纵向布局但保留 5px 间距与圆角 */
+  .article-card {
+    width: 100% !important;
+    margin: 0 !important; /* 由父容器 gap:5px 控制容器间距 */
+    border-radius: 12px !important;
+    overflow: hidden !important;
+    flex-direction: column !important; /* 图片上，文字下 */
+  }
+  .card-image,
+  .card-image .el-image {
+    width: 100% !important;
+    height: 200px !important;
+    flex-shrink: 0 !important;
+  }
+  .card-image .el-image img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    display: block !important;
+  }
+  .card-content {
+    padding: 15px !important;
+  }
+  .article-title {
+    font-size: 16px !important;
+    margin-bottom: 10px !important;
+  }
+  .article-meta {
+    flex-direction: column !important;
+    gap: 5px !important;
+    margin-bottom: 10px !important;
+  }
+  .meta-item {
+    font-size: 11px !important;
+  }
+  .article-tags {
+    margin-bottom: 10px !important;
+  }
+  .tag {
+    font-size: 11px !important;
+    padding: 3px 6px !important;
+  }
+  .article-stats {
+    font-size: 12px !important;
+    margin-bottom: 10px !important;
+  }
+  .article-excerpt {
+    font-size: 13px !important;
+    -webkit-line-clamp: 3 !important;
+  }
+
+  /* 个人数据区在移动端整体居中排列 */
+  .about-me .my-data {
+    justify-content: center !important;
+    gap: 16px !important;
+    align-items: center !important;
+  }
+
+  /* 移动端 my-links 图标固定为 20px */
+  .my-links img {
+    width: 20px !important;
+    height: 20px !important;
+  }
+
+  /* 自定义按钮恢复桌面大小（仅确保图标尺寸） */
+  .custom-gitee-btn .el-icon,
+  .custom-csdn-btn .el-icon {
+    font-size: 18px !important;
+  }
 }
