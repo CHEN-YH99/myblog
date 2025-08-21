@@ -1,6 +1,12 @@
 <template>
 	<div class="home-page">
-		<div class="header">
+		<!-- <nav class="navbar" 
+			:class="{
+				'navbar-scrolled': isScrolled, 
+				'navbar-hidden': isHidden 
+			}"
+		> -->
+			<div class="header">
 			<div class="inner-header flex">
 				<h1>小灰个人博客</h1>
 			</div>
@@ -22,8 +28,8 @@
 					</g>
 				</svg>
 			</div>
-		</div>
-		
+			</div>
+		<!-- </nav> -->
 		<!-- 主要内容区域 -->
 		<div class="main-content">
 			<!-- 回到顶部 -->
@@ -127,14 +133,47 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import '../assets/style/index.css'
-import { ArrowDownBold, } from '@element-plus/icons-vue'
+	import { ref, onMounted, onBeforeUnmount} from 'vue'
+	import { ArrowDownBold, } from '@element-plus/icons-vue'
 
-// 图片地址 - 正确的静态资源引用方式
-import bgImage from '../assets/images/shunsea1.jpg'
-const url = ref(bgImage)
-const fit = ref('cover')
+	import '../assets/style/index.css'
+	import bgImage from '../assets/images/shunsea1.jpg'  // 图片地址 - 正确的静态资源引用方式
+	const url = ref(bgImage)
+	const fit = ref('cover')
+
+// 	// 滚动事件
+// 	const isScrolled = ref(false)  // 是否滚动的标志
+// 	const isHidden = ref(false)  // 是否隐藏的标志
+// 	const lastScrollTop = ref(0)  // 记录上一次滚动位置
+// 	const scrollTimeout = ref(null) // 防抖
+// 	// 监听滚动事件
+// 	const handleScroll = () => {
+// 		console.log("触发滚动条事件");
+		
+// 	  const scrollPosition = window.pageYOffset || document.documentElement.scrollTop
+// 	  console.log('scrollPosition:', scrollPosition)
+		
+		
+//     // if (scrollposition > lastScrollTop.value) {
+//     //   isScrolled.value = true
+// 		// 	setTimeout(() => {
+// 		// 		isHidden.value = true
+// 		// 	}, 300)
+//     // } else {
+//     //   isHidden.value = false
+// 		//   setTimeout(() => {
+// 		// 		isScrolled.value = false
+// 		// 	}, 300)
+//     // }
+// 	}
+// 	// 组件挂载时，监听滚动事件
+// 	onMounted(() => {
+//   console.log('组件已挂载，添加滚动监听')
+//   window.addEventListener('scroll', handleScroll, { passive: true })
+  
+//   // 立即执行一次，检查初始状态
+//   handleScroll()
+// })
 </script>
 
 <style scoped lang="scss">

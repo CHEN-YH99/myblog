@@ -1,0 +1,64 @@
+/* 全局滚动条样式 */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+  transition: background 0.3s ease;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+/* 滚动条滑块悬停效果 */
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+  transform: scale(1.1);
+}
+
+/* 滚动条滑块点击效果 */
+::-webkit-scrollbar-thumb:active {
+  background: #333;
+  transform: scale(0.95);
+}
+
+/* 滚动条轨道悬停效果 */
+::-webkit-scrollbar-track:hover {
+  background: #e8e8e8;
+}
+
+/* 添加渐变效果的滚动条滑块 */
+::-webkit-scrollbar-thumb::before {
+  content: '';
+  position: absolute;
+  top: 10%;
+  left: 10%;
+  right: 10%;
+  bottom: 10%;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.3) 0%,
+    rgba(255, 255, 255, 0) 50%,
+    rgba(0, 0, 0, 0.1) 100%
+  );
+  border-radius: inherit;
+}
+
+/* 滚动时的动画效果 */
+html {
+  scroll-behavior: smooth;
+}
+
+/* 对于你的最大宽度容器 */
+.max-width-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 15px;
+}

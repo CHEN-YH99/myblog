@@ -197,7 +197,7 @@ const handleMobileNavigation = (path) => {
   position: fixed;
   top: 0;
   left: 0;
-  right: 0;
+  right: 5px;
   z-index: 1000;
   height: 48px;
   background: linear-gradient(180deg, rgba(8, 20, 40, 0.2), rgba(8, 20, 40, 0.15));
@@ -206,7 +206,7 @@ const handleMobileNavigation = (path) => {
 }
 
 .navbar__inner {
-  max-width: 1200px;
+  // max-width: 1200px;
   height: 100%;
   margin: 0 auto;
   padding: 0 24px;

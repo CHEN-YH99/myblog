@@ -202,7 +202,7 @@ p {
   padding: 0;
   display: flex;
   align-items: flex-start;
-  gap: 5px; /* 卡片容器之间间距 5px */
+  gap: 15px; /* 卡片容器之间间距 5px */
 }
 
 /* 消除 Element Plus el-col 默认左右内边距，保证列间距仅由 gap 控制为 5px */
@@ -242,7 +242,7 @@ p {
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   overflow: hidden;
-  margin-bottom: 5px; /* 统一 5px 间距 */
+  margin-bottom: 15px; /* 统一 5px 间距 */
   transition: box-shadow 0.3s ease, transform 0.3s ease;
 }
 .article-card:hover {
