@@ -1,35 +1,34 @@
 <template>
 	<div class="home-page">
-		<!-- <nav class="navbar" 
+		<nav class="navbar" 
 			:class="{
 				'navbar-scrolled': isScrolled, 
 				'navbar-hidden': isHidden 
 			}"
-		> -->
+		>
 			<div class="header">
-			<div class="inner-header flex">
-				<h1>小灰个人博客</h1>
+				<div class="inner-header flex">
+					<h1>小灰个人博客</h1>
+				</div>
+				<el-icon color="#ffffff" size="30px" class="turndown"><arrow-down-bold /></el-icon>
+				<!-- 海水波浪 -->
+				<div class="wave-container">
+					<svg class="waves" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+						viewBox="0 24 150 28" preserveAspectRatio="none" shape-rendering="auto">
+						<defs>
+							<path id="gentle-wave"
+								d="M-160 44c30 0 58-18 88-18s 58 18 88 18 58-18 88-18 58 18 88 18 v44h-352z" />
+						</defs>
+						<g class="parallax">
+							<use xlink:href="#gentle-wave" x="48" y="0" fill="rgba(255,255,255,0.7)" />
+							<use xlink:href="#gentle-wave" x="48" y="3" fill="rgba(255,255,255,0.5)" />
+							<use xlink:href="#gentle-wave" x="48" y="5" fill="rgba(255,255,255,0.3)" />
+							<use xlink:href="#gentle-wave" x="48" y="7" fill="#fff" />
+						</g>
+					</svg>
+				</div>
 			</div>
-			<el-icon color="#ffffff" size="30px" class="turndown"><arrow-down-bold /></el-icon>
-
-			<!-- 海水波浪 -->
-			<div class="wave-container">
-				<svg class="waves" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
-					viewBox="0 24 150 28" preserveAspectRatio="none" shape-rendering="auto">
-					<defs>
-						<path id="gentle-wave"
-							d="M-160 44c30 0 58-18 88-18s 58 18 88 18 58-18 88-18 58 18 88 18 v44h-352z" />
-					</defs>
-					<g class="parallax">
-						<use xlink:href="#gentle-wave" x="48" y="0" fill="rgba(255,255,255,0.7)" />
-						<use xlink:href="#gentle-wave" x="48" y="3" fill="rgba(255,255,255,0.5)" />
-						<use xlink:href="#gentle-wave" x="48" y="5" fill="rgba(255,255,255,0.3)" />
-						<use xlink:href="#gentle-wave" x="48" y="7" fill="#fff" />
-					</g>
-				</svg>
-			</div>
-			</div>
-		<!-- </nav> -->
+		</nav>
 		<!-- 主要内容区域 -->
 		<div class="main-content">
 			<!-- 回到顶部 -->
@@ -141,39 +140,44 @@
 	const url = ref(bgImage)
 	const fit = ref('cover')
 
-// 	// 滚动事件
-// 	const isScrolled = ref(false)  // 是否滚动的标志
-// 	const isHidden = ref(false)  // 是否隐藏的标志
-// 	const lastScrollTop = ref(0)  // 记录上一次滚动位置
-// 	const scrollTimeout = ref(null) // 防抖
-// 	// 监听滚动事件
-// 	const handleScroll = () => {
-// 		console.log("触发滚动条事件");
+	// 滚动事件
+	const isScrolled = ref(false)  // 是否滚动的标志
+	const isHidden = ref(false)  // 是否隐藏的标志
+	const lastScrollTop = ref(0)  // 记录上一次滚动位置
+	const scrollTimeout = ref(null) // 防抖
+	// 监听滚动事件
+	const handleScroll = () => {
 		
-// 	  const scrollPosition = window.pageYOffset || document.documentElement.scrollTop
-// 	  console.log('scrollPosition:', scrollPosition)
+	  const scrollPosition = window.pageYOffset || document.documentElement.scrollTop
+		// const scrollPosition = document.body.scrollTop || 0;
+	  console.log("滚动条距离顶部位置:", scrollPosition)
 		
 		
-//     // if (scrollposition > lastScrollTop.value) {
-//     //   isScrolled.value = true
-// 		// 	setTimeout(() => {
-// 		// 		isHidden.value = true
-// 		// 	}, 300)
-//     // } else {
-//     //   isHidden.value = false
-// 		//   setTimeout(() => {
-// 		// 		isScrolled.value = false
-// 		// 	}, 300)
-//     // }
-// 	}
-// 	// 组件挂载时，监听滚动事件
-// 	onMounted(() => {
-//   console.log('组件已挂载，添加滚动监听')
-//   window.addEventListener('scroll', handleScroll, { passive: true })
+    if (scrollPosition > lastScrollTop.value) {
+      isScrolled.value = true
+			
+			
+			setTimeout(() => {
+				isHidden.value = true
+			}, 300)
+    } else {
+      isHidden.value = false
+			console.log("isScrolled", isHidden.value);
+		  setTimeout(() => {
+				isScrolled.value = false
+			}, 300)
+    }
+	}
+	// 组件挂载时，监听滚动事件
+	onMounted(() => {
+  // window.addEventListener('scroll', handleScroll, { passive: true })
   
-//   // 立即执行一次，检查初始状态
-//   handleScroll()
-// })
+  document.body.addEventListener('scroll', handleScroll, { passive: true })
+})
+// 记得在组件卸载时移除监听器
+onBeforeUnmount(() => {
+  document.body.removeEventListener('scroll', handleScroll)
+})
 </script>
 
 <style scoped lang="scss">
