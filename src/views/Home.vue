@@ -60,7 +60,7 @@
 					</el-col>
 					<el-col :span = '6'>
 						<!-- 右侧个人信息 -->
-						<div class=" about-me">
+						<div class="about-me">
 							<el-image :src="url" :fit="fit"/>
 							<el-avatar class="avatar" shape="circle" size="large" :src="url" />
 							<h5>小灰的个人博客</h5>

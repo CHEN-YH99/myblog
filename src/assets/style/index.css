@@ -69,7 +69,7 @@ p {
   background-attachment: fixed;
   color: white;
   margin: 0 !important;
-  padding: 48px 0 calc(var(--wave-height) + 10px) 0 !important; /* 顶部留出导航栏空间 + 预留海浪高度(含缓冲) */
+  padding: 48px 0 calc(var(--wave-height) + 5px) 0 !important; /* 顶部留出导航栏空间 + 预留海浪高度（+5px缓冲） */
   overflow: hidden !important;
   transform: translateZ(0);
   /* 视口高度兼容：优先使用动态视口单位，其次传统 100vh */
@@ -192,7 +192,7 @@ p {
   width: 100%;
   padding: 40px 20px;
   margin-top: 0;
-  z-index: 0; /* 确保不覆盖 Header/Waves */
+  z-index: 1; /* 确保压在海浪之上，避免被遮挡 */
 }
 
 /* 内容列表 */
@@ -203,6 +203,12 @@ p {
   display: flex;
   align-items: flex-start;
   gap: 5px; /* 卡片容器之间间距 5px */
+}
+
+/* 消除 Element Plus el-col 默认左右内边距，保证列间距仅由 gap 控制为 5px */
+.content-list > .el-col {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
 }
 
 /* ========== Cards ========== */
@@ -512,7 +518,7 @@ p {
   .content-list > .el-col {
     width: 100% !important;
     max-width: 100% !important;
-    flex: 0 0 100% !important;
+    flex: 0 0 0 !important;
     padding-left: 0 !important;
     padding-right: 0 !important;
   }
