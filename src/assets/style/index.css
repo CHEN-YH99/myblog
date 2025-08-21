@@ -253,9 +253,9 @@ p {
 /* 卡片图片区域 */
 .card-image {
   width: 300px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: stretch;
+  /* flex-shrink: 0; */
+  /* display: flex;
+  align-items: stretch; */
 }
 .card-image .el-image {
   width: 100%;
@@ -566,6 +566,7 @@ p {
     width: 100% !important;
     height: 200px !important;
     flex-shrink: 0 !important;
+    order: -1 !important;
   }
   .card-image .el-image img {
     width: 100% !important;

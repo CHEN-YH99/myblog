@@ -57,7 +57,32 @@
 								<p class="article-excerpt">这篇文章是在第一篇普通教程的基础上，使用宝塔面板...</p>
 							</div>
 						</div>
+						<div class="article-card">
+							<div class="card-content">
+								<h3 class="article-title">博客部署教程-宝塔面板</h3>
+								<div class="article-meta">
+									<span class="meta-item">📌 置顶</span>
+									<span class="meta-item">📅 发表于 2023-05-19 19:47:44</span>
+									<span class="meta-item">🔄 更新于 2025-06-15 14:51:40</span>
+								</div>
+								<div class="article-tags">
+									<span class="tag">博客部署</span>
+									<span class="tag">linux</span>
+									<span class="tag">阿里云轻量服务器</span>
+									<span class="tag">宝塔面板</span>
+								</div>
+								<div class="article-stats">
+									<span>👍 116</span>
+									<span>👁 1.5w</span>
+								</div>
+								<p class="article-excerpt">这篇文章是在第一篇普通教程的基础上，使用宝塔面板...</p>
+							</div>
+							<div class="card-image">
+								<el-image style="width: 100%; height: 100%;" :src="url" :fit="fit"/>
+							</div>
+						</div>
 					</el-col>
+
 					<el-col :span = '6'>
 						<!-- 右侧个人信息 -->
 						<div class="about-me">
