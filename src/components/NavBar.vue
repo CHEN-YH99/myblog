@@ -200,10 +200,20 @@ const handleMobileNavigation = (path) => {
 	const scrollDown = ref(false)  // 向下滚动触发
 	const scrollUp = ref(false)  // 向上滚动触发
   const isHidden = ref(false)  // 是否隐藏导航栏
+  let ticking = false // 防抖处理
 	// 监听滚动事件
 	const handleScroll = () => {
-		
-	  const scrollPosition = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop;
+    // 防抖处理，防止频繁触发
+		if(!ticking) {
+      requestAnimationFrame(() => {
+        getScrollDirection()
+        ticking = false
+      })
+      ticking = true
+    }
+    // 获取滚动方向
+    function getScrollDirection() { 
+       const scrollPosition = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop;
 		// const scrollPosition = document.body.scrollTop || 0;
 	  // console.log("滚动条距离顶部位置:", scrollPosition)
 	
@@ -223,7 +233,9 @@ const handleMobileNavigation = (path) => {
       isHidden.value = false
     }
 		lastScrollTop.value = scrollPosition
-	}
+	  }
+  }
+	 
 	// 组件挂载时，监听滚动事件
 	onMounted(() => {
   
@@ -246,7 +258,7 @@ onBeforeUnmount(() => {
   background: linear-gradient(180deg, rgba(8, 20, 40, 0.1), rgba(8, 20, 40, 0.2));
   backdrop-filter: blur(6px);
   border-bottom: 1px solid rgba(200, 230, 255, 0.12);
-  transition: all 1s ease-in-out;
+  transition: all .8s ease-in-out;
   transform: translateY(0);
 }
 // 滚动条下滑触发
@@ -260,7 +272,7 @@ onBeforeUnmount(() => {
   background: linear-gradient(180deg, rgba(8, 20, 40, 0.7), rgba(8, 20, 40, 0.55));
   backdrop-filter: blur(6px);
   border-bottom: 1px solid rgba(200, 230, 255, 0.12);
-  transition: all 1s ease-in-out;
+  transition: all .8s ease-in-out;
 }
 // 导航栏显示隐藏
 .navbar.is-hidden {
