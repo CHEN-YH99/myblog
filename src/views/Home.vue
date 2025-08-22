@@ -1,11 +1,8 @@
 <template>
 	<div class="home-page">
-		<nav class="navbar" 
-			:class="{
-				'navbar-scrolled': isScrolled, 
-				'navbar-hidden': isHidden 
-			}"
-		>
+		<!-- <nav class="navbar" 
+			:class="{ 'scroll-down': scrollDown, 'scroll-up': scrollUp }"
+		> -->
 			<div class="header">
 				<div class="inner-header flex">
 					<h1>小灰个人博客</h1>
@@ -28,7 +25,7 @@
 					</svg>
 				</div>
 			</div>
-		</nav>
+		<!-- </nav> -->
 		<!-- 主要内容区域 -->
 		<div class="main-content">
 			<!-- 回到顶部 -->
@@ -132,52 +129,13 @@
 </template>
 
 <script setup lang="ts">
-	import { ref, onMounted, onBeforeUnmount} from 'vue'
+	import { ref } from 'vue'
 	import { ArrowDownBold, } from '@element-plus/icons-vue'
 
 	import '../assets/style/index.css'
 	import bgImage from '../assets/images/shunsea1.jpg'  // 图片地址 - 正确的静态资源引用方式
 	const url = ref(bgImage)
 	const fit = ref('cover')
-
-	// 滚动事件
-	const isScrolled = ref(false)  // 是否滚动的标志
-	const isHidden = ref(false)  // 是否隐藏的标志
-	const lastScrollTop = ref(0)  // 记录上一次滚动位置
-	const scrollTimeout = ref(null) // 防抖
-	// 监听滚动事件
-	const handleScroll = () => {
-		
-	  const scrollPosition = window.pageYOffset || document.documentElement.scrollTop
-		// const scrollPosition = document.body.scrollTop || 0;
-	  console.log("滚动条距离顶部位置:", scrollPosition)
-		
-		
-    if (scrollPosition > lastScrollTop.value) {
-      isScrolled.value = true
-			
-			
-			setTimeout(() => {
-				isHidden.value = true
-			}, 300)
-    } else {
-      isHidden.value = false
-			console.log("isScrolled", isHidden.value);
-		  setTimeout(() => {
-				isScrolled.value = false
-			}, 300)
-    }
-	}
-	// 组件挂载时，监听滚动事件
-	onMounted(() => {
-  // window.addEventListener('scroll', handleScroll, { passive: true })
-  
-  document.body.addEventListener('scroll', handleScroll, { passive: true })
-})
-// 记得在组件卸载时移除监听器
-onBeforeUnmount(() => {
-  document.body.removeEventListener('scroll', handleScroll)
-})
 </script>
 
 <style scoped lang="scss">

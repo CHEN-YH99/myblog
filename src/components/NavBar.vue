@@ -1,5 +1,5 @@
 <template>
-  <header class="navbar">
+  <header class="navbar" :class="{ 'scroll-down': scrollDown, 'navbar': scrollUp,'is-hidden': isHidden }">
     <div class="navbar__inner">
       <el-avatar
         class="navbar__avatar"
@@ -161,8 +161,11 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
+// import  '@/assets/ts/navbar.ts'  // 滚动条导航
+// import { scrollDirection, scrollDown, scrollUp,lastScrollTop } from '@/assets/ts/navbar.ts'
+
 import {
   Search,
   House,
@@ -190,6 +193,46 @@ const handleMobileNavigation = (path) => {
   drawer.value = false
   router.push(path)
 }
+
+// 滚动事件
+	const lastScrollTop = ref(0)  // 记录上一次滚动位置
+	const scrollDirection = ref('') // 记录滚动方向
+	const scrollDown = ref(false)  // 向下滚动触发
+	const scrollUp = ref(false)  // 向上滚动触发
+  const isHidden = ref(false)  // 是否隐藏导航栏
+	// 监听滚动事件
+	const handleScroll = () => {
+		
+	  const scrollPosition = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop;
+		// const scrollPosition = document.body.scrollTop || 0;
+	  // console.log("滚动条距离顶部位置:", scrollPosition)
+	
+		
+    if (scrollPosition > lastScrollTop.value) {
+      scrollDirection.value = 'down'
+			// console.log("向下滚动");
+      scrollDown.value = true
+			scrollUp.value = false
+      isHidden.value = true
+
+    } else {
+			scrollDirection.value = 'up'
+			// console.log("向上滚动");
+      scrollDown.value = false
+			scrollUp.value = true
+      isHidden.value = false
+    }
+		lastScrollTop.value = scrollPosition
+	}
+	// 组件挂载时，监听滚动事件
+	onMounted(() => {
+  
+  document.body.addEventListener('scroll', handleScroll, { passive: true })
+})
+// 记得在组件卸载时移除监听器
+onBeforeUnmount(() => {
+  document.body.removeEventListener('scroll', handleScroll)
+})
 </script>
 
 <style scoped lang="scss">
@@ -200,9 +243,28 @@ const handleMobileNavigation = (path) => {
   right: 5px;
   z-index: 1000;
   height: 48px;
-  background: linear-gradient(180deg, rgba(8, 20, 40, 0.2), rgba(8, 20, 40, 0.15));
+  background: linear-gradient(180deg, rgba(8, 20, 40, 0.1), rgba(8, 20, 40, 0.2));
   backdrop-filter: blur(6px);
   border-bottom: 1px solid rgba(200, 230, 255, 0.12);
+  transition: all 1s ease-in-out;
+  transform: translateY(0);
+}
+// 滚动条下滑触发
+.scroll-down {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 5px;
+  z-index: 1000;
+  height: 48px;
+  background: linear-gradient(180deg, rgba(8, 20, 40, 0.7), rgba(8, 20, 40, 0.55));
+  backdrop-filter: blur(6px);
+  border-bottom: 1px solid rgba(200, 230, 255, 0.12);
+  transition: all 1s ease-in-out;
+}
+// 导航栏显示隐藏
+.navbar.is-hidden {
+  transform: translateY(-100%);
 }
 
 .navbar__inner {
