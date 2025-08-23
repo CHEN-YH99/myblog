@@ -163,8 +163,6 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
-// import  '@/assets/ts/navbar.ts'  // 滚动条导航
-// import { scrollDirection, scrollDown, scrollUp,lastScrollTop } from '@/assets/ts/navbar.ts'
 
 import {
   Search,
@@ -194,57 +192,24 @@ const handleMobileNavigation = (path) => {
   router.push(path)
 }
 
-// 滚动事件
-	const lastScrollTop = ref(0)  // 记录上一次滚动位置
-	const scrollDirection = ref('') // 记录滚动方向
-	const scrollDown = ref(false)  // 向下滚动触发
-	const scrollUp = ref(false)  // 向上滚动触发
-  const isHidden = ref(false)  // 是否隐藏导航栏
-  let ticking = false // 防抖处理
-	// 监听滚动事件
-	const handleScroll = () => {
-    // 防抖处理，防止频繁触发
-		if(!ticking) {
-      requestAnimationFrame(() => {
-        getScrollDirection()
-        ticking = false
-      })
-      ticking = true
-    }
-    // 获取滚动方向
-    function getScrollDirection() { 
-       const scrollPosition = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop;
-		// const scrollPosition = document.body.scrollTop || 0;
-	  // console.log("滚动条距离顶部位置:", scrollPosition)
-	
-		
-    if (scrollPosition > lastScrollTop.value) {
-      scrollDirection.value = 'down'
-			// console.log("向下滚动");
-      scrollDown.value = true
-			scrollUp.value = false
-      isHidden.value = true
+// 监听滚动事件
+import { 
+  isHidden, 
+  scrollDirection, 
+  scrollDown, 
+  scrollUp,
+  initScrollListener, 
+  removeScrollListener 
+} from '@/assets/ts/navbar'
 
-    } else {
-			scrollDirection.value = 'up'
-			// console.log("向上滚动");
-      scrollDown.value = false
-			scrollUp.value = true
-      isHidden.value = false
-    }
-		lastScrollTop.value = scrollPosition
-	  }
-  }
-	 
 	// 组件挂载时，监听滚动事件
 	onMounted(() => {
-  
-  document.body.addEventListener('scroll', handleScroll, { passive: true })
-})
+    initScrollListener()
+  })
 // 记得在组件卸载时移除监听器
-onBeforeUnmount(() => {
-  document.body.removeEventListener('scroll', handleScroll)
-})
+  onBeforeUnmount(() => {
+    removeScrollListener()
+  })
 </script>
 
 <style scoped lang="scss">
