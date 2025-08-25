@@ -35,12 +35,12 @@
 				<div class="content-list flex">
 					<el-col :span = '18'>
 						<!-- 左侧文章卡片 -->
-						<div class="article-card">
+						<div v-for="(article,index) in articleslist" :key="article._id" class="article-card">
 							<div class="card-image">
 								<el-image style="width: 100%; height: 100%;" :src="url" :fit="fit"/>
 							</div>
 							<div class="card-content">
-								<h3 class="article-title">博客部署教程-宝塔面板</h3>
+								<h3 class="article-title">{{ articleslist[index].title }}</h3>
 								<div class="article-meta">
 									<span class="meta-item">📌 置顶</span>
 									<span class="meta-item">📅 发表于 2023-05-19 19:47:44</span>
@@ -129,13 +129,29 @@
 </template>
 
 <script setup lang="ts">
-	import { ref } from 'vue'
+	import { ref, onMounted } from 'vue'
 	import { ArrowDownBold, } from '@element-plus/icons-vue'
+	import type { Article } from '@/api/articles'
+	import { ArticleService } from '../api/articles'
 
 	import '../assets/style/index.css'
 	import bgImage from '../assets/images/shunsea1.jpg'  // 图片地址 - 正确的静态资源引用方式
+
+	const articleslist = ref<Article[]>([])
 	const url = ref(bgImage)
 	const fit = ref('cover')
+
+	// 在组件挂载时获取 MongoDB 数据并在控制台输出
+	onMounted(async () => {
+		try {
+			const res = await ArticleService.getAllArticles()
+			console.log(`获取到的文章数据为：`, res)
+			articleslist.value = res
+			console.log(`共获取到 ${res.length} 篇文章`)
+		} catch (error) {
+			console.error('获取 MongoDB 数据失败:', error)
+		}
+	})
 </script>
 
 <style scoped lang="scss">
