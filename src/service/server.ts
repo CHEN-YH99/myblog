@@ -26,8 +26,11 @@ const ArticleSchema = new mongoose.Schema({
   content: { type: String, required: true },
   author: { type: String, required: true },
   tags: [{ type: String }],
-  createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now }
+  publishDate: { type: Date, default: Date.now },
+  updateDate: { type: Date, default: Date.now },
+  likes: { type: Number, default: 0 },
+  views: { type: Number, default: 0 },
+  excerpt: { type: String },
 });
 
 const Article = mongoose.model('Article', ArticleSchema);

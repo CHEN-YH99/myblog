@@ -5,8 +5,11 @@ export interface Article {
   content: string;
   author: string;
   tags?: string[];
-  createdAt: string;
-  updatedAt: string;
+  publishDate: string;
+  updateDate: string;
+  likes: number;
+  views: number;
+  excerpt: string;
 }
 
 const API_BASE_URL = 'http://localhost:3001/api';

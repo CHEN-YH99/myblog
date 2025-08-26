@@ -250,6 +250,11 @@ p {
   transform: translateY(-2px);
 }
 
+/* 控制奇偶数行不同样式 */
+.article-card.reverse {
+  flex-direction: row-reverse;
+}
+
 /* 卡片图片区域 */
 .card-image {
   width: 300px;
