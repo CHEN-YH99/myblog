@@ -29,12 +29,12 @@
 		<!-- 主要内容区域 -->
 		<div class="main-content">
 			<!-- 回到顶部 -->
-			<el-backtop :right="100" :bottom="100" />
+			<el-backtop :right="100" :bottom="100" target="body" />
 			<el-row>
 				<!-- 内容区域 -->
 				<div class="content-list flex">
+					<!-- 左侧文章卡片 -->
 					<el-col :span = '18'>
-						<!-- 左侧文章卡片 -->
 						<div v-for="(article,index) in articleslist" :key="article._id || index" class="article-card" :class="{ reverse: index % 2 === 1} ">
 							<div class="card-image">
 								<el-image style="width: 100%; height: 100%;" :src="url" :fit="fit"/>
@@ -67,9 +67,8 @@
 						</div>
 						
 					</el-col>
-
-					<el-col :span = '6'>
-						<!-- 右侧个人信息 -->
+					<!-- 右侧个人信息 -->
+					<el-col :span = '6'>	
 						<div class="about-me">
 							<el-image :src="url" :fit="fit"/>
 							<el-avatar class="avatar" shape="circle" size="large" :src="url" />
