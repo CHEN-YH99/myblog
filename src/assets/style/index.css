@@ -196,7 +196,7 @@ p {
 }
 
 /* 返回顶部按钮 */
-  .main-content .backtop {
+.main-content .backtop {
     right: 30px ;
     bottom: 30px ;
   }
@@ -378,7 +378,7 @@ p {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
 }
 
-/* 顶部横幅图（Element Plus el-image 输出 img） */
+/* 顶部横幅图 */
 .about-me .el-image,
 .about-me img {
   width: 100%;
@@ -408,6 +408,41 @@ p {
   font-size: 10px;
   line-height: 1.6;
   text-align: left;
+}
+
+/* 彩色标签云 */
+.tag-cloud {
+  padding: 10px 12px;
+  border-radius: 8px;
+}
+.tag-header {
+  font-size: 14px;
+  color: #000102;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;   
+}
+
+.tags-info .tag {
+  background: transparent !important;
+  border: none !important;
+  padding: 0; 
+  border-radius: 0;
+   font-size: 14px;
+  line-height: 1.6;
+  cursor: pointer;
+  text-decoration: none;
+  transition: filter .2s ease, text-shadow .2s ease;    
+}
+.tags-info .tag:hover {
+  filter: brightness(1.1);
+  text-shadow: 0 0 8px currentColor;
 }
 
 /* my-tags 按钮容器居中与按钮样式（还原） */

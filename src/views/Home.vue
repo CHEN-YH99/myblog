@@ -94,7 +94,7 @@
           </el-col>
 
           <el-col :span="6">
-            <!-- 右侧个人信息（保持原样） -->
+            <!-- 右侧个人信息栏 -->
             <div class="about-me">
               <el-image :src="url" :fit="fit"/>
               <el-avatar class="avatar" shape="circle" size="large" :src="url" />
@@ -129,13 +129,36 @@
                 <img src="../assets/images/哔哩哔哩.svg"/>
               </div>
             </div>
-            <!-- 右侧其他信息 -->
+            <!-- 公告栏 -->
             <div class="about-me adress-info">
               <h6>📢公告 </h6>
               <div class="pub">
                 <p>📅 创建于2025-08-03</p>
                 <a href="#">🔗 https://github.com/CHEN-YH99/myblog</a>
+                <p>技术交流群: 1060899124</p>
+                <p>更多内容敬请期待...</p>
               </div>
+            </div>
+            <!-- 标签栏 -->
+              <div class="about-me tags-info">
+                <section class="tag-cloud">
+                  <div class="tag-header">📋标签</div>
+                  <div class="tags">
+                    <a
+                      v-for="tag in tags"
+                      :key="tag"
+                      class="tag"
+                      :style="{ color: colorFor(tag) }"
+                  
+                    >
+                      {{ tag }}
+                    </a>
+                  </div>
+                </section>
+              </div>
+            <!-- 网站咨询栏 -->
+            <div class="about-me consult-info"> 
+
             </div>
           </el-col>
         </div>	
@@ -161,6 +184,7 @@ type ArticleView = Article & {
   cover?: string
   publishDate?: string
   updateDate?: string
+  tags?: string[]
 }
 
 const articleslist = ref<ArticleView[]>([])
@@ -173,6 +197,35 @@ const scrollDown =() => {
     top:  document.documentElement.scrollTop + window.innerHeight, 
     behavior: 'smooth'
   })
+}
+
+// 彩色板标签云
+const tags = computed(() => {
+  // 收集所有标签并去重
+  const allTags = Array.from(
+    new Set(
+      articleslist.value
+        .flatMap(article => article.tags)
+        .filter((tag): tag is string => tag !== undefined)
+    )
+  )
+  
+  // 随机选择20个标签
+  return [...allTags]
+    .sort(() => Math.random() - 0.5)
+    .slice(0, 20)
+})
+
+// 稳定配色：根据标签文本 -> HSL 颜色（同一标签始终同色）
+const colorFor=(str:string)=> {
+  let hash = 0
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash * 31 + str.charCodeAt(i)) >>> 0
+  }
+  const hue = hash % 360          // 色相 0-359
+  const sat = 72                  // 饱和度，深色背景下略高更鲜明
+  const light = 68                // 明度，注意和背景对比度
+  return `hsl(${hue}deg, ${sat}%, ${light}%)`
 }
 
 // 分页状态与当前页数据
@@ -212,4 +265,5 @@ onMounted(async () => {
 
 <style scoped lang="scss">
 /* 样式已移动到 index.css 中 */
+
 </style>
