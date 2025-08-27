@@ -129,6 +129,14 @@
                 <img src="../assets/images/哔哩哔哩.svg"/>
               </div>
             </div>
+            <!-- 右侧其他信息 -->
+            <div class="about-me adress-info">
+              <h6>📢公告 </h6>
+              <div class="pub">
+                <p>📅 创建于2025-08-03</p>
+                <a href="#">🔗 https://github.com/CHEN-YH99/myblog</a>
+              </div>
+            </div>
           </el-col>
         </div>	
       </el-row>
@@ -162,7 +170,7 @@ const fit = ref('cover')
 // 点击按钮下滑
 const scrollDown =() => {
   document.body.scrollTo({ 
-    top: document.documentElement.scrollTop + window.innerHeight, 
+    top:  document.documentElement.scrollTop + window.innerHeight, 
     behavior: 'smooth'
   })
 }

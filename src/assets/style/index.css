@@ -232,8 +232,7 @@ p {
 .about-me {
   position: relative;
   width: 100%;
-  padding: 40px 20px;
-  margin-top: 0;
+  margin-bottom: 10px;
 }
 
 /* ========== Cards ========== */
