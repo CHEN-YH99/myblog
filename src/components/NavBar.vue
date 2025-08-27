@@ -11,9 +11,10 @@
       <!-- 桌面端菜单 -->
       <el-menu
         mode="horizontal"
+        default-active="home"
         class="navbar__menu"
         background-color="transparent"
-        text-color="#cfe8ff"
+        text-color="#000000"
         active-text-color="#ffffff"
         :ellipsis="false"
       >

@@ -8,7 +8,7 @@
         <div class="inner-header flex">
           <h1>小灰个人博客</h1>
         </div>
-        <el-icon color="#ffffff" size="30px" class="turndown"><arrow-down-bold /></el-icon>
+        <el-icon color="#ffffff" size="30px" class="turndown" @click="scrollDown"><arrow-down-bold /></el-icon>
         <!-- 海水波浪 -->
         <div class="wave-container">
           <svg class="waves" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
@@ -158,6 +158,14 @@ type ArticleView = Article & {
 const articleslist = ref<ArticleView[]>([])
 const url = ref(bgImage)
 const fit = ref('cover')
+
+// 点击按钮下滑
+const scrollDown =() => {
+  document.body.scrollTo({ 
+    top: document.documentElement.scrollTop + window.innerHeight, 
+    behavior: 'smooth'
+  })
+}
 
 // 分页状态与当前页数据
 const currentPage = ref(1)
