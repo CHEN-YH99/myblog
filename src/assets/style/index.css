@@ -396,18 +396,19 @@ p {
 }
 
 .about-me h5 {
-  margin: 0 0 16px 0;
+  margin: 10px 0;
   color: #333;
   font-weight: 600;
+  font-size: 14px !important;
 }
 
-.about-me .pub p {
+.about-me .pub  {
   margin: 8px 0;
   padding: 0 10px;
   color: #666;
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.6;
-  text-align: left;
+  text-align:left;
 }
 
 /* 彩色标签云 */

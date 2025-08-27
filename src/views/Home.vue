@@ -130,35 +130,37 @@
               </div>
             </div>
             <!-- 公告栏 -->
-            <div class="about-me adress-info">
-              <h6>📢公告 </h6>
+            <div class="about-me">
               <div class="pub">
+                <h5> 📢公告 </h5>
                 <p>📅 创建于2025-08-03</p>
-                <a href="#">🔗 https://github.com/CHEN-YH99/myblog</a>
-                <p>技术交流群: 1060899124</p>
+                <p>📝 博客地址：🔗 https://github.com/CHEN-YH99/myblog</p>
+                <p>🗨️ 技术交流群: 1060899124</p>
                 <p>更多内容敬请期待...</p>
               </div>
             </div>
             <!-- 标签栏 -->
-              <div class="about-me tags-info">
-                <section class="tag-cloud">
-                  <div class="tag-header">📋标签</div>
-                  <div class="tags">
-                    <a
-                      v-for="tag in tags"
-                      :key="tag"
-                      class="tag"
-                      :style="{ color: colorFor(tag) }"
-                  
-                    >
-                      {{ tag }}
-                    </a>
-                  </div>
-                </section>
-              </div>
+            <div class="about-me tags-info">
+              <section class="tag-cloud">
+                <div class="tag-header">📋标签</div>
+                <div class="tags">
+                  <a
+                    v-for="tag in tags"
+                    :key="tag"
+                    class="tag"
+                    :style="{ color: colorFor(tag) }"
+                
+                  >
+                    {{ tag }}
+                  </a>
+                </div>
+              </section>
+            </div>
             <!-- 网站咨询栏 -->
             <div class="about-me consult-info"> 
-
+              <div class="pub"> 
+                <h5> 📒网站咨询 </h5>
+              </div>
             </div>
           </el-col>
         </div>	
