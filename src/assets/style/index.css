@@ -424,10 +424,15 @@ p {
   align-items: center;
   gap: 6px;
 }
-.tags {
+.tags-content {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px 12px;   
+  gap: 8px 12px;  
+  text-align: left;
+}
+.tags-content p {
+  flex: 1 1 100%;
+  word-break: break-all; /* 如果链接太长，允许在任意位置断行 */
 }
 
 .tags-info .tag {

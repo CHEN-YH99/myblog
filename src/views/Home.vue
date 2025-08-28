@@ -55,8 +55,8 @@
 
                 <div class="article-meta">
                   <span class="meta-item">📌 置顶</span>
-                  <span class="meta-item">📅 发表于 {{ article.publishDate  }}</span>
-                  <span class="meta-item">🔄 更新于 {{ article.updateDate  }}</span>
+                  <span class="meta-item">📅 发表于 {{ formatDate(article.publishDate) }}</span>
+                  <span class="meta-item">🔄 更新于 {{ formatDate(article.updateDate) }}</span>
                 </div>
 
                 <div class="article-tags">
@@ -131,21 +131,23 @@
             </div>
             <!-- 公告栏 -->
             <div class="about-me">
-              <div class="pub">
-                <h5> 📢公告 </h5>
-                <p>📅 创建于2025-08-03</p>
-                <p>📝 博客地址：🔗 https://github.com/CHEN-YH99/myblog</p>
-                <p>🗨️ 技术交流群: 1060899124</p>
-                <p>更多内容敬请期待...</p>
+              <div class="tag-cloud">
+                <div class="tag-header"> 📢公告 </div>
+                <div class="tags-content">
+                  <p>📅 创建于2025-08-03</p>
+                  <p>📝 博客地址:https://github.com/CHEN-YH99/myblog</p>
+                  <p>🗨️ 技术交流群: 1060899124</p>
+                  <p>更多内容敬请期待...</p>
+                </div>
               </div>
             </div>
             <!-- 标签栏 -->
             <div class="about-me tags-info">
               <section class="tag-cloud">
                 <div class="tag-header">📋标签</div>
-                <div class="tags">
+                <div class="tags-content">
                   <a
-                    v-for="tag in tags"
+                    v-for="tag in tagslist"
                     :key="tag"
                     class="tag"
                     :style="{ color: colorFor(tag) }"
@@ -157,9 +159,14 @@
               </section>
             </div>
             <!-- 网站咨询栏 -->
-            <div class="about-me consult-info"> 
-              <div class="pub"> 
-                <h5> 📒网站咨询 </h5>
+            <div class="about-me "> 
+              <div class="tag-cloud"> 
+                <div class="tag-header"> 📒网站咨询 </div>
+                <div class="tags-content">
+                  <p> 文章数目: {{ articleslist.length }}</p>
+                  <p>运行时间: {{ formatTime(Date.now() - startTime) }}</p>
+                  <p>访问人数: 2356</p>
+                </div>
               </div>
             </div>
           </el-col>
@@ -177,6 +184,13 @@ import { ArticleService } from '../api/articles'
 
 import '../assets/style/index.css'
 import bgImage from '../assets/images/shunsea1.jpg'  // 图片地址 - 正确的静态资源引用方式
+
+// 获取网站运行时间
+const startTime: number = new Date('2025-06-03').getTime(); 
+const formatTime = (ms: number): string => {
+  const days: number = Math.floor(ms / (1000 * 60 * 60 * 24));
+  return `${days}天`;
+}
 
 // 扩展前端可用的显示字段，全部为可选，避免 TS 报错
 type ArticleView = Article & {
@@ -201,8 +215,25 @@ const scrollDown =() => {
   })
 }
 
+// 日期格式化函数
+const formatDate = (dateString: string | Date | undefined): string => {
+  if (!dateString) return '暂无日期'
+  
+  const date = new Date(dateString)
+  if (isNaN(date.getTime())) return '无效日期'
+  
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  const seconds = String(date.getSeconds()).padStart(2, '0')
+  
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+}
+
 // 彩色板标签云
-const tags = computed(() => {
+const tagslist = computed(() => {
   // 收集所有标签并去重
   const allTags = Array.from(
     new Set(
@@ -238,6 +269,7 @@ const pagedArticles = computed(() => {
   const start = (currentPage.value - 1) * pageSize.value
   return articleslist.value.slice(start, start + pageSize.value)
 })
+
 
 // 翻页时回到顶部（根据你实际滚动容器选择 main-content 或 window）
 watch([currentPage, pageSize], async () => {
