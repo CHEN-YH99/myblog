@@ -39,7 +39,7 @@ const Article = mongoose.model('Article', ArticleSchema);
  */
 app.get('/api/articles', async (_req: Request, res: Response) => {
   try {
-    const articles = await Article.find().sort({ createdAt: -1 });
+    const articles = await Article.find().sort({ publishDate: -1 });
     res.json(articles);
   } catch (error) {
     console.error('获取文章列表失败:', error);

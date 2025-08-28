@@ -72,8 +72,8 @@
                 </div>
 
                 <div class="article-stats">
-                  <span>👍 {{ article.likes ?? 0 }}</span>
-                  <span>👁 {{ article.views ?? 0 }}</span>
+                  <span>👍 {{ article.likes || 0 }}</span>
+                  <span>👁 {{ article.views || 0 }}</span>
                 </div>
 
                 <p class="article-excerpt">{{ article.excerpt || '' }}</p>
@@ -192,15 +192,9 @@ const formatTime = (ms: number): string => {
   return `${days}天`;
 }
 
-// 扩展前端可用的显示字段，全部为可选，避免 TS 报错
+// 扩展前端可用的显示字段，添加封面图等前端特有字段
 type ArticleView = Article & {
-  likes?: number
-  views?: number
-  excerpt?: string
-  cover?: string
-  publishDate?: string
-  updateDate?: string
-  tags?: string[]
+  cover?: string  // 封面图片，前端使用
 }
 
 const articleslist = ref<ArticleView[]>([])
@@ -287,7 +281,7 @@ onMounted(async () => {
   try {
     const res = await ArticleService.getAllArticles()
     console.log(`获取到的文章数据为：`, res)
-    // Article[] 可以赋值给 ArticleView[]（扩展字段都是可选的）
+
     articleslist.value = res
     console.log(`共获取到 ${res.length} 篇文章`)
     currentPage.value = 1
