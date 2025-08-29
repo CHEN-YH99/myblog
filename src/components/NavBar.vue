@@ -73,7 +73,11 @@
             :active-action-icon="Moon"
             :inactive-action-icon="Sunny"
             size="small"
+            @click="toggleDark()"
           />
+          <!-- <el-button type="primary"  @click="toggleDark()">
+             {{ isDark ? 'Dark' : 'Light' }} 
+          </el-button> -->
         </el-menu-item>
       </el-menu>
 
@@ -164,7 +168,7 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
-
+// import { isDark, toggleDark } from '@/assets/ts/theme'
 import {
   Search,
   House,

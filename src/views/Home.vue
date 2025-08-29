@@ -1,36 +1,31 @@
 <!-- path: src/views/Home.vue -->
 <template>
   <div class="home-page">
-    <!-- <nav class="navbar" 
-      :class="{ 'scroll-down': scrollDown, 'scroll-up': scrollUp }"
-    > -->
-      <div class="header">
-        <div class="inner-header flex">
-          <h1>小灰个人博客</h1>
-        </div>
-        <el-icon color="#ffffff" size="30px" class="turndown" @click="scrollDown"><arrow-down-bold /></el-icon>
-        <!-- 海水波浪 -->
-        <div class="wave-container">
-          <svg class="waves" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
-            viewBox="0 24 150 28" preserveAspectRatio="none" shape-rendering="auto">
-            <defs>
-              <path id="gentle-wave"
-                d="M-160 44c30 0 58-18 88-18s 58 18 88 18 58-18 88-18 58 18 88 18 v44h-352z" />
-            </defs>
-            <g class="parallax">
-              <use xlink:href="#gentle-wave" x="48" y="0" fill="rgba(255,255,255,0.7)" />
-              <use xlink:href="#gentle-wave" x="48" y="3" fill="rgba(255,255,255,0.5)" />
-              <use xlink:href="#gentle-wave" x="48" y="5" fill="rgba(255,255,255,0.3)" />
-              <use xlink:href="#gentle-wave" x="48" y="7" fill="#fff" />
-            </g>
-          </svg>
-        </div>
+    <div class="header">
+      <div class="inner-header flex">
+        <h1>小灰个人博客</h1>
       </div>
-    <!-- </nav> -->
-
+      <el-icon color="#ffffff" size="30px" class="turndown" @click="scrollDown"><arrow-down-bold /></el-icon>
+      <!-- 海水波浪 -->
+      <div class="wave-container">
+        <svg class="waves" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+          viewBox="0 24 150 28" preserveAspectRatio="none" shape-rendering="auto">
+          <defs>
+            <path id="gentle-wave"
+              d="M-160 44c30 0 58-18 88-18s 58 18 88 18 58-18 88-18 58 18 88 18 v44h-352z" />
+          </defs>
+          <g class="parallax">
+            <use xlink:href="#gentle-wave" x="48" y="0" fill="rgba(255,255,255,0.7)" />
+            <use xlink:href="#gentle-wave" x="48" y="3" fill="rgba(255,255,255,0.5)" />
+            <use xlink:href="#gentle-wave" x="48" y="5" fill="rgba(255,255,255,0.3)" />
+            <use xlink:href="#gentle-wave" x="48" y="7" fill="#fff" />
+          </g>
+        </svg>
+      </div>
+    </div>
     <!-- 主要内容区域 -->
     <div class="main-content">
-      <!-- 回到顶部：如页面是容器滚动，建议 target='.main-content' -->
+      <!-- 回到顶部 -->
       <el-backtop class="backtop" target="body" />
 
       <el-row>
@@ -173,6 +168,7 @@
         </div>	
       </el-row>
     </div>
+    <Footer/>
   </div>
 </template>
 
@@ -181,8 +177,9 @@ import { ref, onMounted, computed, watch, nextTick } from 'vue'
 import { ArrowDownBold } from '@element-plus/icons-vue'
 import type { Article } from '@/api/articles'
 import { ArticleService } from '../api/articles'
+import Footer from '@/components/Footer.vue'
 
-import '../assets/style/index.css'
+import '../assets/style/index.scss'
 import bgImage from '../assets/images/shunsea1.jpg'  // 图片地址 - 正确的静态资源引用方式
 
 // 获取网站运行时间
