@@ -1,0 +1,89 @@
+/* 让页面在深浅色切换时，颜色与背景平滑过渡 */
+
+:root,
+html,
+body,
+#app {
+  height: 100%;
+}
+
+/* 让浏览器控件（滚动条/表单默认样式等）跟随主题 */
+html { color-scheme: light; }
+html.dark { color-scheme: dark; }
+
+/* 页面基础色使用 Element Plus 变量 */
+body {
+  background-color: var(--el-bg-color-page);
+  color: var(--el-text-color-primary);
+}
+
+/* 给被标记了 .theme-transition 的容器及其子元素添加过渡
+   注意：不要对全站所有元素都加过渡，性能不好 */
+.theme-transition,
+.theme-transition * {
+  transition:
+    background-color 240ms ease,
+    color 240ms ease,
+    border-color 240ms ease,
+    fill 240ms ease,
+    stroke 240ms ease;
+}
+
+/* NavBar 示例（按你的类名调整选择器） */
+.navbar {
+  background-color: var(--el-bg-color);
+  color: var(--el-text-color-primary);
+  border-bottom: 1px solid var(--el-border-color);
+}
+
+/* 次要文字/说明文字 */
+.navbar .subtle {
+  color: var(--el-text-color-regular);
+}
+
+/* 图标跟随当前文字颜色 */
+.navbar .icon {
+  color: currentColor;
+  fill: currentColor;
+  stroke: currentColor;
+}
+
+/* 卡片/下拉等浮层示例 */
+.card,
+.dropdown,
+.drawer {
+  background-color: var(--el-bg-color-overlay);
+  color: var(--el-text-color-regular);
+  border: 1px solid var(--el-border-color);
+}
+
+/* 无障碍：用户偏好减少动效时禁用过渡 */
+@media (prefers-reduced-motion: reduce) {
+  .theme-transition,
+  .theme-transition * {
+    transition: none !important;
+  }
+}
+/* View Transition: 在支持 startViewTransition 的浏览器上做一次全局淡入/淡出过渡 */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 500ms;
+  animation-timing-function: ease-in-out;
+}
+
+/* 旧主题淡出、新主题淡入 */
+::view-transition-old(root) { animation-name: theme-fade-out; }
+::view-transition-new(root) { animation-name: theme-fade-in; }
+
+@keyframes theme-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes theme-fade-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+/* 已有的 .theme-transition 过渡会让变量驱动的颜色在不支持 View Transition 时也有平滑过渡 */
+/* 确保页面主容器（如 #app 或布局容器、NavBar 外层）带上 class="theme-transition" */
+

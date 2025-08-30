@@ -4,7 +4,7 @@ import NavBar from './components/NavBar.vue'
 </script>
 
 <template>   
-  <div class="app-container">
+  <div class="app-container theme-transition">
     <NavBar/>
     <router-view />
   </div>

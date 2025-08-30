@@ -125,7 +125,7 @@
               </div>
             </div>
             <!-- 公告栏 -->
-            <div class="about-me">
+            <div class="about-me article-info ">
               <div class="tag-cloud">
                 <div class="tag-header"> 📢公告 </div>
                 <div class="tags-content">
@@ -154,7 +154,7 @@
               </section>
             </div>
             <!-- 网站咨询栏 -->
-            <div class="about-me "> 
+            <div class="about-me article-info"> 
               <div class="tag-cloud"> 
                 <div class="tag-header"> 📒网站咨询 </div>
                 <div class="tags-content">

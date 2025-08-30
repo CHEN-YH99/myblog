@@ -68,16 +68,21 @@
         </el-menu-item>
 
         <el-menu-item index="theme" class="navbar__switch" title="主题切换">
-          <el-switch
-            v-model="isDark"
+          <!-- <el-switch
+            v-model="is_Dark"
             :active-action-icon="Moon"
             :inactive-action-icon="Sunny"
             size="small"
-            @click="toggleDark()"
-          />
-          <!-- <el-button type="primary"  @click="toggleDark()">
-             {{ isDark ? 'Dark' : 'Light' }} 
-          </el-button> -->
+            @change="animateThemeSwitch"
+          /> -->
+           <el-switch
+        :model-value="is_Dark"
+        @change="animateThemeSwitch"
+        @click="rememberPointer"
+        :active-action-icon="Moon"
+        :inactive-action-icon="Sunny"
+        size="small"
+      />
         </el-menu-item>
       </el-menu>
 
@@ -103,13 +108,23 @@
     >
       <div class="drawer__header">
         <div class="drawer__title">导航</div>
-        <el-switch
-          v-model="isDark"
+        <!-- <el-switch
+          v-model="is_Dark"
           :active-action-icon="Moon"
           :inactive-action-icon="Sunny"
           size="small"
           aria-label="主题切换"
-        />
+          @change="animateThemeSwitch"
+        /> -->
+         <el-switch
+        :model-value="is_Dark"
+        @change="animateThemeSwitch"
+        @click="rememberPointer"
+        :active-action-icon="Moon"
+        :inactive-action-icon="Sunny"
+        size="small"
+        aria-label="主题切换"
+      />
       </div>
 
       <el-menu
@@ -168,7 +183,7 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
-// import { isDark, toggleDark } from '@/assets/ts/theme'
+ import { is_Dark, toggleDark, animateThemeSwitch,rememberPointer} from '@/assets/ts/theme'
 import {
   Search,
   House,
@@ -188,7 +203,6 @@ import {
 import avatarUrl from '../assets/images/hui.svg'
 
 const router = useRouter()
-const isDark = ref(true)
 const drawer = ref(false)
 
 // 处理移动端导航

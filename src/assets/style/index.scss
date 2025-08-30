@@ -38,7 +38,7 @@ p {
   font-family: 'Lato', sans-serif;
   letter-spacing: 1px;
   font-size: 14px;
-  color: #333333;
+  // color: #333333;
 }
 
 /* ========== CSS Variables ========== */
@@ -67,7 +67,7 @@ p {
   background-size: cover;
   background-position: center center;
   background-attachment: fixed;
-  color: white;
+  // color: white;
   margin: 0 !important;
   padding: 48px 0 calc(var(--wave-height) + 5px) 0 !important; /* 顶部留出导航栏空间 + 预留海浪高度（+5px缓冲） */
   overflow: hidden !important;
@@ -241,7 +241,7 @@ p {
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   transition: box-shadow 0.3s ease;
-  background: white;
+  // background: white;
   margin: 10px 5px;
   overflow: hidden;
   padding: 0;
@@ -262,7 +262,7 @@ p {
 /* 文章卡片 */
 .article-card {
   display: flex;
-  background: white;
+  // background: white;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   overflow: hidden;
@@ -307,7 +307,7 @@ p {
 .article-title {
   font-size: 20px;
   font-weight: 600;
-  color: #333;
+  // color: #333;
   margin: 0 0 12px 0;
   line-height: 1.4;
   text-align: left;
@@ -322,7 +322,7 @@ p {
 }
 .meta-item {
   font-size: 12px;
-  color: #666;
+  // color: #666;
   display: flex;
   align-items: center;
 }
@@ -348,12 +348,12 @@ p {
   gap: 16px;
   margin-bottom: 12px;
   font-size: 14px;
-  color: #666;
+  // color: #666;
 }
 
 /* 摘要 */
 .article-excerpt {
-  color: #666;
+  // color: #666;
   font-size: 14px;
   line-height: 1.6;
   margin: 0;
@@ -367,7 +367,7 @@ p {
 /* ========== About Me Card ========== */
 .about-me {
   position: relative;
-  background: white;
+  // background: white;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   transition: box-shadow 0.3s ease;
@@ -397,7 +397,7 @@ p {
 
 .about-me h5 {
   margin: 10px 0;
-  color: #333;
+  // color: #333;
   font-weight: 600;
   font-size: 14px !important;
 }
@@ -405,7 +405,7 @@ p {
 .about-me .pub  {
   margin: 8px 0;
   padding: 0 10px;
-  color: #666;
+  // color: #666;
   font-size: 12px;
   line-height: 1.6;
   text-align:left;
@@ -418,7 +418,7 @@ p {
 }
 .tag-header {
   font-size: 14px;
-  color: #000102;
+  // color: #000102;
   margin-bottom: 8px;
   display: flex;
   align-items: center;
@@ -603,6 +603,9 @@ p {
     cursor: pointer;
     margin-left: 50%;
     transform: translateX(-50%);
+  }
+  .content-list .article-info {
+    display: none !important;
   }
 
   /* 个人信息卡片：移动端全宽出血（让顶部图 100vw） */
