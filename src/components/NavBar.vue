@@ -68,21 +68,15 @@
         </el-menu-item>
 
         <el-menu-item index="theme" class="navbar__switch" title="主题切换">
-          <!-- <el-switch
-            v-model="is_Dark"
+          
+           <el-switch
+            :model-value="is_Dark"
+            @change="animateThemeSwitch"
+            @click="rememberPointer"
             :active-action-icon="Moon"
             :inactive-action-icon="Sunny"
             size="small"
-            @change="animateThemeSwitch"
-          /> -->
-           <el-switch
-        :model-value="is_Dark"
-        @change="animateThemeSwitch"
-        @click="rememberPointer"
-        :active-action-icon="Moon"
-        :inactive-action-icon="Sunny"
-        size="small"
-      />
+          />
         </el-menu-item>
       </el-menu>
 
@@ -108,23 +102,16 @@
     >
       <div class="drawer__header">
         <div class="drawer__title">导航</div>
-        <!-- <el-switch
-          v-model="is_Dark"
+        
+         <el-switch
+          :model-value="is_Dark"
+          @change="animateThemeSwitch"
+          @click="rememberPointer"
           :active-action-icon="Moon"
           :inactive-action-icon="Sunny"
           size="small"
           aria-label="主题切换"
-          @change="animateThemeSwitch"
-        /> -->
-         <el-switch
-        :model-value="is_Dark"
-        @change="animateThemeSwitch"
-        @click="rememberPointer"
-        :active-action-icon="Moon"
-        :inactive-action-icon="Sunny"
-        size="small"
-        aria-label="主题切换"
-      />
+        />
       </div>
 
       <el-menu

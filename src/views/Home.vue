@@ -26,7 +26,7 @@
     <!-- 主要内容区域 -->
     <div class="main-content">
       <!-- 回到顶部 -->
-      <el-backtop class="backtop" target="body" />
+      <el-backtop class="backtop animate__animated animate__slideInUp" target="body" />
 
       <el-row>
         <!-- 内容区域 -->
