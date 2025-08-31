@@ -17,14 +17,23 @@
         <el-timeline-item 
           v-for="(item,index) in timelist" :key="index" 
           :timestamp="item.time"
-          hollow="true" 
+          :hollow="true" 
           center 
           placement="top"
           type="primary"
         >
-          <el-card>
-            <h4>{{ item.title }}</h4>
-            <p>{{ item.content }}</p>
+          <el-card >
+            <div class="timeline-card">
+              <el-image 
+                class="timeline-card-image" 
+                style="width: 100px; height: 100px" 
+                fit="cover"
+              />
+              <div class="timeline-card-content">
+                <h4>{{ item.title }}</h4>
+                <p>{{ item.content }}</p>
+              </div>
+            </div>
           </el-card>
         </el-timeline-item>
       </el-timeline>
@@ -43,17 +52,17 @@ const timelist = reactive([
   {
     title: 'Update',
     time: '2025',
-    content: 'Tom '
+    content: 'Tom ',
   },
    {
     title: 'Github ',
     time: '2018',
-    content: ' committed '
+    content: ' committed ',
   },
    {
     title: 'template',
     time: '2014',
-    content: '2018/4/12 20:46'
+    content: '2018/4/12 20:46',
   },
 ])
   
@@ -73,6 +82,12 @@ const timelist = reactive([
   :deep .el-timeline-item__timestamp {
     font-size: 1.5rem;
     color: rgb(88, 191, 242);
+  }
+  .timeline-card {
+    display: flex;
+    flex-direction: row;
+    gap: 1rem;
+    flex: 1 1 100%;
   }
 }
 </style>
