@@ -7,6 +7,7 @@ import 'element-plus/dist/index.css'
 import 'element-plus/theme-chalk/dark/css-vars.css'
 import '@/assets/style/common/scrollbar.scss'  // 滚动条样式
 import '@/assets/style/common/theme.scss'  // 主题样式
+import '@/assets/style/common/headpicture.scss'  // 头部大图样式
 import 'animate.css' // 动画库
 
 const app = createApp(App)

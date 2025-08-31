@@ -10,7 +10,8 @@ const routes: RouteRecordRaw[] = [
   {
     path: "/timeline",
     name: "TimeLine",
-    component: () => import("../views/TimeLine.vue")
+    component: () => import("../views/TimeLine.vue"),
+    meta: { title: "时间轴" }
   }
 ];
 

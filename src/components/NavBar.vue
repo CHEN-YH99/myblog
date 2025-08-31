@@ -14,7 +14,7 @@
         default-active="home"
         class="navbar__menu"
         background-color="transparent"
-        text-color="#000000"
+        text-color="#00BFFF"
         active-text-color="#ffffff"
         :ellipsis="false"
       >
@@ -322,19 +322,19 @@ import {
   line-height: 48px;
   padding: 0 7px;
   font-size: 13px;
-  color: #cfe8ff;
+  color: #3293ee;
   transition: color 0.2s ease, background-color 0.2s ease;
 }
 
 :deep(.el-menu-item:hover),
 :deep(.el-sub-menu__title:hover) {
-  color: #ffffff;
+  color: #30a9e6;
   background-color: rgba(255, 255, 255, 0.06);
 }
 
 :deep(.el-sub-menu.is-active > .el-sub-menu__title),
 :deep(.el-menu-item.is-active) {
-  color: #ffffff;
+  color: #26c1f4;
   background-color: rgba(255, 255, 255, 0.08);
 }
 
