@@ -3,20 +3,20 @@
   <div class="home-page">
     <div class="header">
       <div class="inner-header flex">
-        <h1>小灰个人博客</h1>
+        <h1 class="animate__animated animate__backInDown">小灰个人博客</h1>
       </div>
       <el-icon color="#ffffff" size="30px" class="turndown" @click="scrollDown"><arrow-down-bold /></el-icon>
       <!-- 海水波浪 -->
       <WaveContainer />
     </div>
-    <!-- 主要内容区域 -->
+    <!-- 内容区域 -->
     <div class="main-content">
-      <!-- 回到顶部 -->
+      <!-- 回到顶部控件 -->
       <el-backtop class="backtop animate__animated animate__slideInUp" target="body" />
 
-      <el-row>
-        <!-- 内容区域 -->
-        <div class="content-list flex">
+      <el-row class="animate__animated animate__fadeInUp">
+        <div v-if="articleslist.length" class="content-list flex ">
+          <!-- 左侧文章列表 -->
           <el-col :span="18">
             <div
               v-for="(article, index) in pagedArticles"
@@ -60,7 +60,6 @@
                 <p class="article-excerpt">{{ article.excerpt || '' }}</p>
               </div>
             </div>
-
             <!-- 分页控件：双向绑定当前页与每页条数 -->
             <el-pagination
               size="small"
@@ -73,7 +72,7 @@
               class=" mt-4 "
             />
           </el-col>
-
+          <!-- 右侧个人信息栏 -->
           <el-col :span="6">
             <!-- 右侧个人信息栏 -->
             <div class="about-me">
@@ -152,6 +151,9 @@
             </div>
           </el-col>
         </div>	
+        <div v-else class="empty">
+           <el-empty description="暂无文章" :image-size="200" />
+        </div>
       </el-row>
     </div>
     <Footer/>
@@ -159,38 +161,38 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import { ArrowDownBold } from '@element-plus/icons-vue'
-import type { Article } from '@/api/articles'
-import { ArticleService } from '../api/articles'
+import { useArticles } from '@/composables/useArticles' // 引入获取到文章列表数据文件
+
 import WaveContainer from '@/components/WaveContainer.vue'
 import Footer from '@/components/Footer.vue'
-
 import '../assets/style/index.scss'
 import bgImage from '../assets/images/shunsea1.jpg'  // 图片地址 - 正确的静态资源引用方式
 
+// 使用 composable
+const {
+  articles: articleslist,
+  // loading,
+  // error,
+  total,
+  // tagslist,
+  pagedArticles,
+  currentPage,
+  pageSize,
+  initArticles,
+  cleanup
+} = useArticles()
+
 // 获取网站运行时间
 const startTime: number = new Date('2025-06-03').getTime(); 
-const formatTime = (ms: number): string => {
-  const days: number = Math.floor(ms / (1000 * 60 * 60 * 24));
-  return `${days}天`;
-}
-
-// 扩展前端可用的显示字段，添加封面图等前端特有字段
-type ArticleView = Article & {
-  cover?: string  // 封面图片，前端使用
-}
-
-const articleslist = ref<ArticleView[]>([])
 const url = ref(bgImage)
 const fit = ref('cover')
 
-// 点击按钮下滑
-const scrollDown =() => {
-  document.body.scrollTo({ 
-    top:  document.documentElement.scrollTop + window.innerHeight, 
-    behavior: 'smooth'
-  })
+// 格式化日期
+const formatTime = (ms: number): string => {
+  const days: number = Math.floor(ms / (1000 * 60 * 60 * 24));
+  return `${days}天`;
 }
 
 // 日期格式化函数
@@ -208,6 +210,14 @@ const formatDate = (dateString: string | Date | undefined): string => {
   const seconds = String(date.getSeconds()).padStart(2, '0')
   
   return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+}
+
+// 点击按钮下滑
+const scrollDown =() => {
+  document.body.scrollTo({ 
+    top:  document.documentElement.scrollTop + window.innerHeight, 
+    behavior: 'smooth'
+  })
 }
 
 // 彩色板标签云
@@ -239,17 +249,6 @@ const colorFor=(str:string)=> {
   return `hsl(${hue}deg, ${sat}%, ${light}%)`
 }
 
-// 分页状态与当前页数据
-const currentPage = ref(1)
-const pageSize = ref(5)
-const total = computed(() => articleslist.value.length)
-const pagedArticles = computed(() => {
-  const start = (currentPage.value - 1) * pageSize.value
-  return articleslist.value.slice(start, start + pageSize.value)
-})
-
-
-// 翻页时回到顶部（根据你实际滚动容器选择 main-content 或 window）
 watch([currentPage, pageSize], async () => {
   await nextTick()
   const container = document.querySelector('.main-content') as HTMLElement | null
@@ -260,22 +259,18 @@ watch([currentPage, pageSize], async () => {
   }
 })
 
-// 在组件挂载时获取 MongoDB 数据并在控制台输出
 onMounted(async () => {
-  try {
-    const res = await ArticleService.getAllArticles()
-    console.log(`获取到的文章数据为：`, res)
+  await initArticles()
+})
 
-    articleslist.value = res
-    console.log(`共获取到 ${res.length} 篇文章`)
-    currentPage.value = 1
-  } catch (error) {
-    console.error('获取 MongoDB 数据失败:', error)
-  }
+onBeforeUnmount(() => {
+  cleanup()
 })
 </script>
 
 <style scoped lang="scss">
 /* 样式已移动到 index.css 中 */
-
+ .empty {
+   margin: 0 auto;
+ }
 </style>

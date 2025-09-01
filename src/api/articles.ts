@@ -10,6 +10,7 @@ export interface Article {
   likes: number;
   views: number;
   excerpt: string;
+  image: string; 
 }
 
 const API_BASE_URL = 'http://localhost:3001/api';
