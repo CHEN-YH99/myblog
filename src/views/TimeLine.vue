@@ -3,7 +3,7 @@
     <!-- 回到顶部控件 -->
     <el-backtop class="backtop animate__animated animate__slideInUp" target="body" />
     <!-- 头部大图 -->
-    <div class="page-header">
+    <div class="page_header">
       <div class="large-img">
         <img src="../assets/images/timeline4k.jpg" alt="" />
         <div class="inner-header flex">
@@ -136,6 +136,9 @@ onMounted(async() => {
       display: flex;
       flex-direction: column;
       justify-content: center;
+    }
+    .timeline-card-image {
+       flex-shrink: 0; // 防止图片挤压缩小
     }
   }
 }
