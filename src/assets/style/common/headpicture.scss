@@ -1,4 +1,4 @@
-.timeline_header{
+.page-header{
   position: relative;
   width: 100%;
   overflow: hidden;
@@ -16,6 +16,10 @@
       height: 100%; /* 高度占满容器 */
       object-fit: cover; /* 保持图片比例并覆盖容器 */
       object-position: center; /* 图片居中显示 */
+    }
+    h1 {
+      font-family: 'Lato', sans-serif;
+      font-weight: bolder;
     }
     .inner-header {
       position: absolute;

@@ -11,7 +11,20 @@ const routes: RouteRecordRaw[] = [
     path: "/timeline",
     name: "TimeLine",
     component: () => import("../views/TimeLine.vue"),
-    meta: { title: "时间轴" }
+    meta: { title: "时间轴" },
+    
+  },
+  {
+    path: "/frontend",
+    name: "FrontEnd",
+    component: () => import("../views/FrontEnd.vue"),
+    meta: { title: "前端" },
+  },
+  {
+    path: "/backend",
+    name: "BackEnd",
+    component: () => import("../views/BackEnd.vue"),
+    meta: { title: "后端" },
   }
 ];
 

@@ -141,7 +141,7 @@
           <el-icon><Clock /></el-icon>
           <span>时间轴</span>
         </el-menu-item>
-        <el-sub-menu index="m-more">
+        <el-sub-menu index="m-more" >
           <template #title>
             <el-icon><Grid /></el-icon>
             <span>更多</span>

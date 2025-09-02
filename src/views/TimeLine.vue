@@ -3,7 +3,7 @@
     <!-- 回到顶部控件 -->
     <el-backtop class="backtop animate__animated animate__slideInUp" target="body" />
     <!-- 头部大图 -->
-    <div class="timeline_header">
+    <div class="page-header">
       <div class="large-img">
         <img src="../assets/images/timeline4k.jpg" alt="" />
         <div class="inner-header flex">
@@ -11,7 +11,7 @@
         </div>
       </div>
       <!-- 海水波浪 -->
-      <WaveContainer />
+      <WaveContainer  />
     </div>
     <!-- 内容 -->
     <div v-if="articleslist.length" class="timeline_content animate__animated animate__fadeInUp">
@@ -67,7 +67,6 @@ import { onMounted , watch, nextTick } from 'vue'
 import { useArticles } from '@/composables/useArticles' // 引入获取到文章列表数据文件
 import WaveContainer from '@/components/WaveContainer.vue'
 import Footer from '@/components/Footer.vue'
-// import '@/assets/style/index.scss'
 
 // 请求文章列表数据
 const {
@@ -79,7 +78,6 @@ const {
   total
 } = useArticles()
 
-// 时间格式化
 // 日期格式化函数
 const formatDate = (dateString: string | Date | undefined): string => {
   if (!dateString) return '暂无日期'
@@ -109,7 +107,7 @@ watch([currentPage, pageSize], async () => {
 
 // 组件挂载后获取文章列表数据
 onMounted(async() => {
- await initArticles()
+  await initArticles()
 })
 </script>
 <style scoped lang="scss">
