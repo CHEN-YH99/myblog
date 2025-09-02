@@ -31,11 +31,20 @@
           <el-icon><Clock /></el-icon>
           <span class="menu-text">时间轴</span>
         </el-menu-item>
+        
+        <el-sub-menu index="more">
+          <template #title>
+            <el-icon><Grid /></el-icon>
+            <span class="menu-text">更多</span>
+          </template>
+          <el-menu-item index="frontend" @click="$router.push('/frontend')">
+            <span>前端推荐</span>
+          </el-menu-item>
+          <el-menu-item index="backend" @click="$router.push('/backend')">
+            <span>后端推荐</span>
+          </el-menu-item>
+        </el-sub-menu>
 
-        <el-menu-item index="more">
-          <el-icon><Grid /></el-icon>
-          <span class="menu-text">更多</span>
-        </el-menu-item>
 
         <el-menu-item index="category">
           <el-icon><Collection /></el-icon>
@@ -137,19 +146,25 @@
             <el-icon><Grid /></el-icon>
             <span>更多</span>
           </template>
-          <el-menu-item index="m-photos">
+          <el-menu-item index="m-frontend" @click="handleMobileNavigation('/frontend')">
+            <span>前端推荐</span>
+          </el-menu-item>
+          <el-menu-item index="m-backend" @click="handleMobileNavigation('/backend')">
+            <span>后端推荐</span>
+          </el-menu-item> 
+        </el-sub-menu>
+        <el-menu-item index="m-photos">
             <el-icon><Picture /></el-icon>
             <span>相册</span>
-          </el-menu-item>
-          <el-menu-item index="m-talk">
-            <el-icon><ChatLineRound /></el-icon>
-            <span>说说</span>
-          </el-menu-item>
-          <el-menu-item index="m-links">
-            <el-icon><LinkIcon /></el-icon>
-            <span>友链</span>
-          </el-menu-item>
-        </el-sub-menu>
+        </el-menu-item>
+        <el-menu-item index="m-talk">
+          <el-icon><ChatLineRound /></el-icon>
+          <span>说说</span>
+        </el-menu-item>
+        <el-menu-item index="m-links">
+          <el-icon><LinkIcon /></el-icon>
+          <span>友链</span>
+        </el-menu-item>
         <el-menu-item index="m-category">
           <el-icon><Collection /></el-icon>
           <span>分类</span>
@@ -324,6 +339,27 @@ import {
   font-size: 13px;
   color: #3293ee;
   transition: color 0.2s ease, background-color 0.2s ease;
+}
+
+// 去除二级菜单右边箭头
+:deep(.el-sub-menu__title) {
+  // 去除箭头图标
+  .el-sub-menu__icon-arrow {
+    display: none !important;
+  }
+  
+  // 重置右边距，去除箭头预留空间
+  padding-right: 7px !important;
+  
+  // 去除可能的伪元素箭头
+  &::after {
+    display: none !important;
+  }
+  
+  // 确保没有额外的右边距
+  .el-icon {
+    margin-right: 0 !important;
+  }
 }
 
 :deep(.el-menu-item:hover),
