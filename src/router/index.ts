@@ -21,11 +21,22 @@ const routes: RouteRecordRaw[] = [
     meta: { title: "前端" },
   },
   {
+    path: "/frontend/frontendDetail",
+    name: "FrontendDetail",
+    component: () => import("../views/FrontendDetail.vue"),
+    meta: { title: "网站列表" },
+  },
+  {
     path: "/backend",
     name: "BackEnd",
     component: () => import("../views/BackEnd.vue"),
     meta: { title: "后端" },
-  }
+  },
+  {
+    path: "/backtend/backendDetail",
+    name: "BackendDetail",
+    component: () => import("../views/BackendDetail.vue"),
+  },
 ];
 
 const router = createRouter({

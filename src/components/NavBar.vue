@@ -11,7 +11,7 @@
       <!-- 桌面端菜单 -->
       <el-menu
         mode="horizontal"
-        default-active="home"
+        :default-active="$route.name?.toLowerCase() || 'home'"
         class="navbar__menu"
         background-color="transparent"
         text-color="#00BFFF"
