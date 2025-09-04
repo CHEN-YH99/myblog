@@ -46,7 +46,7 @@
         </el-sub-menu>
 
 
-        <el-menu-item index="category">
+        <el-menu-item index="category" @click="$router.push('/category')">
           <el-icon><Collection /></el-icon>
           <span class="menu-text">分类</span>
         </el-menu-item>
@@ -153,6 +153,10 @@
             <span>后端推荐</span>
           </el-menu-item> 
         </el-sub-menu>
+        <el-menu-item index="m-category" @click="handleMobileNavigation('/category')">
+          <el-icon><Collection /></el-icon>
+          <span>分类</span>
+        </el-menu-item>
         <el-menu-item index="m-photos">
             <el-icon><Picture /></el-icon>
             <span>相册</span>
@@ -164,10 +168,6 @@
         <el-menu-item index="m-links">
           <el-icon><LinkIcon /></el-icon>
           <span>友链</span>
-        </el-menu-item>
-        <el-menu-item index="m-category">
-          <el-icon><Collection /></el-icon>
-          <span>分类</span>
         </el-menu-item>
         <el-menu-item index="m-board">
           <el-icon><MessageIcon /></el-icon>

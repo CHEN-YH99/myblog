@@ -37,6 +37,12 @@ const routes: RouteRecordRaw[] = [
     name: "BackendDetail",
     component: () => import("../views/BackendDetail.vue"),
   },
+  {
+    path: "/category",
+    name: "Category",
+    component: () => import("../views/Category.vue"),
+    meta: { title: "分类" }
+  }
 ];
 
 const router = createRouter({
