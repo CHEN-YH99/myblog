@@ -13,7 +13,7 @@
    <!-- 内容 -->
   <div class="end_content animate__animated animate__fadeInUp">
    <ul class="end-item" >
-     <li v-for="item in state" :key="item.id" >
+     <li v-for="item in state" :key="item.id" @click="goToWebsite(item.url)" >
        <el-image class="end-image" style="width: 60px; height: 60px" />
        <div class="end-description">
          <h4>{{ item.title }}</h4>
@@ -41,35 +41,41 @@ const getStateByType = (type: string) => {
   switch(type) {
     case '后端语言':
       return [
-        { id: nanoid(), title: 'Java', image: '', content: 'Java 是企业级应用开发的主流语言' },
-        { id: nanoid(), title: 'Python', image: '', content: 'Python 是数据科学和Web开发的热门语言' },
-        { id: nanoid(), title: 'Go', image: '', content: 'Go 是Google开发的高性能并发语言' },
-        { id: nanoid(), title: 'Node.js', image: '', content: 'Node.js 让JavaScript运行在服务端' }
+        { id: nanoid(), title: 'Java', image: '', content: 'Java 是企业级应用开发的主流语言', url: 'https://www.oracle.com/java/' },
+        { id: nanoid(), title: 'Python', image: '', content: 'Python 是数据科学和Web开发的热门语言', url: 'https://www.python.org/' },
+        { id: nanoid(), title: 'Go', image: '', content: 'Go 是Google开发的高性能并发语言', url: 'https://golang.google.cn/' },
+        { id: nanoid(), title: 'Node.js', image: '', content: 'Node.js 让JavaScript运行在服务端', url: 'https://nodejs.org/'}
       ]
     case '工具':
       return [
-        { id: nanoid(), title: 'Spring Boot', image: '', content: 'Java生态最流行的微服务框架' },
-        { id: nanoid(), title: 'Django', image: '', content: 'Python的全功能Web开发框架' },
-        { id: nanoid(), title: 'Docker', image: '', content: '容器化部署和管理工具' },
-        { id: nanoid(), title: 'Redis', image: '', content: '高性能的内存数据库和缓存' }
+        { id: nanoid(), title: 'Spring Boot', image: '', content: 'Java生态最流行的微服务框架', url: 'https://spring.io/projects/spring-boot/'},
+        { id: nanoid(), title: 'Django', image: '', content: 'Python的全功能Web开发框架', url: 'https://www.djangoproject.com/'},
+        { id: nanoid(), title: 'Docker', image: '', content: '容器化部署和管理工具', url: 'https://www.docker.com/'},
+        { id: nanoid(), title: 'Redis', image: '', content: '高性能的内存数据库和缓存', url: 'https://redis.io/'}
       ]
     case '大模型开发':
       return [
-        { id: nanoid(), title: 'LangChain', image: '', content: '大语言模型应用开发框架' },
-        { id: nanoid(), title: 'Transformers', image: '', content: 'Hugging Face的预训练模型库' },
-        { id: nanoid(), title: 'OpenAI API', image: '', content: 'OpenAI提供的GPT模型接口' },
-        { id: nanoid(), title: 'LlamaIndex', image: '', content: '构建LLM应用的数据框架' }
+        { id: nanoid(), title: 'LangChain', image: '', content: '大语言模型应用开发框架', url: 'https://github.com/LangChain/langchain'},
+        { id: nanoid(), title: 'Transformers', image: '', content: 'Hugging Face的预训练模型库' , url: 'https://huggingface.co/docs/transformers/index'},
+        { id: nanoid(), title: 'OpenAI API', image: '', content: 'OpenAI提供的GPT模型接口', url: 'https://openai.com/api/'},
+        { id: nanoid(), title: 'LlamaIndex', image: '', content: '构建LLM应用的数据框架', url: 'https://docs.llamalab.com/llamaindex/'}
       ]
     case '推荐网站':
       return [
-        { id: nanoid(), title: 'Stack Overflow', image: '', content: '程序员问答社区和技术交流平台' },
-        { id: nanoid(), title: 'GitHub', image: '', content: '全球最大的代码托管和协作平台' },
-        { id: nanoid(), title: 'Docker Hub', image: '', content: '容器镜像的官方仓库' },
-        { id: nanoid(), title: 'Postman', image: '', content: 'API开发和测试的强大工具' }
+        { id: nanoid(), title: 'Stack Overflow', image: '', content: '程序员问答社区和技术交流平台', url: 'https://stackoverflow.com/'},
+        { id: nanoid(), title: 'GitHub', image: '', content: '全球最大的代码托管和协作平台', url: 'https://github.com/'},
+        { id: nanoid(), title: 'Docker Hub', image: '', content: '容器镜像的官方仓库', url: 'https://hub.docker.com/'},
+        { id: nanoid(), title: 'Postman', image: '', content: 'API开发和测试的强大工具', url: 'https://www.postman.com/'}
       ]
     default:
       return []
   }
+}
+
+// 跳转到官网
+
+const goToWebsite = (url: string) => {
+  window.open(url, '_blank')
 }
 
 // 响应式计算当前显示的数据
