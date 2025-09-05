@@ -4,9 +4,7 @@
     <div class="large-img">
       <img src="../assets/images/category.jpeg" alt="" />
       <div class="inner-header flex">
-        <h1 class="animate__animated animate__backInDown">
-          {{ tagName }} 相关文章
-        </h1>
+        <h1 class="animate__animated animate__backInDown">相关文章</h1>
       </div>
     </div>
     <WaveContainer />
@@ -124,7 +122,8 @@ const formatDate = (dateString: string | Date | undefined): string => {
 }
 
 const goToArticle = (article: any) => {
-  console.log('点击文章:', article.title)
+  // console.log('点击文章:', article.title)
+  router.push(`/article/${article._id}`)
 }
 
 onMounted(async () => {
@@ -137,9 +136,8 @@ onMounted(async () => {
   max-width: 1200px;
   margin: 50px auto;
   padding: 0 20px;
-  background: #fff;
   border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 20px rgba(215, 215, 215, 0.6);
   overflow: hidden;
 }
 
@@ -149,7 +147,6 @@ onMounted(async () => {
   align-items: center;
   padding: 24px 30px;
   border-bottom: 1px solid #f0f0f0;
-  background: #fafafa;
   
   .breadcrumb {
     font-size: 16px;
@@ -157,14 +154,13 @@ onMounted(async () => {
     
     :deep(.el-breadcrumb__item) {
       .el-breadcrumb__inner {
-        color: #666;
+        color: #51dbfa;
         &:hover {
           color: #409eff;
         }
       }
       
       &:last-child .el-breadcrumb__inner {
-        color: #333;
         font-weight: 600;
       }
     }
@@ -172,7 +168,6 @@ onMounted(async () => {
   
   .article-count {
     font-size: 14px;
-    color: #666;
     font-weight: 500;
   }
 }
@@ -199,7 +194,6 @@ onMounted(async () => {
 }
 
 .article-item {
-  background: #fff;
   border-radius: 8px;
   overflow: hidden;
   transition: all 0.3s ease;
@@ -234,7 +228,6 @@ onMounted(async () => {
     .article-title {
       font-size: 16px;
       font-weight: 600;
-      color: #333;
       margin-bottom: 8px;
       line-height: 1.4;
       display: -webkit-box;
@@ -246,7 +239,6 @@ onMounted(async () => {
     
     .article-date {
       font-size: 12px;
-      color: #999;
       font-family: 'Courier New', monospace;
     }
   }

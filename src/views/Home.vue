@@ -28,7 +28,7 @@
               }"
             >
               <div class="card-image">
-                <el-image style="width: 100%; height: 100%;" :src="article.cover || url" :fit="fit" />
+                <el-image style="width: 100%; height: 100%;" :src="article.image || url" :fit="fit" />
               </div>
 
               <div class="card-content">
