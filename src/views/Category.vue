@@ -12,44 +12,17 @@
   </div>
   <!-- 内容 -->
   <div v-if="articleslist.length" class="timeline_content animate__animated animate__fadeInUp">
-    <!-- <el-timeline style="max-width: 600px">
-     <el-timeline-item 
-       v-for="(article, index) in pagedArticles"
-       :key="article._id || ((currentPage - 1) * pageSize + index)"
-       :class="{ reverse: (((currentPage - 1) * pageSize + index) % 2) === 1 }"
-       :timestamp="formatDate(article.publishDate)"
-       :hollow="true" 
-       center
-       placement="top"
-       type="primary"
-     >
-       <el-card >
-         <div class="timeline-card">
-           <el-image 
-             class="timeline-card-image" 
-             style="width: 100px; height: 100px" 
-             fit="cover"
-             :src="article.image"
-           />
-           <div class="timeline-card-content">
-             <h4>{{ article.title }}</h4>
-             <p>{{ article.excerpt }}</p>
-           </div>
-         </div>
-       </el-card>
-     </el-timeline-item>
-   </el-timeline> -->
     <!-- 标签栏 -->
     <div class="about-me tags-info">
       <section class="tag-cloud">
-        <h3 class="tag-header">分类</h3>
+        <h3 class="tag-header">分类 {{ tagslist.length }}</h3>
         <div class="tags-content">
           <a
             v-for="tag in tagslist"
             :key="tag"
             class="tag"
             :style="{ color: colorFor(tag) }"
-        
+            @click="goToTagPage(tag)"
           >
             {{ tag }}
           </a>
@@ -66,9 +39,12 @@
 
 <script setup lang="ts">
 import { onMounted, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { useArticles } from '@/composables/useArticles' // 引入获取到文章列表数据文件
 import WaveContainer from '@/components/WaveContainer.vue';
 import Footer from '@/components/Footer.vue';
+
+const router = useRouter()
 
 // 请求文章列表数据
 const {
@@ -87,7 +63,7 @@ const tagslist = computed(() => {
     )
   )
   
-  // 随机选择20个标签
+  // 随机选择6个标签
   return [...allTags]
     .sort(() => Math.random() - 0.5)
     .slice(0, 6)
@@ -103,6 +79,11 @@ const colorFor=(str:string)=> {
   const sat = 72                  // 饱和度，深色背景下略高更鲜明
   const light = 68                // 明度，注意和背景对比度
   return `hsl(${hue}deg, ${sat}%, ${light}%)`
+}
+
+// 跳转到标签页面
+const goToTagPage = (tag: string) => {
+  router.push(`/category/${encodeURIComponent(tag)}`)
 }
 
 // 组件挂载后获取文章列表数据
