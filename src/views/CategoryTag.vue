@@ -122,8 +122,10 @@ const formatDate = (dateString: string | Date | undefined): string => {
 }
 
 const goToArticle = (article: any) => {
-  // console.log('点击文章:', article.title)
-  router.push(`/article/${article._id}`)
+    router.push({
+    path: '/category/categoryDetail',
+    query: { id: article._id }
+  })
 }
 
 onMounted(async () => {
