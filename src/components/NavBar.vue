@@ -51,7 +51,7 @@
           <span class="menu-text">分类</span>
         </el-menu-item>
 
-        <el-menu-item index="photos">
+        <el-menu-item index="photos" @click="$router.push('/photoAlbum')">
           <el-icon><Picture /></el-icon>
           <span class="menu-text">相册</span>
         </el-menu-item>
@@ -157,7 +157,7 @@
           <el-icon><Collection /></el-icon>
           <span>分类</span>
         </el-menu-item>
-        <el-menu-item index="m-photos">
+        <el-menu-item index="m-photos" @click="handleMobileNavigation('/photoAlbum')">
             <el-icon><Picture /></el-icon>
             <span>相册</span>
         </el-menu-item>

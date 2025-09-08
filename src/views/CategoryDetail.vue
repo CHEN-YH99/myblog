@@ -18,17 +18,6 @@
 
   <!-- 文章内容 -->
   <div v-else-if="article" class="article-container animate__animated animate__fadeInUp">
-    <!-- 面包屑导航 -->
-    <!-- <div class="breadcrumb-container">
-      <el-breadcrumb separator=" - " class="breadcrumb">
-        <el-breadcrumb-item :to="{ path: '/category' }">分类</el-breadcrumb-item>
-        <el-breadcrumb-item v-if="article.tags && article.tags.length > 0">
-          {{ article.tags[0] }}
-        </el-breadcrumb-item>
-        <el-breadcrumb-item>{{ article.title }}</el-breadcrumb-item>
-      </el-breadcrumb>
-    </div> -->
-
     <div class="content-wrapper">
       <!-- 主要内容区域 -->
       <div class="article-main">
@@ -145,6 +134,7 @@
           </div>
         </div>
       </div>
+
     </div>
   </div>
 
@@ -206,7 +196,7 @@ const fetchArticle = async () => {
 
   try {
     loading.value = true
-    article.value = await ArticleService.getArticleById(articleId.value)
+    article.value = await ArticleService.getArticle(articleId.value)
     
     // 生成目录
     await nextTick()
@@ -318,6 +308,8 @@ onMounted(async () => {
   ])
 })
 </script>
+
+
 
 <style scoped lang="scss">
 .loading-container {
@@ -601,7 +593,7 @@ onMounted(async () => {
         margin: 0 0 6px 0;
         line-height: 1.4;
         display: -webkit-box;
-        -webkit-line-clamp: 2;
+        
         -webkit-box-orient: vertical;
         overflow: hidden;
       }

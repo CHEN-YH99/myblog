@@ -91,6 +91,7 @@ onMounted(async() => {
   await initArticles()
 })
 </script>
+
 <style scoped lang="scss">
 .tags-info {
   width: 50%;
