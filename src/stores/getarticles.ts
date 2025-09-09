@@ -19,7 +19,13 @@ export const useArticlesStore = defineStore('articles', {
     abortController: null as AbortController | null,
     
     // 组件订阅管理
-    subscribers: new Set<string>()
+    subscribers: new Set<string>(),
+
+    // 用户已点赞的文章ID集合
+    likedArticles: new Set<string>(),
+
+    // 正在处理点赞的文章ID集合
+    likingArticles: new Set<string>(), 
   }),
 
   getters: {
@@ -48,6 +54,64 @@ export const useArticlesStore = defineStore('articles', {
   },
 
   actions: {
+    // 点赞文章
+    async likeArticle(articleId: string) {
+      if (this.likingArticles.has(articleId)) return // 防止重复点击
+
+      this.likingArticles.add(articleId)
+
+      try {
+        const result = await ArticleService.likeArticle(articleId)
+
+        // 更新本地状态
+        this.likedArticles.add(articleId)
+
+        // 更新文章点赞数
+        const article = this.articles.find(a => a._id === articleId)
+        if (article) {
+          article.likes = result.likes
+        }
+
+        return result
+      } catch (error) {
+        console.error('点赞失败:', error)
+        throw error
+      } finally {
+        this.likingArticles.delete(articleId)
+      }
+    },
+  
+  // 取消点赞
+    async unlikeArticle(articleId: string) {
+      if (this.likingArticles.has(articleId)) return
+      
+      this.likingArticles.add(articleId)
+      
+      try {
+        const result = await ArticleService.unlikeArticle(articleId)
+        
+        this.likedArticles.delete(articleId)
+        
+        const article = this.articles.find(a => a._id === articleId)
+        if (article) {
+          article.likes = result.likes
+        }
+        
+        return result
+      } catch (error) {
+        console.error('取消点赞失败:', error)
+        throw error
+      } finally {
+        this.likingArticles.delete(articleId)
+      }
+    },
+    
+    // 切换点赞状态
+    async toggleLike(articleId: string) {
+      const isLiked = this.likedArticles.has(articleId)
+      return isLiked ? this.unlikeArticle(articleId) : this.likeArticle(articleId)
+    },
+
     // 组件订阅管理
     subscribe(componentId: string) {
       this.subscribers.add(componentId)

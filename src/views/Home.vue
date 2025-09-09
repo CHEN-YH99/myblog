@@ -52,8 +52,28 @@
                   </template>
                 </div>
 
-                <div class="article-stats">
+                <!-- <div class="article-stats">
                   <span>👍 {{ article.likes || 0 }}</span>
+                  <span>👁 {{ article.views || 0 }}</span>
+                </div> -->
+
+                <div class="article-stats">
+                  <span 
+                    class="like-btn"
+                    :class="{ 
+                      'liked': isLiked(article._id), 
+                      'loading': isLiking(article._id) 
+                    }"
+                    @click="handleLike(article._id)"
+                  >
+                    <el-icon v-if="!isLiking(article._id)">
+                      {{ isLiked(article._id) ? '❤️' : '🤍' }}
+                    </el-icon>
+                    <el-icon v-else class="loading-icon">
+                      <Loading />
+                    </el-icon>
+                    {{ article.likes || 0 }}
+                  </span>
                   <span>👁 {{ article.views || 0 }}</span>
                 </div>
 
@@ -84,10 +104,10 @@
               </div>
               <div class="pub my-data">
                 <div class="pub-item">
-                  <p>📖 文章116</p>
+                  <p>📖 文章{{ articleslist.length }}</p>
                 </div>
                 <div class="pub-item">
-                  <p>👍 点赞量116</p>
+                  <p>👍 点赞量{{ totalLikes }}</p>
                 </div>
                 <div class="pub-item">
                   <p>🎉 阅读量1.5w</p>
@@ -162,8 +182,9 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
-import { ArrowDownBold } from '@element-plus/icons-vue'
+import { ArrowDownBold, Loading } from '@element-plus/icons-vue'
 import { useArticles } from '@/composables/useArticles' // 引入获取到文章列表数据文件
+import { useLikes } from '@/composables/useLikes'       // 引入获取到点赞数据文件
 
 import WaveContainer from '@/components/WaveContainer.vue'
 import Footer from '@/components/Footer.vue'
@@ -183,6 +204,14 @@ const {
   initArticles,
   cleanup
 } = useArticles()
+
+// 点赞功能
+const { isLiked, isLiking, handleLike } = useLikes()
+// 计算总点赞数
+const totalLikes = computed(() => {
+  return articleslist.value.reduce((total, article) => total + (article.likes || 0), 0)
+})
+
 
 // 获取网站运行时间
 const startTime: number = new Date('2025-06-03').getTime(); 

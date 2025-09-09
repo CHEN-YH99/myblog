@@ -38,7 +38,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, computed } from 'vue'
+import { onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useArticles } from '@/composables/useArticles' // 引入获取到文章列表数据文件
 import WaveContainer from '@/components/WaveContainer.vue';
@@ -50,6 +50,7 @@ const router = useRouter()
 const {
   articles: articleslist,
   initArticles,
+  cleanup
 } = useArticles()
 
 // 彩色板标签云
@@ -89,6 +90,10 @@ const goToTagPage = (tag: string) => {
 // 组件挂载后获取文章列表数据
 onMounted(async() => {
   await initArticles()
+})
+// 组件卸载后清除数据
+onUnmounted(() => {
+  cleanup()
 })
 </script>
 
