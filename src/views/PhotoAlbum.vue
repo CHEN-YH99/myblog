@@ -13,15 +13,21 @@
    <!-- 内容 -->
   <div v-if="articleslist.length" class="timeline_content animate__animated animate__fadeInUp">
     <!-- 标签栏 -->
-    <div class="about-me tags-info">
+    <div class= "tags-info">
       <section class="tag-cloud">
-        <div class="photo-scroll-container">
-          <div v-for="(item,index) in articleslist" :key="index" class="photo-item">
-            <router-link :to="'/article/'+item._id">
-              <img :src="item.image" :alt="item.title || '文章图片'" class="album-image" />
+        <ul>
+          <li v-for="(item, index) in imglist" :key="index">
+            <router-link :to="'/photoalbum/' + item.title" class="photo-link">
+              <div class="image-container">
+                <img :src="item.src" alt="" />
+                <div class="overlay">
+                  <span class="title">{{ item.title }}</span>
+                  <span class="content">{{ item.content }}</span>
+                </div>
+              </div>
             </router-link>
-          </div>
-        </div>
+          </li>
+        </ul>
       </section>
     </div>
   </div>
@@ -32,12 +38,36 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted } from 'vue'
+import { onMounted, onUnmounted, reactive } from 'vue'
 import { useArticles } from '@/composables/useArticles' // 引入获取到文章列表数据文件
 import WaveContainer from '@/components/WaveContainer.vue'
 import Footer from '@/components/Footer.vue'
 
 const { articles: articleslist, initArticles, cleanup } = useArticles()
+
+const imglist = reactive([
+  {
+    src: 'https://img.remit.ee/api/file/BQACAgUAAyEGAASHRsPbAAEBpP1owPE9sjhjPULfhsAa6x3o9qzkpgACoBcAAj4FCFY1JYUdfzclzTYE.jpg',
+    title: '旅游',
+    content:'记录沿途风景'
+
+  },
+  {
+    src: 'https://img.remit.ee/api/file/BQACAgUAAyEGAASHRsPbAAEBpPtowPE6kBGQDVlmMv2xhTkmgo0blAACnhcAAj4FCFZMm707q5R3SDYE.jpg',
+    title: '美食',
+    content:'唯有美食与爱不可辜负'
+  },
+  {
+    src: 'https://img.remit.ee/api/file/BQACAgUAAyEGAASHRsPbAAEBpP5owPE-CuRR6pvlieBCd28osVLqSwACoRcAAj4FCFbCPU9AEolMaDYE.jpg',
+    title: '日常生活',
+    content:'记录平凡生活'
+  },
+  {
+    src: 'https://img.remit.ee/api/file/BQACAgUAAyEGAASHRsPbAAEBpPpowPE6i1ILFM_VVdUOsPDmEFxPgwACnRcAAj4FCFa18pjg0YacVzYE.jpg',
+    title: '工作',
+    content:'记录工作日常'
+  },
+])
 
 // 组件挂载时初始化数据
 onMounted(async () => {
@@ -52,95 +82,65 @@ onUnmounted(() => {
 
 <style scoped lang="scss">
 .tags-info {
-  width: 50%;
-  margin: 50px auto 200px auto;
-  @media (max-width: 768px) {
   .tag-cloud {
-    .photo-scroll-container {
-      // 平板显示3张图片
-      max-width: calc(3 * 180px + 2 * 20px + 40px);
-    }
-    
-    .photo-item {
-      width: 180px;
-      height: 180px;
-    }
-  }
-    width: 80% !important; // 平板宽度
-    margin: 50px auto 200px auto !important; // 外边距完全一样
-  }
-  
-  @media (max-width: 480px) {
-    width: 95% !important; // 手机宽度
-    margin: 50px auto 200px auto !important; // 外边距完全一样
-    .tag-cloud {
-    .photo-scroll-container {
-      // 手机显示2张图片
-      max-width: calc(2 * 150px + 1 * 20px + 40px);
-    }
-    
-    .photo-item {
-      width: 150px;
-      height: 150px;
-    }
-  }
-  }
-  .tag-cloud {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 300px; // 固定容器高度
-    width: 100%;
-    
-    .photo-scroll-container {
+    width: 70%;
+    margin: 100px auto 200px auto;
+    box-shadow: 2px 2px 10px #ccc;
+    ul {
       display: flex;
-      gap: 20px;
-      width: 100%;
-      height: 250px;
-      overflow-x: auto; // 横向滚动
-      overflow-y: hidden;
-      padding: 20px 0;
-
-      // 只显示4张图片的宽度
-      max-width: calc(4 * 200px + 3 * 20px + 40px); // 4张图片 + 3个间距 + 左右padding
-
-      // 自定义横向滚动条样式
-      &::-webkit-scrollbar {
-        height: 8px;
-      }
-
-      &::-webkit-scrollbar-track {
-        background: #f1f1f1;
-        border-radius: 4px;
-      }
-
-      &::-webkit-scrollbar-thumb {
-        background: #888;
-        border-radius: 4px;
-
+      justify-content: flex-start;
+      flex-wrap: wrap;
+      gap: 8px; // 添加元素间距
+      padding: 5px; // 添加内边距
+      li {
+        transition: all 0.3s ease-in-out;
+        list-style-type: none;
+        flex: 0 0 calc(25% - 6px); // 每行4个元素，减去gap的影响
         &:hover {
-          background: #555;
+          transform: translateY(-3px);
+          .image-container {
+            img {
+              filter: saturate(3); // 饱和度增加
+            }
+            
+            .overlay {
+              background-color: rgba(0, 0, 0, 0.4); // 背景变深
+            }
+          }
         }
-      }
-    }
-
-    .photo-item {
-      flex-shrink: 0; // 防止图片被压缩
-      width: 200px;
-      height: 200px;
-
-      .album-image {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        border-radius: 12px;
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-        cursor: pointer;
-
-        &:hover {
-          transform: scale(1.05);
-          box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        .image-container {
+          position: relative;
+          img {
+            transition: filter 0.3s ease-in-out;
+            width: 100%;
+            height: 160px;
+            object-fit: cover;
+            border-radius: 10px;
+          }
+          .overlay {
+            transition: background-color 0.3s ease-in-out;
+            position: absolute;
+            top: 10px;
+            left: 0;
+            right: 0;
+            margin: 0 auto;
+            width: 80%;
+            background-color: rgba(0, 0, 0, 0.2);
+            color: white;
+            font-weight: bolder;
+            padding: 10px;
+            border-radius: 10px;
+            .title {
+              display: block;
+              text-align: left;
+              font-size: 16px;
+            }
+            .content {
+              display: block;
+              text-align: left;
+              font-size: 14px;
+            }
+          }
         }
       }
     }
