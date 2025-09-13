@@ -1,0 +1,223 @@
+/**
+ * API相关类型定义
+ */
+declare namespace Api {
+  /** 通用类型 */
+  namespace Common {
+    /** 分页参数 */
+    interface PaginationParams {
+      /** 当前页码 */
+      current?: number
+      /** 每页条数 */
+      size?: number
+      /** 偏移量 */
+      offset?: number
+      /** 限制数量 */
+      limit?: number
+    }
+
+    /** 通用搜索参数 */
+    interface SearchParams extends PaginationParams {
+      /** 搜索关键词 */
+      keyword?: string
+      /** 排序字段 */
+      sortBy?: string
+      /** 排序方向 */
+      sortOrder?: 'asc' | 'desc'
+    }
+
+    /** 启用状态 */
+    type EnableStatus = '1' | '2' // 1: 启用 2: 禁用
+
+    /** 通用ID参数 */
+    interface IdParams {
+      id: string
+    }
+  }
+
+  /** 文章相关类型 */
+  namespace Article {
+    /** 目录项 */
+    interface TocItem {
+      id: string
+      text: string
+      level: number
+    }
+
+    /** 文章项 */
+    interface ArticleItem {
+      _id: string
+      title: string
+      slug: string
+      content: string
+      contentFormat: 'markdown' | 'html'
+      contentHtml?: string
+      toc?: TocItem[]
+      author: string
+      category?: string
+      tags?: string[]
+      publishDate: string
+      updateDate: string
+      likes: number
+      views: number
+      excerpt: string
+      image?: string
+    }
+
+    /** 文章列表 */
+    type ArticleList = ArticleItem[]
+
+    /** 文章搜索参数 */
+    interface SearchParams extends Api.Common.SearchParams {
+      /** 标签 */
+      tag?: string
+      /** 分类 */
+      category?: string
+      /** 作者 */
+      author?: string
+      /** 开始日期 */
+      startDate?: string
+      /** 结束日期 */
+      endDate?: string
+    }
+
+    /** 创建文章参数 */
+    interface CreateParams {
+      title: string
+      slug?: string
+      content: string
+      contentFormat?: 'markdown' | 'html'
+      contentHtml?: string
+      toc?: TocItem[]
+      author: string
+      category?: string
+      tags?: string[]
+      excerpt?: string
+      image?: string
+    }
+
+    /** 更新文章参数 */
+    interface UpdateParams extends Partial<CreateParams> {
+      updateDate?: string
+    }
+
+    /** 点赞响应 */
+    interface LikeResponse {
+      likes: number
+    }
+
+    /** 点赞状态响应 */
+    interface LikeStatusResponse {
+      isLiked: boolean
+    }
+
+    /** 批量点赞状态响应 */
+    interface BatchLikeStatusResponse {
+      [articleId: string]: boolean
+    }
+
+    /** 点赞数响应 */
+    interface LikeCountResponse {
+      likes: number
+    }
+
+    /** 浏览量响应 */
+    interface ViewsResponse {
+      views: number
+    }
+
+    /** 上传响应 */
+    interface UploadResponse {
+      url: string
+      filename?: string
+      size?: number
+    }
+
+    /** 搜索响应 */
+    interface SearchResponse {
+      articles: ArticleItem[]
+      total: number
+      keyword: string
+    }
+
+    /** 搜索建议项 */
+    interface SuggestionItem {
+      text: string
+      type: 'title' | 'tag' | 'category'
+    }
+
+    /** 分类项 */
+    interface CategoryItem {
+      name: string
+      count: number
+    }
+
+    /** 标签项 */
+    interface TagItem {
+      name: string
+      count: number
+    }
+  }
+
+  /** 用户相关类型 */
+  namespace User {
+    /** 用户信息 */
+    interface UserInfo {
+      id: string
+      username: string
+      email: string
+      avatar?: string
+      nickname?: string
+      bio?: string
+      createTime: string
+      updateTime: string
+    }
+
+    /** 登录参数 */
+    interface LoginParams {
+      username: string
+      password: string
+    }
+
+    /** 登录响应 */
+    interface LoginResponse {
+      token: string
+      userInfo: UserInfo
+    }
+
+    /** 注册参数 */
+    interface RegisterParams {
+      username: string
+      email: string
+      password: string
+      confirmPassword: string
+    }
+  }
+
+  /** 评论相关类型 */
+  namespace Comment {
+    /** 评论项 */
+    interface CommentItem {
+      id: string
+      articleId: string
+      content: string
+      author: string
+      email?: string
+      website?: string
+      createTime: string
+      likes: number
+      parentId?: string
+      replies?: CommentItem[]
+    }
+
+    /** 创建评论参数 */
+    interface CreateParams {
+      articleId: string
+      content: string
+      author: string
+      email?: string
+      website?: string
+      parentId?: string
+    }
+  }
+}

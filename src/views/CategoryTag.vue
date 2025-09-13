@@ -90,7 +90,7 @@ const pageSize = ref(8) // 每页8个，对应4x2的网格
 const tagName = computed(() => decodeURIComponent(route.params.tag as string))
 
 // 获取文章数据
-const { articles, initArticles, loading } = useArticles()
+const { articles, initArticles } = useArticles()
 
 // 筛选当前标签的文章
 const filteredArticles = computed(() => {

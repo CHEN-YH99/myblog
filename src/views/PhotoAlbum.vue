@@ -146,5 +146,65 @@ onUnmounted(() => {
     }
   }
 }
+
+// 响应式媒体查询
+// 大屏幕 (1200px以上) - 保持4列
+@media (min-width: 1200px) {
+  .tags-info .tag-cloud {
+    width: 80%;
+    ul li {
+      flex: 0 0 calc(25% - 6px); // 4列
+    }
+  }
+}
+
+// 中等屏幕 (768px - 1199px) - 3列
+@media (max-width: 1199px) and (min-width: 768px) {
+  .tags-info .tag-cloud {
+    width: 85%;
+    ul li {
+      flex: 0 0 calc(33.333% - 6px); // 3列
+    }
+  }
+}
+
+// 小屏幕 (480px - 767px) - 2列
+@media (max-width: 767px) and (min-width: 480px) {
+  .tags-info .tag-cloud {
+    width: 90%;
+    margin: 50px auto 100px auto;
+    ul {
+      gap: 10px;
+      padding: 10px;
+      li {
+        flex: 0 0 calc(50% - 5px); // 2列
+        .image-container img {
+          height: 140px; // 稍微调小图片高度
+        }
+      }
+    }
+  }
+}
+
+// 超小屏幕 (480px以下) - 1列
+@media (max-width: 479px) {
+  .tags-info .tag-cloud {
+    width: 95%;
+    margin: 30px auto 80px auto;
+    ul {
+      gap: 15px;
+      padding: 15px;
+      li {
+        flex: 0 0 100%; // 1列，占满宽度
+        .image-container img {
+          height: 200px; // 单列时图片可以高一些
+        }
+        .overlay {
+          width: 90%; // 单列时文字覆盖层可以更宽
+        }
+      }
+    }
+  }
+}
 </style>
 

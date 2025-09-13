@@ -154,7 +154,8 @@ import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { User, Calendar, View, Star, ArrowLeft, Share } from '@element-plus/icons-vue'
-import { ArticleService, type Article } from '@/api/articles'
+import { getArticle } from '@/api/articles'
+// Api 类型是全局声明的，不需要导入
 import { useArticles } from '@/composables/useArticles'
 import WaveContainer from '@/components/WaveContainer.vue'
 import Footer from '@/components/Footer.vue'
@@ -163,7 +164,7 @@ const route = useRoute()
 const router = useRouter()
 
 // 响应式数据
-const article = ref<Article | null>(null)
+const article = ref<Api.Article.ArticleItem | null>(null)
 const loading = ref(true)
 const hasLiked = ref(false)
 const tocItems = ref<Array<{ id: string; text: string; level: number }>>([])
@@ -196,7 +197,7 @@ const fetchArticle = async () => {
 
   try {
     loading.value = true
-    article.value = await ArticleService.getArticle(articleId.value)
+    article.value = await getArticle(articleId.value)
     
     // 生成目录
     await nextTick()

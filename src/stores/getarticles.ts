@@ -1,9 +1,9 @@
 import { defineStore } from 'pinia'
-import { ArticleService } from '@/api/articles'
-import type { Article } from '@/api/articles'
+import { getAllArticles, likeArticle, unlikeArticle } from '@/api/articles'
+// Api 类型是全局声明的，不需要导入
 
 // 扩展文章类型
-type ArticleView = Article & {
+type ArticleView = Api.Article.ArticleItem & {
   cover?: string
 }
 
@@ -61,7 +61,7 @@ export const useArticlesStore = defineStore('articles', {
       this.likingArticles.add(articleId)
 
       try {
-        const result = await ArticleService.likeArticle(articleId)
+        const result = await likeArticle(articleId)
 
         // 更新本地状态
         this.likedArticles.add(articleId)
@@ -88,7 +88,7 @@ export const useArticlesStore = defineStore('articles', {
       this.likingArticles.add(articleId)
       
       try {
-        const result = await ArticleService.unlikeArticle(articleId)
+        const result = await unlikeArticle(articleId)
         
         this.likedArticles.delete(articleId)
         
@@ -159,7 +159,7 @@ export const useArticlesStore = defineStore('articles', {
         this.abortController = new AbortController()
         
         console.log('发起新的文章数据请求')
-        const articles = await ArticleService.getAllArticles()
+        const articles = await getAllArticles()
         
         // 检查请求是否被取消
         if (this.abortController?.signal.aborted) {

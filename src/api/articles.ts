@@ -1,241 +1,272 @@
-export interface TocItem {
-  id: string
-  text: string
-  level: number
+import request from '@/utils/http'
+
+/**
+ * 获取文章列表
+ * @param params 查询参数
+ * @returns 文章列表
+ */
+export function getAllArticles(params?: Api.Article.SearchParams) {
+  return request.get<Api.Article.ArticleItem[]>({
+    url: '/api/articles',
+    params,
+    showErrorMessage: true
+  })
 }
 
-export interface Article {
-  _id: string
-  title: string
-  slug: string
-  content: string
-  contentFormat: 'markdown' | 'html'
-  contentHtml?: string
-  toc?: TocItem[]
-  author: string
-  category?: string
-  tags?: string[]
-  publishDate: string
-  updateDate: string
-  likes: number
-  views: number
-  excerpt: string
-  image?: string
+/**
+ * 根据ID或slug获取文章详情
+ * @param idOrSlug 文章ID或slug
+ * @returns 文章详情
+ */
+export function getArticle(idOrSlug: string) {
+  return request.get<Api.Article.ArticleItem>({
+    url: `/api/articles/${idOrSlug}`,
+    showErrorMessage: true
+  })
 }
 
-const API_BASE_URL = 'http://localhost:3001/api'
+/**
+ * 创建文章
+ * @param payload 文章数据
+ * @returns 创建的文章
+ */
+export function createArticle(payload: Api.Article.CreateParams) {
+  return request.post<Api.Article.ArticleItem>({
+    url: '/api/articles',
+    data: payload,
+    showSuccessMessage: true,
+    showErrorMessage: true
+  })
+}
 
-export class ArticleService {
+/**
+ * 更新文章
+ * @param id 文章ID
+ * @param payload 更新数据
+ * @returns 更新后的文章
+ */
+export function updateArticle(id: string, payload: Api.Article.UpdateParams) {
+  return request.put<Api.Article.ArticleItem>({
+    url: `/api/articles/${id}`,
+    data: payload,
+    showSuccessMessage: true,
+    showErrorMessage: true
+  })
+}
+
+/**
+ * 删除文章
+ * @param id 文章ID
+ * @returns 删除结果
+ */
+export function deleteArticle(id: string) {
+  return request.del<void>({
+    url: `/api/articles/${id}`,
+    showSuccessMessage: true,
+    showErrorMessage: true
+  })
+}
+
+/**
+ * 上传图片
+ * @param file 图片文件
+ * @returns 图片URL
+ */
+export function uploadImage(file: File) {
+  const formData = new FormData()
+  formData.append('file', file)
   
-  // 获取所有文章列表的静态异步方法
+  return request.post<Api.Article.UploadResponse>({
+    url: '/api/uploads',
+    data: formData,
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    },
+    showErrorMessage: true
+  })
+}
 
-  static async getAllArticles(params?: { tag?: string; category?: string }): Promise<Article[]> {
-    const u = new URL(`${API_BASE_URL}/articles`)
-    if (params?.tag) u.searchParams.set('tag', params.tag)
-    if (params?.category) u.searchParams.set('category', params.category)
-    
-    const res = await fetch(u)
-    if (!res.ok) throw new Error('获取文章列表失败')
-    
-    const articles: Article[] = await res.json()
-    
-    // 为每篇文章初始化当前点赞数（基于数据库原始数据）
-    const updatedArticles = articles.map(article => {
-      const currentLikesKey = `current_likes_${article._id}`
-      
-      // 如果localStorage中没有当前点赞数，使用数据库的原始数据初始化
-      if (!localStorage.getItem(currentLikesKey)) {
-        localStorage.setItem(currentLikesKey, (article.likes || 0).toString())
-      }
-      
-      // 获取当前存储的点赞数用于显示
-      const currentLikes = parseInt(localStorage.getItem(currentLikesKey) || (article.likes || 0).toString())
-      
-      return {
-        ...article,
-        likes: currentLikes // 显示当前的点赞数
-      }
-    })
-    
-    return updatedArticles
-  }
+// ==================== 点赞功能 ====================
 
-  static async getArticle(idOrSlug: string): Promise<Article> {
-    const res = await fetch(`${API_BASE_URL}/articles/${idOrSlug}`)
-    if (!res.ok) throw new Error('获取文章失败')
-    return res.json()
-  }
+/**
+ * 点赞文章
+ * @param articleId 文章ID
+ * @returns 点赞结果
+ */
+export function likeArticle(articleId: string) {
+  return request.post<Api.Article.LikeResponse>({
+    url: `/api/articles/${articleId}/like`,
+    showErrorMessage: true
+  })
+}
 
-  static async createArticle(payload: Partial<Article>): Promise<Article> {
-    const res = await fetch(`${API_BASE_URL}/articles`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    })
-    if (!res.ok) throw new Error('创建文章失败')
-    return res.json()
-  }
+/**
+ * 取消点赞
+ * @param articleId 文章ID
+ * @returns 取消点赞结果
+ */
+export function unlikeArticle(articleId: string) {
+  return request.post<Api.Article.LikeResponse>({
+    url: `/api/articles/${articleId}/unlike`,
+    showErrorMessage: true
+  })
+}
 
-  static async uploadImage(file: File): Promise<{ url: string }> {
-    const fd = new FormData()
-    fd.append('file', file)
-    const res = await fetch(`${API_BASE_URL}/uploads`, { method: 'POST', body: fd })
-    if (!res.ok) throw new Error('上传失败')
-    return res.json()
-  }
-  
-  // ==================== 点赞功能 - 本地模拟实现 ====================
-  
-  //  点赞文章 - 本地模拟版本
-  static async likeArticle(articleId: string): Promise<{ likes: number }> {
-    try {
-      await new Promise(resolve => setTimeout(resolve, 300))
+/**
+ * 获取文章点赞状态
+ * @param articleId 文章ID
+ * @returns 点赞状态
+ */
+export function getLikeStatus(articleId: string) {
+  return request.get<Api.Article.LikeStatusResponse>({
+    url: `/api/articles/${articleId}/like-status`,
+    showErrorMessage: false // 静默获取，不显示错误
+  })
+}
 
-      const currentLikesKey = `current_likes_${articleId}`
-      const userLikedKey = `user_liked_${articleId}`
+/**
+ * 批量获取文章点赞状态
+ * @param articleIds 文章ID数组
+ * @returns 批量点赞状态
+ */
+export function getBatchLikeStatus(articleIds: string[]) {
+  return request.post<Api.Article.BatchLikeStatusResponse>({
+    url: '/api/articles/batch-like-status',
+    data: { articleIds },
+    showErrorMessage: false
+  })
+}
 
-      // 防止重复点赞
-      if (localStorage.getItem(userLikedKey) === 'true') {
-        const currentLikes = parseInt(localStorage.getItem(currentLikesKey) || '0')
-        return { likes: currentLikes }
-      }
+/**
+ * 获取文章点赞数
+ * @param articleId 文章ID
+ * @returns 点赞数
+ */
+export function getArticleLikes(articleId: string) {
+  return request.get<Api.Article.LikeCountResponse>({
+    url: `/api/articles/${articleId}/likes`,
+    showErrorMessage: false
+  })
+}
 
-      // 获取当前点赞数（这个数已经包含了数据库原始数据）
-      const currentLikes = parseInt(localStorage.getItem(currentLikesKey) || '0')
-      const newLikes = currentLikes + 1
+// ==================== 统计功能 ====================
 
-      // 更新数据
-      localStorage.setItem(currentLikesKey, newLikes.toString())
-      localStorage.setItem(userLikedKey, 'true')
+/**
+ * 增加文章浏览量
+ * @param articleId 文章ID
+ * @returns 浏览量结果
+ */
+export function incrementViews(articleId: string) {
+  return request.post<Api.Article.ViewsResponse>({
+    url: `/api/articles/${articleId}/views`,
+    showErrorMessage: false // 静默操作
+  })
+}
 
-      return { likes: newLikes }
-    } catch (error) {
-      throw new Error('点赞失败')
-    }
-  }
+/**
+ * 获取热门文章
+ * @param limit 数量限制
+ * @returns 热门文章列表
+ */
+export function getPopularArticles(limit: number = 10) {
+  return request.get<Api.Article.ArticleItem[]>({
+    url: '/api/articles/popular',
+    params: { limit },
+    showErrorMessage: true
+  })
+}
 
-  // 修正后的取消点赞逻辑
-  static async unlikeArticle(articleId: string): Promise<{ likes: number }> {
-    try {
-      await new Promise(resolve => setTimeout(resolve, 300))
+/**
+ * 获取相关文章
+ * @param articleId 当前文章ID
+ * @param limit 数量限制
+ * @returns 相关文章列表
+ */
+export function getRelatedArticles(articleId: string, limit: number = 5) {
+  return request.get<Api.Article.ArticleItem[]>({
+    url: `/api/articles/${articleId}/related`,
+    params: { limit },
+    showErrorMessage: false
+  })
+}
 
-      const currentLikesKey = `current_likes_${articleId}`
-      const userLikedKey = `user_liked_${articleId}`
+// ==================== 分类和标签 ====================
 
-      // 如果用户没有点赞过，直接返回当前数据
-      if (localStorage.getItem(userLikedKey) !== 'true') {
-        const currentLikes = parseInt(localStorage.getItem(currentLikesKey) || '0')
-        return { likes: currentLikes }
-      }
+/**
+ * 获取所有分类
+ * @returns 分类列表
+ */
+export function getCategories() {
+  return request.get<Api.Article.CategoryItem[]>({
+    url: '/api/categories',
+    showErrorMessage: true
+  })
+}
 
-      // 获取当前点赞数并 -1（确保不小于0）
-      const currentLikes = parseInt(localStorage.getItem(currentLikesKey) || '0')
-      const newLikes = Math.max(0, currentLikes - 1)
+/**
+ * 获取所有标签
+ * @returns 标签列表
+ */
+export function getTags() {
+  return request.get<Api.Article.TagItem[]>({
+    url: '/api/tags',
+    showErrorMessage: true
+  })
+}
 
-      // 保存新的点赞数和用户状态
-      localStorage.setItem(currentLikesKey, newLikes.toString())
-      localStorage.setItem(userLikedKey, 'false')
+/**
+ * 根据分类获取文章
+ * @param category 分类名称
+ * @param params 其他查询参数
+ * @returns 文章列表
+ */
+export function getArticlesByCategory(category: string, params?: Api.Article.SearchParams) {
+  return request.get<Api.Article.ArticleItem[]>({
+    url: '/api/articles',
+    params: { ...params, category },
+    showErrorMessage: true
+  })
+}
 
-      return { likes: newLikes }
-    } catch (error) {
-      throw new Error('取消点赞失败')
-    }
-  }
+/**
+ * 根据标签获取文章
+ * @param tag 标签名称
+ * @param params 其他查询参数
+ * @returns 文章列表
+ */
+export function getArticlesByTag(tag: string, params?: Api.Article.SearchParams) {
+  return request.get<Api.Article.ArticleItem[]>({
+    url: '/api/articles',
+    params: { ...params, tag },
+    showErrorMessage: true
+  })
+}
 
-  // 获取用户点赞状态 - 本地模拟版本
-  static async getLikeStatus(articleId: string): Promise<{ isLiked: boolean }> {
-    try {
-      // 模拟轻微延迟
-      await new Promise(resolve => setTimeout(resolve, 100))
-      
-      // 从localStorage检查点赞状态
-      const likedArticlesKey = 'likedArticles'
-      const likedArticles = JSON.parse(localStorage.getItem(likedArticlesKey) || '[]')
-      
-      const isLiked = likedArticles.includes(articleId)
-      
-      return { isLiked }
-    } catch (error) {
-      console.error('获取点赞状态失败:', error)
-      throw new Error('获取点赞状态失败')
-    }
-  }
+// ==================== 搜索功能 ====================
 
-  // 批量获取文章点赞状态 - 本地模拟版本
-  static async getBatchLikeStatus(articleIds: string[]): Promise<Record<string, boolean>> {
-    try {
-      await new Promise(resolve => setTimeout(resolve, 200))
-      
-      const likedArticlesKey = 'likedArticles'
-      const likedArticles = JSON.parse(localStorage.getItem(likedArticlesKey) || '[]')
-      
-      const result: Record<string, boolean> = {}
-      articleIds.forEach(id => {
-        result[id] = likedArticles.includes(id)
-      })
-      
-      return result
-    } catch (error) {
-      console.error('批量获取点赞状态失败:', error)
-      throw new Error('批量获取点赞状态失败')
-    }
-  }
+/**
+ * 搜索文章
+ * @param keyword 搜索关键词
+ * @param params 其他查询参数
+ * @returns 搜索结果
+ */
+export function searchArticles(keyword: string, params?: Api.Article.SearchParams) {
+  return request.get<Api.Article.SearchResponse>({
+    url: '/api/articles/search',
+    params: { ...params, keyword },
+    showErrorMessage: true
+  })
+}
 
-  // 获取文章的实际点赞数 - 本地模拟版本
-  static async getArticleLikes(articleId: string): Promise<{ likes: number }> {
-    try {
-      await new Promise(resolve => setTimeout(resolve, 100))
-      
-      const likesKey = `article_likes_${articleId}`
-      const likes = parseInt(localStorage.getItem(likesKey) || '0')
-      
-      return { likes }
-    } catch (error) {
-      console.error('获取文章点赞数失败:', error)
-      throw new Error('获取文章点赞数失败')
-    }
-  }
-
-  
-  // 初始化文章点赞数据 - 本地模拟版本
-  static async initializeArticleLikes(articles: Article[]): Promise<Article[]> {
-    try {
-      // 为每篇文章从localStorage获取点赞数
-      const updatedArticles = articles.map(article => {
-        const likesKey = `article_likes_${article._id}`
-        const localLikes = parseInt(localStorage.getItem(likesKey) || '0')
-        
-        // 如果localStorage中有点赞数据，使用localStorage的数据
-        // 否则保持原有的点赞数
-        return {
-          ...article,
-          likes: localLikes > 0 ? localLikes : article.likes || 0
-        }
-      })
-      
-      return updatedArticles
-    } catch (error) {
-      console.error('初始化文章点赞数据失败:', error)
-      return articles // 出错时返回原数据
-    }
-  }
- 
-  // 清除所有本地点赞数据 - 用于测试或重置
-  static clearLocalLikeData(): void {
-    try {
-      const likedArticlesKey = 'likedArticles'
-      localStorage.removeItem(likedArticlesKey)
-      
-      // 清除所有文章的点赞数据
-      Object.keys(localStorage).forEach(key => {
-        if (key.startsWith('article_likes_')) {
-          localStorage.removeItem(key)
-        }
-      })
-      
-      console.log('本地点赞数据已清除')
-    } catch (error) {
-      console.error('清除本地点赞数据失败:', error)
-    }
-  }
+/**
+ * 获取搜索建议
+ * @param keyword 关键词
+ * @returns 搜索建议列表
+ */
+export function getSearchSuggestions(keyword: string) {
+  return request.get<Api.Article.SuggestionItem[]>({
+    url: '/api/articles/search/suggestions',
+    params: { keyword },
+    showErrorMessage: false
+  })
 }
