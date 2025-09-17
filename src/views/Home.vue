@@ -74,7 +74,7 @@
                     </el-icon>
                     {{ article.likes || 0 }}
                   </span>
-                  <span>👁 {{ article.views || 0 }}</span>
+                  <span>👁 {{ formatNumber(article.views || 0) }}</span>
                 </div>
 
                 <p class="article-excerpt">{{ article.excerpt || '' }}</p>
@@ -185,6 +185,7 @@ import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import { ArrowDownBold, Loading } from '@element-plus/icons-vue'
 import { useArticles } from '@/composables/useArticles' // 引入获取到文章列表数据文件
 import { useLikes } from '@/composables/useLikes'       // 引入获取到点赞数据文件
+import { formatNumber } from '@/utils/format'         // 引入数字格式化函数
 
 import WaveContainer from '@/components/WaveContainer.vue'
 import Footer from '@/components/Footer.vue'

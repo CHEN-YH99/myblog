@@ -4,7 +4,7 @@
     <div class="large-img">
       <img src="../assets/images/category.jpeg" alt="" />
       <div class="inner-header flex">
-        <h1 class="animate__animated animate__backInDown">文章详情</h1>
+        <h1 class="animate__animated animate__backInDown">{{ categoryDisplayName }}</h1>
       </div>
     </div>
     <!-- 海水波浪 -->
@@ -16,132 +16,105 @@
     <el-skeleton :rows="8" animated />
   </div>
 
-  <!-- 文章内容 -->
-  <div v-else-if="article" class="article-container animate__animated animate__fadeInUp">
+  <!-- 分类文章列表 -->
+  <div v-else-if="categoryArticles.length" class="articles-container animate__animated animate__fadeInUp">
     <div class="content-wrapper">
-      <!-- 主要内容区域 -->
-      <div class="article-main">
-        <!-- 文章头部信息 -->
-        <div class="article-header">
-          <h1 class="article-title">{{ article.title }}</h1>
-          <div class="article-meta">
-            <div class="meta-item">
-              <el-icon><User /></el-icon>
-              <span>{{ article.author }}</span>
-            </div>
-            <div class="meta-item">
-              <el-icon><Calendar /></el-icon>
-              <span>{{ formatDate(article.publishDate) }}</span>
-            </div>
-            <div class="meta-item">
-              <el-icon><View /></el-icon>
-              <span>{{ article.views }} 次阅读</span>
-            </div>
-            <div class="meta-item">
-              <el-icon><Star /></el-icon>
-              <span>{{ article.likes }} 点赞</span>
-            </div>
-          </div>
-          
-          <!-- 标签 -->
-          <div v-if="article.tags && article.tags.length > 0" class="article-tags">
-            <el-tag
-              v-for="tag in article.tags"
-              :key="tag"
-              :style="{ backgroundColor: colorFor(tag), color: '#fff' }"
-              class="tag-item"
-              @click="goToTagPage(tag)"
-            >
-              {{ tag }}
-            </el-tag>
-          </div>
-        </div>
-
-        <!-- 文章封面图 -->
-        <div v-if="article.image" class="article-image">
-          <el-image :src="article.image" :alt="article.title" fit="cover" />
-        </div>
-
-        <!-- 文章摘要 -->
-        <div v-if="article.excerpt" class="article-excerpt">
-          <p>{{ article.excerpt }}</p>
-        </div>
-
-        <!-- 文章正文 -->
-        <div class="article-content" v-html="article.content"></div>
-
-        <!-- 文章底部操作 -->
-        <div class="article-actions">
-          <el-button type="primary" @click="goBack">
-            <el-icon><ArrowLeft /></el-icon>
-            返回列表
-          </el-button>
-          <div class="action-buttons">
-            <el-button @click="likeArticle" :disabled="hasLiked">
-              <el-icon><Star /></el-icon>
-              {{ hasLiked ? '已点赞' : '点赞' }} ({{ article.likes }})
-            </el-button>
-            <el-button @click="shareArticle">
-              <el-icon><Share /></el-icon>
-              分享
-            </el-button>
-          </div>
+      <!-- 面包屑导航 -->
+      <div class="breadcrumb-container">
+        <el-breadcrumb separator=" - " class="breadcrumb">
+          <el-breadcrumb-item :to="{ path: '/category' }">分类</el-breadcrumb-item>
+          <el-breadcrumb-item>{{ categoryDisplayName }}</el-breadcrumb-item>
+        </el-breadcrumb>
+        <div class="article-count">
+          共 {{ categoryArticles.length }} 篇文章
         </div>
       </div>
 
-      <!-- 侧边栏 -->
-      <div class="article-sidebar">
-        <!-- 目录 -->
-        <div class="sidebar-section">
-          <h3>文章目录</h3>
-          <div class="toc-container">
-            <div v-if="tocItems.length > 0" class="toc-list">
-              <a
-                v-for="item in tocItems"
-                :key="item.id"
-                :href="`#${item.id}`"
-                :class="['toc-item', `toc-level-${item.level}`]"
-                @click="scrollToHeading(item.id)"
-              >
-                {{ item.text }}
-              </a>
-            </div>
-            <div v-else class="no-toc">暂无目录</div>
+      <!-- 文章网格 -->
+      <div class="articles-grid">
+        <div 
+          v-for="article in paginatedArticles" 
+          :key="article._id"
+          class="article-card"
+          @click="goToArticleDetail(article._id)"
+        >
+          <div class="article-image-wrapper">
+            <el-image 
+              class="article-image" 
+              :src="article.image || '/default-article.jpg'" 
+              :alt="article.title"
+              fit="cover"
+            />
           </div>
-        </div>
-
-        <!-- 相关文章 -->
-        <div class="sidebar-section">
-          <h3>相关文章</h3>
-          <div class="related-articles">
-            <div
-              v-for="relatedArticle in relatedArticles"
-              :key="relatedArticle._id"
-              class="related-item"
-              @click="goToArticle(relatedArticle._id)"
-            >
-              <el-image
-                class="related-image"
-                :src="relatedArticle.image"
-                :alt="relatedArticle.title"
-                fit="cover"
-              />
-              <div class="related-info">
-                <h4 class="related-title">{{ relatedArticle.title }}</h4>
-                <p class="related-date">{{ formatDate(relatedArticle.publishDate) }}</p>
+          <div class="article-content">
+            <h3 class="article-title">{{ article.title }}</h3>
+            <div class="article-meta">
+              <div class="meta-item">
+                <el-icon><Calendar /></el-icon>
+                <span>{{ formatDate(article.publishDate) }}</span>
+              </div>
+              <div class="meta-item">
+                <el-icon><View /></el-icon>
+                <span>{{ formatNumber(article.views || 0) }} 次阅读</span>
+              </div>
+              <div class="meta-item">
+                <el-icon><Star /></el-icon>
+                <span>{{ formatNumber(article.likes || 0) }} 点赞</span>
               </div>
             </div>
+            
+            <!-- 文章摘要 -->
+            <p v-if="article.excerpt" class="article-excerpt">{{ article.excerpt }}</p>
+            
+            <!-- 标签 -->
+            <div v-if="article.tags && article.tags.length > 0" class="article-tags">
+              <el-tag
+                v-for="tag in article.tags.slice(0, 3)"
+                :key="tag"
+                :style="{ backgroundColor: colorFor(tag), color: '#fff' }"
+                class="tag-item"
+                size="small"
+              >
+                {{ tag }}
+              </el-tag>
+              <span v-if="article.tags.length > 3" class="more-tags">+{{ article.tags.length - 3 }}</span>
+            </div>
           </div>
         </div>
       </div>
 
+      <!-- 分页 -->
+      <el-pagination
+        v-if="categoryArticles.length > pageSize"
+        v-model:current-page="currentPage"
+        v-model:page-size="pageSize"
+        :total="categoryArticles.length"
+        layout="prev, pager, next, jumper"
+        class="pagination"
+        hide-on-single-page
+      />
     </div>
   </div>
 
   <!-- 错误状态 -->
-  <div v-else class="error-container">
-    <el-empty description="文章不存在或已被删除" :image-size="200">
-      <el-button type="primary" @click="goBack">返回列表</el-button>
+  <div v-else-if="error" class="error-container">
+    <el-alert
+      title="加载失败"
+      :description="error"
+      type="error"
+      center
+      show-icon
+    >
+      <template #default>
+        <el-button @click="handleRefresh" type="primary">重新加载</el-button>
+      </template>
+    </el-alert>
+  </div>
+
+  <!-- 空状态 -->
+  <div v-else class="empty-container">
+    <el-empty :description="`暂无 ${categoryDisplayName} 相关文章`" :image-size="200">
+      <el-button type="primary" @click="goBack">返回分类页面</el-button>
     </el-empty>
   </div>
 
@@ -150,13 +123,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { User, Calendar, View, Star, ArrowLeft, Share } from '@element-plus/icons-vue'
-import { getArticle } from '@/api/articles'
-// Api 类型是全局声明的，不需要导入
-import { useArticles } from '@/composables/useArticles'
+import { Calendar, View, Star } from '@element-plus/icons-vue'
+import { getAllArticles, getArticle } from '@/api/articles'
+import { useCategories } from '@/composables/useCategories'
+import { formatNumber } from '@/utils/format'
 import WaveContainer from '@/components/WaveContainer.vue'
 import Footer from '@/components/Footer.vue'
 
@@ -164,77 +137,56 @@ const route = useRoute()
 const router = useRouter()
 
 // 响应式数据
-const article = ref<Api.Article.ArticleItem | null>(null)
 const loading = ref(true)
-const hasLiked = ref(false)
-const tocItems = ref<Array<{ id: string; text: string; level: number }>>([])
+const error = ref<string | null>(null)
+const allArticles = ref<Api.Article.ArticleItem[]>([])
+const currentPage = ref(1)
+const pageSize = ref(12)
+const currentArticle = ref<Api.Article.ArticleItem | null>(null)
 
-// 获取文章列表用于相关文章推荐
-const { articles, initArticles } = useArticles()
+// 使用分类组合式函数
+const { findCategory, initCategories } = useCategories()
 
-// 获取文章ID
-const articleId = computed(() => route.query.id as string || route.params.id as string)
+// 获取分类参数和文章ID参数
+const categorySlug = computed(() => route.params.category as string)
+const articleId = computed(() => route.query.id as string)
 
-// 相关文章（同标签的其他文章）
-const relatedArticles = computed(() => {
-  if (!article.value || !article.value.tags) return []
-  
-  return articles.value
-    .filter(item => 
-      item._id !== article.value!._id && 
-      item.tags?.some(tag => article.value!.tags?.includes(tag))
-    )
-    .slice(0, 5)
+// 判断是否为文章详情模式
+const isArticleDetailMode = computed(() => !!articleId.value)
+
+// 获取分类信息
+const currentCategory = ref<Api.Article.CategoryItem | null>(null)
+
+// 分类显示名称
+const categoryDisplayName = computed(() => {
+  return currentCategory.value?.name || categorySlug.value || '未知分类'
 })
 
-// 获取文章详情
-const fetchArticle = async () => {
-  if (!articleId.value) {
-    ElMessage.error('文章ID不存在')
-    router.push('/category')
-    return
-  }
-
-  try {
-    loading.value = true
-    article.value = await getArticle(articleId.value)
-    
-    // 生成目录
-    await nextTick()
-    generateTOC()
-    
-  } catch (error) {
-    console.error('获取文章失败:', error)
-    ElMessage.error('获取文章失败')
-  } finally {
-    loading.value = false
-  }
-}
-
-// 生成文章目录
-const generateTOC = () => {
-  const contentEl = document.querySelector('.article-content')
-  if (!contentEl) return
-
-  const headings = contentEl.querySelectorAll('h1, h2, h3, h4, h5, h6')
-  tocItems.value = Array.from(headings).map((heading, index) => {
-    const id = `heading-${index}`
-    heading.id = id
-    return {
-      id,
-      text: heading.textContent || '',
-      level: parseInt(heading.tagName.charAt(1))
+// 筛选当前分类的文章
+const categoryArticles = computed(() => {
+  console.log('CategoryDetail - 筛选分类文章:', categorySlug.value)
+  console.log('CategoryDetail - 全部文章:', allArticles.value.length)
+  
+  const filtered = allArticles.value.filter(article => {
+    // 检查分类匹配（支持slug和名称匹配）
+    if (article.category === categorySlug.value || 
+        article.category === currentCategory.value?.name ||
+        article.category === currentCategory.value?.slug) {
+      return true
     }
+    return false
   })
-}
+  
+  console.log('CategoryDetail - 筛选后的文章:', filtered.length)
+  return filtered
+})
 
-// 滚动到指定标题
-const scrollToHeading = (id: string) => {
-  const element = document.getElementById(id)
-  if (element) {
-    element.scrollIntoView({ behavior: 'smooth' })
-  }
-}
+// 分页文章
+const paginatedArticles = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  const end = start + pageSize.value
+  return categoryArticles.value.slice(start, end)
+})
 
 // 格式化日期
 const formatDate = (dateString: string | Date | undefined): string => {
@@ -260,53 +212,57 @@ const colorFor = (str: string) => {
   return `hsl(${hue}deg, ${sat}%, ${light}%)`
 }
 
-// 跳转到标签页面
-const goToTagPage = (tag: string) => {
-  router.push(`/category/${encodeURIComponent(tag)}`)
-}
-
-// 跳转到其他文章
-const goToArticle = (id: string) => {
-  router.push(`/category/categoryDetail?id=${id}`)
+// 跳转到文章详情
+const goToArticleDetail = (articleId: string) => {
+  router.push(`/article/${articleId}`)
 }
 
 // 返回上一页
 const goBack = () => {
-  router.go(-1)
+  router.push('/category')
 }
 
-// 点赞文章
-const likeArticle = () => {
-  if (hasLiked.value) return
-  
-  hasLiked.value = true
-  if (article.value) {
-    article.value.likes++
-  }
-  ElMessage.success('点赞成功！')
+// 刷新数据
+const handleRefresh = async () => {
+  await loadData()
+  ElMessage.success('刷新成功')
 }
 
-// 分享文章
-const shareArticle = () => {
-  if (navigator.share && article.value) {
-    navigator.share({
-      title: article.value.title,
-      text: article.value.excerpt,
-      url: window.location.href
-    })
-  } else {
-    // 复制链接到剪贴板
-    navigator.clipboard.writeText(window.location.href)
-    ElMessage.success('链接已复制到剪贴板')
+// 加载数据
+const loadData = async () => {
+  try {
+    loading.value = true
+    error.value = null
+    
+    console.log('CategoryDetail - 开始加载数据, 分类:', categorySlug.value)
+    
+    // 并行加载分类和文章数据
+    const [articles] = await Promise.all([
+      getAllArticles(),
+      initCategories()
+    ])
+    
+    // 设置文章数据
+    allArticles.value = Array.isArray(articles) ? articles : []
+    console.log('CategoryDetail - 获取到文章:', allArticles.value.length)
+    
+    // 查找当前分类
+    const foundCategory = findCategory(categorySlug.value)
+    currentCategory.value = foundCategory || null
+    console.log('CategoryDetail - 找到分类:', currentCategory.value)
+    
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : '加载数据失败'
+    console.error('CategoryDetail - 加载数据失败:', err)
+    allArticles.value = []
+  } finally {
+    loading.value = false
   }
 }
 
 // 组件挂载
 onMounted(async () => {
-  await Promise.all([
-    fetchArticle(),
-    initArticles()
-  ])
+  await loadData()
 })
 </script>
 
@@ -319,296 +275,216 @@ onMounted(async () => {
   padding: 0 20px;
 }
 
-.article-container {
+.articles-container {
   max-width: 1200px;
   margin: 50px auto;
   padding: 0 20px;
 }
 
+.content-wrapper {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
 .breadcrumb-container {
-  margin-bottom: 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 30px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-bottom: 1px solid #dee2e6;
   
   .breadcrumb {
-    font-size: 14px;
+    font-size: 16px;
+    font-weight: 500;
     
     :deep(.el-breadcrumb__item) {
       .el-breadcrumb__inner {
         color: #51dbfa;
+        text-decoration: none;
+        transition: color 0.3s ease;
+        
         &:hover {
           color: #409eff;
         }
       }
-    }
-  }
-}
-
-.content-wrapper {
-  display: grid;
-  grid-template-columns: 1fr 300px;
-  gap: 40px;
-  
-  @media (max-width: 1024px) {
-    grid-template-columns: 1fr;
-    gap: 30px;
-  }
-}
-
-.article-main {
-  background: #fff;
-  border-radius: 12px;
-  padding: 40px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-  
-  @media (max-width: 768px) {
-    padding: 20px;
-  }
-}
-
-.article-header {
-  margin-bottom: 30px;
-  
-  .article-title {
-    font-size: 32px;
-    font-weight: 700;
-    line-height: 1.3;
-    margin-bottom: 20px;
-    color: #2c3e50;
-    
-    @media (max-width: 768px) {
-      font-size: 24px;
-    }
-  }
-  
-  .article-meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 20px;
-    margin-bottom: 20px;
-    
-    .meta-item {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 14px;
-      color: #666;
       
-      .el-icon {
-        font-size: 16px;
+      &:last-child .el-breadcrumb__inner {
+        font-weight: 600;
+        color: #495057;
       }
     }
   }
   
-  .article-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
+  .article-count {
+    font-size: 14px;
+    font-weight: 500;
+    color: #6c757d;
+    background: rgba(64, 158, 255, 0.1);
+    padding: 6px 12px;
+    border-radius: 16px;
+  }
+}
+
+.articles-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
+  padding: 30px;
+  
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    padding: 20px;
+  }
+}
+
+.article-card {
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  border: 1px solid #f0f0f0;
+  background: #fff;
+  
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    border-color: #409eff;
+  }
+  
+  .article-image-wrapper {
+    width: 100%;
+    height: 200px;
+    overflow: hidden;
     
-    .tag-item {
-      cursor: pointer;
-      border: none;
-      transition: all 0.3s ease;
+    .article-image {
+      width: 100%;
+      height: 100%;
+      transition: transform 0.3s ease;
+    }
+  }
+  
+  &:hover .article-image {
+    transform: scale(1.05);
+  }
+  
+  .article-content {
+    padding: 20px;
+    
+    .article-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      line-height: 1.4;
+      color: #212529;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      min-height: 50px;
+      transition: color 0.3s ease;
+    }
+    
+    .article-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+      gap: 8px;
+      
+      .meta-item {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 12px;
+        color: #6c757d;
+        
+        .el-icon {
+          font-size: 14px;
+        }
+      }
+    }
+    
+    .article-excerpt {
+      font-size: 14px;
+      color: #6c757d;
+      line-height: 1.6;
+      margin-bottom: 12px;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    
+    .article-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+      
+      .tag-item {
+        border: none;
+        font-size: 11px;
+        padding: 2px 8px;
+        border-radius: 12px;
+      }
+      
+      .more-tags {
+        font-size: 11px;
+        color: #999;
+        background: #f5f5f5;
+        padding: 2px 6px;
+        border-radius: 8px;
+      }
+    }
+  }
+  
+  &:hover .article-title {
+    color: #409eff;
+  }
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  padding: 30px;
+  border-top: 1px solid #f0f0f0;
+  background: #fafafa;
+  
+  :deep(.el-pagination) {
+    .el-pager li {
+      background: #fff;
+      border: 1px solid #ddd;
+      margin: 0 2px;
+      
+      &.is-active {
+        background: #409eff;
+        border-color: #409eff;
+        color: #fff;
+      }
+      
+      &:hover:not(.is-active) {
+        background: #f5f7fa;
+      }
+    }
+    
+    .btn-prev, .btn-next {
+      background: #fff;
+      border: 1px solid #ddd;
       
       &:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        background: #f5f7fa;
       }
     }
   }
 }
 
-.article-image {
-  margin-bottom: 30px;
-  border-radius: 8px;
-  overflow: hidden;
-  
-  :deep(.el-image) {
-    width: 100%;
-    height: 300px;
-  }
-}
-
-.article-excerpt {
-  background: #f8f9fa;
-  border-left: 4px solid #409eff;
-  padding: 20px;
-  margin-bottom: 30px;
-  border-radius: 0 8px 8px 0;
-  
-  p {
-    margin: 0;
-    font-style: italic;
-    color: #555;
-    line-height: 1.6;
-  }
-}
-
-.article-content {
-  line-height: 1.8;
-  font-size: 16px;
-  color: #333;
-  margin-bottom: 40px;
-  
-  :deep(h1), :deep(h2), :deep(h3), :deep(h4), :deep(h5), :deep(h6) {
-    margin: 30px 0 15px 0;
-    font-weight: 600;
-    line-height: 1.4;
-  }
-  
-  :deep(p) {
-    margin-bottom: 16px;
-  }
-  
-  :deep(img) {
-    max-width: 100%;
-    height: auto;
-    border-radius: 8px;
-    margin: 20px 0;
-  }
-  
-  :deep(code) {
-    background: #f1f2f6;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-family: 'Courier New', monospace;
-  }
-  
-  :deep(pre) {
-    background: #2d3748;
-    color: #e2e8f0;
-    padding: 20px;
-    border-radius: 8px;
-    overflow-x: auto;
-    margin: 20px 0;
-  }
-}
-
-.article-actions {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-top: 30px;
-  border-top: 1px solid #eee;
-  
-  .action-buttons {
-    display: flex;
-    gap: 12px;
-  }
-  
-  @media (max-width: 768px) {
-    flex-direction: column;
-    gap: 20px;
-    align-items: stretch;
-    
-    .action-buttons {
-      justify-content: center;
-    }
-  }
-}
-
-.article-sidebar {
-  display: flex;
-  flex-direction: column;
-  gap: 30px;
-  
-  @media (max-width: 1024px) {
-    order: -1;
-  }
-}
-
-.sidebar-section {
-  background: #fff;
-  border-radius: 12px;
-  padding: 24px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-  
-  h3 {
-    margin: 0 0 20px 0;
-    font-size: 18px;
-    font-weight: 600;
-    color: #2c3e50;
-    border-bottom: 2px solid #409eff;
-    padding-bottom: 8px;
-  }
-}
-
-.toc-list {
-  .toc-item {
-    display: block;
-    padding: 8px 0;
-    color: #666;
-    text-decoration: none;
-    border-left: 2px solid transparent;
-    padding-left: 12px;
-    transition: all 0.3s ease;
-    
-    &:hover {
-      color: #409eff;
-      border-left-color: #409eff;
-      background: #f8f9fa;
-    }
-    
-    &.toc-level-2 { padding-left: 24px; }
-    &.toc-level-3 { padding-left: 36px; }
-    &.toc-level-4 { padding-left: 48px; }
-  }
-}
-
-.no-toc {
-  color: #999;
-  text-align: center;
-  padding: 20px 0;
-}
-
-.related-articles {
-  .related-item {
-    display: flex;
-    gap: 12px;
-    padding: 12px 0;
-    border-bottom: 1px solid #f0f0f0;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    
-    &:hover {
-      background: #f8f9fa;
-      transform: translateX(4px);
-    }
-    
-    &:last-child {
-      border-bottom: none;
-    }
-    
-    .related-image {
-      width: 60px;
-      height: 60px;
-      border-radius: 6px;
-      overflow: hidden;
-      flex-shrink: 0;
-    }
-    
-    .related-info {
-      flex: 1;
-      
-      .related-title {
-        font-size: 14px;
-        font-weight: 500;
-        margin: 0 0 6px 0;
-        line-height: 1.4;
-        display: -webkit-box;
-        
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-      }
-      
-      .related-date {
-        font-size: 12px;
-        color: #999;
-        margin: 0;
-      }
-    }
-  }
-}
-
-.error-container {
+.error-container,
+.empty-container {
   max-width: 600px;
   margin: 100px auto;
   text-align: center;
@@ -616,5 +492,27 @@ onMounted(async () => {
   background: #fff;
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+// 响应式调整
+@media (max-width: 768px) {
+  .articles-container {
+    margin: 20px auto;
+  }
+  
+  .content-wrapper {
+    border-radius: 8px;
+  }
+  
+  .breadcrumb-container {
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 20px;
+    
+    .article-count {
+      align-self: flex-end;
+    }
+  }
 }
 </style>

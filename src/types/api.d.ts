@@ -79,6 +79,12 @@ declare namespace Api {
       startDate?: string
       /** 结束日期 */
       endDate?: string
+      /** 年份 */
+      year?: string
+      /** 页码 */
+      page?: number
+      /** 每页数量 */
+      size?: number
     }
 
     /** 创建文章参数 */
@@ -148,14 +154,54 @@ declare namespace Api {
 
     /** 分类项 */
     interface CategoryItem {
+      _id?: string
+      id?: string
       name: string
-      count: number
+      slug: string
+      description?: string
+      color?: string
+      sort?: number
+      status: 'active' | 'inactive'
+      articleCount?: number
+      createTime?: string
+      updateTime?: string
     }
 
     /** 标签项 */
     interface TagItem {
       name: string
       count: number
+    }
+
+    /** 分类搜索参数 */
+    interface CategorySearchParams {
+      page?: number
+      size?: number
+      keyword?: string
+      status?: 'active' | 'inactive'
+    }
+
+    /** 创建分类参数 */
+    interface CreateCategoryParams {
+      name: string
+      slug: string
+      description?: string
+      color?: string
+      sort?: number
+      status?: 'active' | 'inactive'
+    }
+
+    /** 更新分类参数 */
+    interface UpdateCategoryParams extends Partial<CreateCategoryParams> {
+      _id?: string
+    }
+
+    /** 分类列表响应 */
+    interface CategoryListResponse {
+      categories: CategoryItem[]
+      total: number
+      currentPage: number
+      pageSize: number
     }
   }
 

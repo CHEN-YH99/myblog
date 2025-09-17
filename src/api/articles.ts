@@ -6,10 +6,34 @@ import request from '@/utils/http'
  * @returns 文章列表
  */
 export function getAllArticles(params?: Api.Article.SearchParams) {
-  return request.get<Api.Article.ArticleItem[]>({
+  console.log('前台调用getAllArticles API，参数:', params)
+  
+  return request.get<any>({
     url: '/api/articles',
     params,
     showErrorMessage: true
+  }).then(response => {
+    console.log('前台getAllArticles处理后的响应:', response)
+    
+    // HTTP拦截器已经提取了data部分，直接处理
+    if (response && typeof response === 'object') {
+      // 如果是分页响应格式 {articles: [...], total: ...}
+      if ('articles' in response && Array.isArray(response.articles)) {
+        console.log('前台收到articles格式文章数据:', response.articles.length)
+        return response.articles
+      }
+      // 如果直接是数组格式
+      else if (Array.isArray(response)) {
+        console.log('前台收到数组格式文章数据:', response.length)
+        return response
+      }
+    }
+    
+    console.warn('前台无法识别的文章响应格式:', response)
+    return []
+  }).catch(error => {
+    console.error('前台获取文章失败:', error)
+    throw error
   })
 }
 
@@ -194,12 +218,98 @@ export function getRelatedArticles(articleId: string, limit: number = 5) {
 
 /**
  * 获取所有分类
+ * @param params 查询参数
  * @returns 分类列表
  */
-export function getCategories() {
-  return request.get<Api.Article.CategoryItem[]>({
+export function getCategories(params?: Api.Article.CategorySearchParams) {
+  console.log('前台调用getCategories API，参数:', params)
+  
+  return request.get<any>({
     url: '/api/categories',
+    params,
     showErrorMessage: true
+  }).then(response => {
+    console.log('前台getCategories处理后的响应:', response)
+    
+    // HTTP拦截器已经提取了data部分，直接处理
+    if (response && typeof response === 'object') {
+      // 如果是分页响应格式 {categories: [...], total: ...}
+      if ('categories' in response && Array.isArray(response.categories)) {
+        console.log('前台收到categories格式分类数据:', response.categories.length)
+        return response.categories.filter((cat: any) => cat.status === 'active')
+      }
+      // 如果直接是数组格式
+      else if (Array.isArray(response)) {
+        console.log('前台收到数组格式分类数据:', response.length)
+        return response.filter((cat: any) => cat.status === 'active')
+      }
+    }
+    
+    console.warn('前台无法识别的分类响应格式:', response)
+    return []
+  }).catch(error => {
+    console.error('前台获取分类失败:', error)
+    throw error
+  })
+}
+
+/**
+ * 根据ID获取分类详情
+ * @param id 分类ID
+ * @returns 分类详情
+ */
+export function getCategoryDetail(id: string) {
+  return request.get<Api.Article.CategoryItem>({
+    url: `/api/categories/${id}`,
+    showErrorMessage: true
+  })
+}
+
+/**
+ * 根据分类获取文章
+ * @param category 分类名称或slug
+ * @param params 其他查询参数
+ * @returns 文章列表
+ */
+export function getArticlesByCategory(category: string, params?: Api.Article.SearchParams) {
+  console.log('前台调用getArticlesByCategory API，分类:', category, '参数:', params)
+  
+  return request.get<any>({
+    url: '/api/articles',
+    params: { ...params, category },
+    showErrorMessage: true
+  }).then(response => {
+    console.log('前台getArticlesByCategory原始响应:', response)
+    
+    // 处理后端的响应格式
+    if (response && typeof response === 'object') {
+      // 直接是数组格式
+      if (Array.isArray(response)) {
+        return response
+      }
+      
+      // 有data属性的情况
+      if (response.data) {
+        // 如果是分页响应格式 {articles: [...], total: ...}
+        if (typeof response.data === 'object' && 'articles' in response.data && Array.isArray(response.data.articles)) {
+          return response.data.articles
+        }
+        // 如果是直接的数组格式
+        else if (Array.isArray(response.data)) {
+          return response.data
+        }
+      }
+      
+      // 直接有articles属性的情况
+      if ('articles' in response && Array.isArray(response.articles)) {
+        return response.articles
+      }
+    }
+    
+    return []
+  }).catch(error => {
+    console.error('前台根据分类获取文章失败:', error)
+    throw error
   })
 }
 
@@ -214,19 +324,7 @@ export function getTags() {
   })
 }
 
-/**
- * 根据分类获取文章
- * @param category 分类名称
- * @param params 其他查询参数
- * @returns 文章列表
- */
-export function getArticlesByCategory(category: string, params?: Api.Article.SearchParams) {
-  return request.get<Api.Article.ArticleItem[]>({
-    url: '/api/articles',
-    params: { ...params, category },
-    showErrorMessage: true
-  })
-}
+
 
 /**
  * 根据标签获取文章

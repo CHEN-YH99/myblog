@@ -13,12 +13,14 @@ interface ExtendedAxiosRequestConfig extends AxiosRequestConfig {
   showSuccessMessage?: boolean
 }
 
-const { VITE_API_URL = 'http://localhost:3001' } = import.meta.env
+const { VITE_API_URL = '/api' } = import.meta.env
+
+console.log('前台HTTP配置 - VITE_API_URL:', VITE_API_URL)
 
 /** Axios实例 */
 const axiosInstance = axios.create({
   timeout: REQUEST_TIMEOUT,
-  baseURL: VITE_API_URL,
+  baseURL: VITE_API_URL.startsWith('http') ? VITE_API_URL : '', // 如果是完整URL就使用，否则为空（使用代理）
   withCredentials: false,
   validateStatus: (status) => status >= 200 && status < 300,
   transformResponse: [
@@ -56,11 +58,25 @@ axiosInstance.interceptors.request.use(
 /** 响应拦截器 */
 axiosInstance.interceptors.response.use(
   (response: AxiosResponse<Http.BaseResponse>) => {
-    const { code, msg } = response.data
-    if (code === ApiStatus.success) return response
-    throw createHttpError(msg || '请求失败', code)
+    console.log('前台HTTP响应拦截器 - 原始响应:', response.data)
+    
+    // 检查是否是后端的标准响应格式 {code, msg, data}
+    if (response.data && typeof response.data === 'object' && 'code' in response.data) {
+      const { code, msg } = response.data
+      if (code === ApiStatus.success || code === 200) {
+        console.log('前台HTTP响应拦截器 - 请求成功')
+        return response
+      }
+      console.error('前台HTTP响应拦截器 - 请求失败:', msg)
+      throw createHttpError(msg || '请求失败', code)
+    }
+    
+    // 其他格式的响应直接返回
+    console.log('前台HTTP响应拦截器 - 非标准格式响应，直接返回')
+    return response
   },
   (error) => {
+    console.error('前台HTTP响应拦截器 - 网络错误:', error)
     return Promise.reject(handleError(error))
   }
 )

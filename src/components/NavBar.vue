@@ -10,13 +10,15 @@
 
       <!-- 桌面端菜单 -->
       <el-menu
+        :key="activeIndex"
         mode="horizontal"
-        :default-active="$route.name?.toLowerCase() || 'home'"
+        :default-active="activeIndex"
         class="navbar__menu"
         background-color="transparent"
         text-color="#00BFFF"
         active-text-color="#ffffff"
         :ellipsis="false"
+        @select="(index) => activeIndex = index"
       >
         <el-menu-item index="search" class="navbar__search" title="搜索">
           <el-icon><Search /></el-icon>
@@ -124,10 +126,13 @@
       </div>
 
       <el-menu
+        :key="mobileActiveIndex"
         class="drawer__menu"
+        :default-active="mobileActiveIndex"
         background-color="transparent"
         text-color="#cfe8ff"
         active-text-color="#ffffff"
+        @select="(index) => mobileActiveIndex = index"
       >
         <el-menu-item index="m-search">
           <el-icon><Search /></el-icon>
@@ -183,8 +188,8 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted, onBeforeUnmount, computed, watch, nextTick } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
  import { is_Dark, toggleDark, animateThemeSwitch,rememberPointer} from '@/assets/ts/theme'
 import {
   Search,
@@ -205,7 +210,55 @@ import {
 import avatarUrl from '../assets/images/hui.svg'
 
 const router = useRouter()
+const route = useRoute()
 const drawer = ref(false)
+
+// 使用 ref 来控制活动菜单项，避免跳闪
+const activeIndex = ref('')
+const mobileActiveIndex = ref('')
+
+// 获取活动菜单项的函数
+const getActiveMenuItem = (path) => {
+  if (path === '/') return 'home'
+  if (path === '/timeline') return 'timeline'
+  if (path.startsWith('/frontend')) return 'frontend'
+  if (path.startsWith('/backend')) return 'backend'
+  if (path.startsWith('/category')) return 'category'
+  if (path.startsWith('/photoAlbum')) return 'photos'
+  if (path.startsWith('/talk')) return 'talk'
+  if (path.startsWith('/links')) return 'links'
+  if (path.startsWith('/board')) return 'board'
+  if (path.startsWith('/login')) return 'login'
+  return 'home'
+}
+
+// 获取移动端活动菜单项的函数
+const getMobileActiveMenuItem = (path) => {
+  if (path === '/') return 'm-home'
+  if (path === '/timeline') return 'm-timeline'
+  if (path.startsWith('/frontend')) return 'm-frontend'
+  if (path.startsWith('/backend')) return 'm-backend'
+  if (path.startsWith('/category')) return 'm-category'
+  if (path.startsWith('/photoAlbum')) return 'm-photos'
+  if (path.startsWith('/talk')) return 'm-talk'
+  if (path.startsWith('/links')) return 'm-links'
+  if (path.startsWith('/board')) return 'm-board'
+  if (path.startsWith('/login')) return 'm-login'
+  return 'm-home'
+}
+
+// 初始化活动状态
+const initActiveState = () => {
+  const currentPath = route.path
+  activeIndex.value = getActiveMenuItem(currentPath)
+  mobileActiveIndex.value = getMobileActiveMenuItem(currentPath)
+}
+
+// 监听路由变化
+watch(() => route.path, (newPath) => {
+  activeIndex.value = getActiveMenuItem(newPath)
+  mobileActiveIndex.value = getMobileActiveMenuItem(newPath)
+}, { immediate: true })
 
 // 处理移动端导航
 const handleMobileNavigation = (path) => {
@@ -223,9 +276,10 @@ import {
   removeScrollListener 
 } from '@/assets/ts/navbar'
 
-	// 组件挂载时，监听滚动事件
+	// 组件挂载时，监听滚动事件和初始化活动状态
 	onMounted(() => {
     initScrollListener()
+    initActiveState()
   })
 // 记得在组件卸载时移除监听器
   onBeforeUnmount(() => {
@@ -337,8 +391,11 @@ import {
   line-height: 48px;
   padding: 0 7px;
   font-size: 13px;
-  color: #3293ee;
+  color: #3293eea6;
   transition: color 0.2s ease, background-color 0.2s ease;
+  /* 防止布局抖动 */
+  will-change: color, background-color;
+  transform: translateZ(0);
 }
 
 // 去除二级菜单右边箭头

@@ -50,10 +50,16 @@ const routes: RouteRecordRaw[] = [
     meta: { title: "分类文章" }
   },
   {
-    path: "/category/categoryDetail",
+    path: "/article/:id",
+    name: "ArticleDetail",
+    component: () => import("../views/ArticleDetail.vue"),
+    meta: { title: "文章详情" }
+  },
+  {
+    path: "/category/detail/:category",
     name: "CategoryDetail",
     component: () => import("../views/CategoryDetail.vue"),
-    meta: { title: "文章内容" }
+    meta: { title: "文章详情" }
   },
   {
     path: "/photoAlbum",
