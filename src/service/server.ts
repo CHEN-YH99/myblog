@@ -191,6 +191,39 @@ CategorySchema.virtual('articleCount', {
 
 const Category = mongoose.model('Category', CategorySchema);
 
+// 图片分类模型
+const PhotoCategorySchema = new mongoose.Schema({
+  id: { type: String, required: true, unique: true },
+  name: { type: String, required: true },
+  title: { type: String, required: true },
+  description: { type: String, default: '' },
+  coverImage: { type: String, default: '' },
+  photoCount: { type: Number, default: 0 },
+  sortOrder: { type: Number, default: 0 },
+  isVisible: { type: Boolean, default: true },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
+});
+
+const PhotoCategory = mongoose.model('PhotoCategory', PhotoCategorySchema, 'photocategories');
+
+// 照片模型
+const PhotoSchema = new mongoose.Schema({
+  categoryId: { type: String, required: true },
+  title: { type: String, required: true },
+  description: { type: String, default: '' },
+  imageUrl: { type: String, required: true },
+  thumbnailUrl: { type: String, default: '' },
+  tags: [{ type: String }],
+  uploadDate: { type: Date, default: Date.now },
+  sortOrder: { type: Number, default: 0 },
+  isVisible: { type: Boolean, default: true },
+  viewCount: { type: Number, default: 0 },
+  likeCount: { type: Number, default: 0 }
+});
+
+const Photo = mongoose.model('Photo', PhotoSchema);
+
 // 统一响应格式函数
 const createResponse = <T>(data: T, message: string = '操作成功', code: number = 200) => {
   return {
@@ -879,6 +912,313 @@ app.post('/api/uploads', upload.single('file'), async (req: Request, res: Respon
   } catch (error) {
     console.error('上传失败:', error);
     res.status(500).json(createErrorResponse('上传失败', 500));
+  }
+});
+
+/**
+ * 获取图片分类列表
+ */
+app.get('/api/photo-categories', async (req: Request, res: Response) => {
+  try {
+    const { current = 1, size = 10, keyword, isVisible } = req.query;
+    
+    // 构建查询条件
+    const query: any = {};
+    if (keyword) {
+      query.$or = [
+        { name: { $regex: keyword, $options: 'i' } },
+        { title: { $regex: keyword, $options: 'i' } },
+        { description: { $regex: keyword, $options: 'i' } }
+      ];
+    }
+    if (isVisible !== undefined) {
+      query.isVisible = isVisible === 'true';
+    }
+    
+    const pageNum = Number(current);
+    const pageSize = Number(size);
+    const skip = (pageNum - 1) * pageSize;
+    
+    const categories = await PhotoCategory.find(query)
+      .sort({ sortOrder: 1, createdAt: -1 })
+      .skip(skip)
+      .limit(pageSize);
+    
+    const total = await PhotoCategory.countDocuments(query);
+    
+    res.json(createResponse({
+      categories,
+      total,
+      currentPage: pageNum,
+      pageSize
+    }, '获取图片分类列表成功'));
+  } catch (error) {
+    console.error('获取图片分类列表失败:', error);
+    res.status(500).json(createErrorResponse('获取图片分类列表失败', 500));
+  }
+});
+
+/**
+ * 获取图片分类详情
+ */
+app.get('/api/photo-categories/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    
+    const category = await PhotoCategory.findOne({ id });
+    if (!category) {
+      return res.status(404).json(createErrorResponse('图片分类未找到', 404));
+    }
+    
+    res.json(createResponse(category, '获取图片分类详情成功'));
+  } catch (error) {
+    console.error('获取图片分类详情失败:', error);
+    res.status(500).json(createErrorResponse('获取图片分类详情失败', 500));
+  }
+});
+
+/**
+ * 创建图片分类
+ */
+app.post('/api/photo-categories', async (req: Request, res: Response) => {
+  try {
+    const categoryData = req.body;
+    
+    // 如果没有提供id，生成一个唯一ID
+    if (!categoryData.id) {
+      categoryData.id = 'pc_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    }
+    
+    const category = new PhotoCategory(categoryData);
+    const savedCategory = await category.save();
+    
+    res.status(201).json(createResponse(savedCategory, '图片分类创建成功', 201));
+  } catch (error) {
+    console.error('创建图片分类失败:', error);
+    if (error instanceof Error && 'code' in error && (error as any).code === 11000) {
+      res.status(400).json(createErrorResponse('图片分类ID已存在', 400));
+    } else {
+      res.status(500).json(createErrorResponse('创建图片分类失败', 500));
+    }
+  }
+});
+
+/**
+ * 更新图片分类
+ */
+app.put('/api/photo-categories/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const updateData = { ...req.body, updatedAt: new Date() };
+    
+    const category = await PhotoCategory.findOneAndUpdate(
+      { id }, 
+      updateData, 
+      { new: true, runValidators: true }
+    );
+    
+    if (!category) {
+      return res.status(404).json(createErrorResponse('图片分类未找到', 404));
+    }
+    
+    res.json(createResponse(category, '图片分类更新成功'));
+  } catch (error) {
+    console.error('更新图片分类失败:', error);
+    res.status(500).json(createErrorResponse('更新图片分类失败', 500));
+  }
+});
+
+/**
+ * 删除图片分类
+ */
+app.delete('/api/photo-categories/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    
+    const category = await PhotoCategory.findOneAndDelete({ id });
+    if (!category) {
+      return res.status(404).json(createErrorResponse('图片分类未找到', 404));
+    }
+    
+    // 同时删除该分类下的所有照片
+    await Photo.deleteMany({ categoryId: id });
+    
+    res.json(createResponse(null, '图片分类删除成功'));
+  } catch (error) {
+    console.error('删除图片分类失败:', error);
+    res.status(500).json(createErrorResponse('删除图片分类失败', 500));
+  }
+});
+
+/**
+ * 获取照片列表
+ */
+app.get('/api/photos', async (req: Request, res: Response) => {
+  try {
+    const { current = 1, size = 20, categoryId, keyword, tag, isVisible } = req.query;
+    
+    // 构建查询条件
+    const query: any = {};
+    if (categoryId) {
+      query.categoryId = categoryId;
+    }
+    if (keyword) {
+      query.$or = [
+        { title: { $regex: keyword, $options: 'i' } },
+        { description: { $regex: keyword, $options: 'i' } }
+      ];
+    }
+    if (tag) {
+      query.tags = { $in: [tag] };
+    }
+    if (isVisible !== undefined) {
+      query.isVisible = isVisible === 'true';
+    }
+    
+    const pageNum = Number(current);
+    const pageSize = Number(size);
+    const skip = (pageNum - 1) * pageSize;
+    
+    const photos = await Photo.find(query)
+      .sort({ sortOrder: 1, uploadDate: -1 })
+      .skip(skip)
+      .limit(pageSize);
+    
+    const total = await Photo.countDocuments(query);
+    
+    res.json(createResponse({
+      photos,
+      total,
+      currentPage: pageNum,
+      pageSize
+    }, '获取照片列表成功'));
+  } catch (error) {
+    console.error('获取照片列表失败:', error);
+    res.status(500).json(createErrorResponse('获取照片列表失败', 500));
+  }
+});
+
+/**
+ * 获取照片详情
+ */
+app.get('/api/photos/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    
+    const photo = await Photo.findById(id);
+    if (!photo) {
+      return res.status(404).json(createErrorResponse('照片未找到', 404));
+    }
+    
+    // 增加浏览次数
+    photo.viewCount += 1;
+    await photo.save();
+    
+    res.json(createResponse(photo, '获取照片详情成功'));
+  } catch (error) {
+    console.error('获取照片详情失败:', error);
+    res.status(500).json(createErrorResponse('获取照片详情失败', 500));
+  }
+});
+
+/**
+ * 创建照片
+ */
+app.post('/api/photos', async (req: Request, res: Response) => {
+  try {
+    const photoData = req.body;
+    
+    const photo = new Photo(photoData);
+    const savedPhoto = await photo.save();
+    
+    // 更新分类的照片数量
+    if (photoData.categoryId) {
+      const category = await PhotoCategory.findOne({ id: photoData.categoryId });
+      if (category) {
+        category.photoCount = await Photo.countDocuments({ categoryId: photoData.categoryId });
+        category.updatedAt = new Date();
+        await category.save();
+      }
+    }
+    
+    res.status(201).json(createResponse(savedPhoto, '照片创建成功', 201));
+  } catch (error) {
+    console.error('创建照片失败:', error);
+    res.status(500).json(createErrorResponse('创建照片失败', 500));
+  }
+});
+
+/**
+ * 更新照片
+ */
+app.put('/api/photos/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+    
+    const photo = await Photo.findByIdAndUpdate(id, updateData, { new: true, runValidators: true });
+    
+    if (!photo) {
+      return res.status(404).json(createErrorResponse('照片未找到', 404));
+    }
+    
+    res.json(createResponse(photo, '照片更新成功'));
+  } catch (error) {
+    console.error('更新照片失败:', error);
+    res.status(500).json(createErrorResponse('更新照片失败', 500));
+  }
+});
+
+/**
+ * 删除照片
+ */
+app.delete('/api/photos/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    
+    const photo = await Photo.findByIdAndDelete(id);
+    if (!photo) {
+      return res.status(404).json(createErrorResponse('照片未找到', 404));
+    }
+    
+    // 更新分类的照片数量
+    if (photo.categoryId) {
+      const category = await PhotoCategory.findOne({ id: photo.categoryId });
+      if (category) {
+        category.photoCount = await Photo.countDocuments({ categoryId: photo.categoryId });
+        category.updatedAt = new Date();
+        await category.save();
+      }
+    }
+    
+    res.json(createResponse(null, '照片删除成功'));
+  } catch (error) {
+    console.error('删除照片失败:', error);
+    res.status(500).json(createErrorResponse('删除照片失败', 500));
+  }
+});
+
+/**
+ * 照片点赞
+ */
+app.post('/api/photos/:id/like', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    
+    const photo = await Photo.findByIdAndUpdate(
+      id,
+      { $inc: { likeCount: 1 } },
+      { new: true }
+    );
+    
+    if (!photo) {
+      return res.status(404).json(createErrorResponse('照片未找到', 404));
+    }
+    
+    res.json(createResponse({ likeCount: photo.likeCount }, '点赞成功'));
+  } catch (error) {
+    console.error('点赞失败:', error);
+    res.status(500).json(createErrorResponse('点赞失败', 500));
   }
 });
 

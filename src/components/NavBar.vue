@@ -58,6 +58,11 @@
           <span class="menu-text">相册</span>
         </el-menu-item>
 
+        <el-menu-item index="photo-category" @click="$router.push('/photo-category')">
+          <el-icon><Folder /></el-icon>
+          <span class="menu-text">相册分类</span>
+        </el-menu-item>
+
         <el-menu-item index="talk">
           <el-icon><ChatLineRound /></el-icon>
           <span class="menu-text">说说</span>
@@ -166,6 +171,10 @@
             <el-icon><Picture /></el-icon>
             <span>相册</span>
         </el-menu-item>
+        <el-menu-item index="m-photo-category" @click="handleMobileNavigation('/photo-category')">
+            <el-icon><Folder /></el-icon>
+            <span>相册分类</span>
+        </el-menu-item>
         <el-menu-item index="m-talk">
           <el-icon><ChatLineRound /></el-icon>
           <span>说说</span>
@@ -204,7 +213,8 @@ import {
   User,
   Moon,
   Sunny,
-  Menu as MenuIcon
+  Menu as MenuIcon,
+  Folder
 } from '@element-plus/icons-vue'
 
 import avatarUrl from '../assets/images/hui.svg'
@@ -225,6 +235,7 @@ const getActiveMenuItem = (path) => {
   if (path.startsWith('/backend')) return 'backend'
   if (path.startsWith('/category')) return 'category'
   if (path.startsWith('/photoAlbum')) return 'photos'
+  if (path.startsWith('/photo-category')) return 'photo-category'
   if (path.startsWith('/talk')) return 'talk'
   if (path.startsWith('/links')) return 'links'
   if (path.startsWith('/board')) return 'board'
@@ -240,6 +251,7 @@ const getMobileActiveMenuItem = (path) => {
   if (path.startsWith('/backend')) return 'm-backend'
   if (path.startsWith('/category')) return 'm-category'
   if (path.startsWith('/photoAlbum')) return 'm-photos'
+  if (path.startsWith('/photo-category')) return 'm-photo-category'
   if (path.startsWith('/talk')) return 'm-talk'
   if (path.startsWith('/links')) return 'm-links'
   if (path.startsWith('/board')) return 'm-board'

@@ -11,18 +11,18 @@
     <WaveContainer />
   </div>
    <!-- 内容 -->
-  <div v-if="articleslist.length" class="timeline_content animate__animated animate__fadeInUp">
+  <div v-if="photoCategories.length" class="timeline_content animate__animated animate__fadeInUp">
     <!-- 标签栏 -->
     <div class= "tags-info">
       <section class="tag-cloud">
         <ul>
-          <li v-for="(item, index) in imglist" :key="index">
-            <router-link :to="'/photoalbum/' + item.title" class="photo-link">
+          <li v-for="(item, index) in photoCategories" :key="item._id">
+            <router-link :to="'/photo-category/' + item._id" class="photo-link">
               <div class="image-container">
-                <img :src="item.src" alt="" />
+                <img :src="item.coverImage" :alt="item.title" />
                 <div class="overlay">
                   <span class="title">{{ item.title }}</span>
-                  <span class="content">{{ item.content }}</span>
+                  <span class="content">{{ item.description }}</span>
                 </div>
               </div>
             </router-link>
@@ -32,52 +32,29 @@
     </div>
   </div>
   <div v-else class="empty">
-    <el-empty description="暂无文章" :image-size="200" />
+    <el-empty description="暂无相册分类" :image-size="200" />
   </div>
   <Footer />
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, reactive } from 'vue'
+import { onMounted } from 'vue'
 import { useArticles } from '@/composables/useArticles' // 引入获取到文章列表数据文件
+import { usePhotoCategories } from '@/composables/usePhotoCategories' // 引入图片分类数据文件
 import WaveContainer from '@/components/WaveContainer.vue'
 import Footer from '@/components/Footer.vue'
 
 const { articles: articleslist, initArticles, cleanup } = useArticles()
-
-const imglist = reactive([
-  {
-    src: 'https://img.remit.ee/api/file/BQACAgUAAyEGAASHRsPbAAEBpP1owPE9sjhjPULfhsAa6x3o9qzkpgACoBcAAj4FCFY1JYUdfzclzTYE.jpg',
-    title: '旅游',
-    content:'记录沿途风景'
-
-  },
-  {
-    src: 'https://img.remit.ee/api/file/BQACAgUAAyEGAASHRsPbAAEBpPtowPE6kBGQDVlmMv2xhTkmgo0blAACnhcAAj4FCFZMm707q5R3SDYE.jpg',
-    title: '美食',
-    content:'唯有美食与爱不可辜负'
-  },
-  {
-    src: 'https://img.remit.ee/api/file/BQACAgUAAyEGAASHRsPbAAEBpP5owPE-CuRR6pvlieBCd28osVLqSwACoRcAAj4FCFbCPU9AEolMaDYE.jpg',
-    title: '日常生活',
-    content:'记录平凡生活'
-  },
-  {
-    src: 'https://img.remit.ee/api/file/BQACAgUAAyEGAASHRsPbAAEBpPpowPE6i1ILFM_VVdUOsPDmEFxPgwACnRcAAj4FCFa18pjg0YacVzYE.jpg',
-    title: '工作',
-    content:'记录工作日常'
-  },
-])
+const { photoCategories, initPhotoCategories } = usePhotoCategories()
 
 // 组件挂载时初始化数据
 onMounted(async () => {
   await initArticles()
+  await initPhotoCategories()
 })
 
 // 组件卸载时清理
-onUnmounted(() => {
-  cleanup()
-})
+// cleanup函数在组件卸载时调用，但usePhotoCategories没有cleanup函数，所以只清理articles
 </script>
 
 <style scoped lang="scss">
@@ -207,4 +184,3 @@ onUnmounted(() => {
   }
 }
 </style>
-

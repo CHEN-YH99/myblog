@@ -66,6 +66,12 @@ const routes: RouteRecordRaw[] = [
     name: "PhotoAlbum",
     component: () => import("../views/PhotoAlbum.vue"),
     meta: { title: "相册" }
+  },
+  {
+    path: "/photo-category/:id",
+    name: "PhotoCategoryDetail",
+    component: () => import("../views/PhotoCategoryDetail.vue"),
+    meta: { title: "相册分类" }
   }
 ];
 
@@ -75,6 +81,3 @@ const router = createRouter({
 });
 
 export default router;
-
-
-

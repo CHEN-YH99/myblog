@@ -46,6 +46,13 @@ axiosInstance.interceptors.request.use(
       request.headers.set('Content-Type', 'application/json')
       request.data = JSON.stringify(request.data)
     }
+    
+    console.log('发送HTTP请求:', {
+      url: request.url,
+      method: request.method,
+      params: request.params,
+      data: request.data
+    })
 
     return request
   },
@@ -57,7 +64,7 @@ axiosInstance.interceptors.request.use(
 
 /** 响应拦截器 */
 axiosInstance.interceptors.response.use(
-  (response: AxiosResponse<Http.BaseResponse>) => {
+  (response: AxiosResponse) => {
     console.log('前台HTTP响应拦截器 - 原始响应:', response.data)
     
     // 检查是否是后端的标准响应格式 {code, msg, data}
@@ -65,6 +72,7 @@ axiosInstance.interceptors.response.use(
       const { code, msg } = response.data
       if (code === ApiStatus.success || code === 200) {
         console.log('前台HTTP响应拦截器 - 请求成功')
+        // 返回响应数据，让request函数处理data字段提取
         return response
       }
       console.error('前台HTTP响应拦截器 - 请求失败:', msg)
@@ -131,7 +139,9 @@ async function request<T = any>(config: ExtendedAxiosRequestConfig): Promise<T> 
   }
 
   try {
-    const res = await axiosInstance.request<Http.BaseResponse<T>>(config)
+    console.log('发起HTTP请求:', config)
+    const res = await axiosInstance.request(config)
+    console.log('收到HTTP响应:', res)
 
     // 显示成功消息
     if (config.showSuccessMessage && res.data.msg) {
@@ -140,6 +150,7 @@ async function request<T = any>(config: ExtendedAxiosRequestConfig): Promise<T> 
 
     return res.data.data as T
   } catch (error) {
+    console.error('HTTP请求失败:', error)
     if (error instanceof HttpError) {
       const showMsg = config.showErrorMessage !== false
       showError(error, showMsg)

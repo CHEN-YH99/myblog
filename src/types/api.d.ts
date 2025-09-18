@@ -205,6 +205,91 @@ declare namespace Api {
     }
   }
 
+  /** 图片分类相关类型 */
+  namespace PhotoCategory {
+    /** 图片分类项 */
+    interface PhotoCategoryItem {
+      _id: string
+      id: string
+      name: string
+      title: string
+      description: string
+      coverImage: string
+      photoCount: number
+      sortOrder: number
+      isVisible: boolean
+      createdAt: string
+      updatedAt: string
+    }
+
+    /** 图片分类列表 */
+    type PhotoCategoryList = PhotoCategoryItem[]
+
+    /** 图片分类搜索参数 */
+    interface SearchParams extends Api.Common.SearchParams {
+      /** 搜索关键词 */
+      keyword?: string
+      /** 是否可见 */
+      isVisible?: boolean
+    }
+
+    /** 图片分类列表响应 */
+    interface ListResponse {
+      categories: PhotoCategoryItem[]
+      total: number
+      currentPage: number
+      pageSize: number
+    }
+
+    /** 图片分类详情响应 */
+    interface DetailResponse extends PhotoCategoryItem {}
+  }
+
+  /** 图片相关类型 */
+  namespace Photo {
+    /** 图片项 */
+    interface PhotoItem {
+      _id: string
+      categoryId: string
+      title: string
+      description: string
+      imageUrl: string
+      thumbnailUrl: string
+      tags: string[]
+      uploadDate: string
+      sortOrder: number
+      isVisible: boolean
+      viewCount: number
+      likeCount: number
+    }
+
+    /** 图片列表 */
+    type PhotoList = PhotoItem[]
+
+    /** 图片搜索参数 */
+    interface SearchParams extends Api.Common.SearchParams {
+      /** 分类ID */
+      categoryId?: string
+      /** 搜索关键词 */
+      keyword?: string
+      /** 标签 */
+      tag?: string
+      /** 是否可见 */
+      isVisible?: boolean
+    }
+
+    /** 图片列表响应 */
+    interface ListResponse {
+      photos: PhotoItem[]
+      total: number
+      currentPage: number
+      pageSize: number
+    }
+
+    /** 图片详情响应 */
+    interface DetailResponse extends PhotoItem {}
+  }
+
   /** 用户相关类型 */
   namespace User {
     /** 用户信息 */
