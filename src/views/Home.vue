@@ -26,6 +26,8 @@
                 // 使用全局索引保证跨页也交错
                 reverse: (((currentPage - 1) * pageSize + index) % 2) === 1
               }"
+              @click="goToArticle(article)"
+              style="cursor: pointer;"
             >
               <div class="card-image">
                 <el-image style="width: 100%; height: 100%;" :src="article.image || url" :fit="fit" />
@@ -77,7 +79,7 @@
                   <span>👁 {{ formatNumber(article.views || 0) }}</span>
                 </div>
 
-                <p class="article-excerpt">{{ article.excerpt || '' }}</p>
+                <p class="article-excerpt">{{ (article.excerpt || '').length > 30 ? (article.excerpt || '').substring(0, 30) + '...' : (article.excerpt || '') }}</p>
               </div>
             </div>
             <!-- 分页控件：双向绑定当前页与每页条数 -->
@@ -110,7 +112,7 @@
                   <p>👍 点赞量{{ totalLikes }}</p>
                 </div>
                 <div class="pub-item">
-                  <p>🎉 阅读量1.5w</p>
+                  <p>🎉 阅读量{{ formatNumber(totalViews) }}</p>
                 </div>
               </div>
               <div class="my-tags">
@@ -134,7 +136,7 @@
               <div class="tag-cloud">
                 <div class="tag-header"> 📢公告 </div>
                 <div class="tags-content">
-                  <p>📅 创建于2025-08-03</p>
+                  <p>📅 创建于2025-06-03</p>
                   <p>📝 博客地址:https://github.com/CHEN-YH99/myblog</p>
                   <p>🗨️ 技术交流群: 1060899124</p>
                   <p>更多内容敬请期待...</p>
@@ -163,9 +165,9 @@
               <div class="tag-cloud"> 
                 <div class="tag-header"> 📒网站咨询 </div>
                 <div class="tags-content">
-                  <p> 文章数目: {{ articleslist.length }}</p>
+                  <p>文章数目: {{ articleslist.length }}</p>
                   <p>运行时间: {{ formatTime(Date.now() - startTime) }}</p>
-                  <p>访问人数: 2356</p>
+                  <p>用户: 34</p>
                 </div>
               </div>
             </div>
@@ -183,6 +185,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import { ArrowDownBold, Loading } from '@element-plus/icons-vue'
+import { useRouter } from 'vue-router'
 import { useArticles } from '@/composables/useArticles' // 引入获取到文章列表数据文件
 import { useLikes } from '@/composables/useLikes'       // 引入获取到点赞数据文件
 import { formatNumber } from '@/utils/format'         // 引入数字格式化函数
@@ -191,6 +194,9 @@ import WaveContainer from '@/components/WaveContainer.vue'
 import Footer from '@/components/Footer.vue'
 import '../assets/style/index.scss'
 import bgImage from '../assets/images/shunsea1.jpg'  // 图片地址 - 正确的静态资源引用方式
+
+// 路由
+const router = useRouter()
 
 // 使用 composable
 const {
@@ -211,6 +217,11 @@ const { isLiked, isLiking, handleLike } = useLikes()
 // 计算总点赞数
 const totalLikes = computed(() => {
   return articleslist.value.reduce((total, article) => total + (article.likes || 0), 0)
+})
+
+// 计算总阅读量
+const totalViews = computed(() => {
+  return articleslist.value.reduce((total, article) => total + (article.views || 0), 0)
 })
 
 
@@ -248,6 +259,11 @@ const scrollDown =() => {
     top:  document.documentElement.scrollTop + window.innerHeight, 
     behavior: 'smooth'
   })
+}
+
+// 跳转到文章详情
+const goToArticle = (article: any) => {
+  router.push(`/article/${article._id}`)
 }
 
 // 彩色板标签云

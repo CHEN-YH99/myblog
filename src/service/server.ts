@@ -195,7 +195,7 @@ const Category = mongoose.model('Category', CategorySchema);
 const PhotoCategorySchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true },
   name: { type: String, required: true },
-  title: { type: String, required: true },
+  title: { type: String, required: false, default: '' },
   description: { type: String, default: '' },
   coverImage: { type: String, default: '' },
   photoCount: { type: Number, default: 0 },
@@ -699,19 +699,13 @@ app.get('/api/categories', async (req: Request, res: Response) => {
 app.get('/api/categories/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    
+
     const category = await Category.findById(id);
     if (!category) {
       return res.status(404).json(createErrorResponse('分类未找到', 404));
     }
-    
-    // 获取文章数量
-    const articleCount = await Article.countDocuments({ category: category.name });
-    
-    res.json(createResponse({
-      ...category.toObject(),
-      articleCount
-    }, '获取分类详情成功'));
+
+    res.json(createResponse(category, '获取分类详情成功'));
   } catch (error) {
     console.error('获取分类详情失败:', error);
     res.status(500).json(createErrorResponse('获取分类详情失败', 500));
@@ -754,27 +748,34 @@ app.post('/api/categories', async (req: Request, res: Response) => {
 app.put('/api/categories/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const updateData = { ...req.body, updateTime: new Date() };
-    
-    const category = await Category.findByIdAndUpdate(id, updateData, { 
-      new: true, 
-      runValidators: true 
-    });
-    
+    const updateData = req.body || {};
+
+    const category = await Category.findById(id);
     if (!category) {
       return res.status(404).json(createErrorResponse('分类未找到', 404));
     }
-    
-    // 获取文章数量
-    const articleCount = await Article.countDocuments({ category: category.name });
-    
-    res.json(createResponse({
-      ...category.toObject(),
-      articleCount
-    }, '分类更新成功'));
+
+    const updatableFields: Array<'name' | 'slug' | 'description' | 'color' | 'sort' | 'status'> = [
+      'name', 'slug', 'description', 'color', 'sort', 'status'
+    ];
+
+    for (const key of updatableFields) {
+      if (Object.prototype.hasOwnProperty.call(updateData, key)) {
+        (category as any)[key] = (updateData as any)[key];
+      }
+    }
+
+    (category as any).updateTime = new Date();
+
+    const saved = await category.save();
+    res.json(createResponse(saved, '分类更新成功'));
   } catch (error) {
     console.error('更新分类失败:', error);
-    res.status(500).json(createErrorResponse('更新分类失败', 500));
+    if (error instanceof Error && 'code' in error && (error as any).code === 11000) {
+      res.status(400).json(createErrorResponse('分类名称或URL别名已存在', 400));
+    } else {
+      res.status(500).json(createErrorResponse('更新分类失败', 500));
+    }
   }
 });
 
@@ -851,7 +852,7 @@ app.patch('/api/categories/status', async (req: Request, res: Response) => {
     
     const result = await Category.updateMany(
       { _id: { $in: ids } },
-      { status, updateTime: new Date() }
+      { $set: { status, updateTime: new Date() } }
     );
     
     res.json(createResponse({ modifiedCount: result.modifiedCount }, `成功更新 ${result.modifiedCount} 个分类的状态`));
@@ -965,7 +966,14 @@ app.get('/api/photo-categories/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     
-    const category = await PhotoCategory.findOne({ id });
+    // 尝试使用id字段查询，如果没找到则使用_id字段查询
+    let category = await PhotoCategory.findOne({ id });
+    
+    // 如果使用id字段没找到，尝试使用_id字段
+    if (!category) {
+      category = await PhotoCategory.findOne({ _id: id });
+    }
+    
     if (!category) {
       return res.status(404).json(createErrorResponse('图片分类未找到', 404));
     }
@@ -1009,19 +1017,48 @@ app.post('/api/photo-categories', async (req: Request, res: Response) => {
 app.put('/api/photo-categories/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const updateData = { ...req.body, updatedAt: new Date() };
-    
-    const category = await PhotoCategory.findOneAndUpdate(
-      { id }, 
-      updateData, 
-      { new: true, runValidators: true }
-    );
-    
+    const updateData = req.body || {};
+
+    // 依次尝试按 id(字符串) -> id(数字) -> _id(ObjectId) 查找
+    const candidates: any[] = [{ id }];
+    if (/^\d+$/.test(id)) {
+      candidates.push({ id: Number(id) });
+    }
+    if ((mongoose as any).Types?.ObjectId?.isValid?.(id)) {
+      candidates.push({ _id: id });
+    }
+
+    let category: any = null;
+    for (const filter of candidates) {
+      category = await PhotoCategory.findOne(filter);
+      if (category) break;
+    }
+
     if (!category) {
       return res.status(404).json(createErrorResponse('图片分类未找到', 404));
     }
-    
-    res.json(createResponse(category, '图片分类更新成功'));
+
+    // 仅白名单字段可被更新，避免无效字段触发校验/类型错误
+    const updatableFields: Array<keyof typeof category> = [
+      'name',
+      'title',
+      'description',
+      'coverImage',
+      'sortOrder',
+      'isVisible',
+      'photoCount'
+    ];
+
+    for (const key of updatableFields) {
+      if (Object.prototype.hasOwnProperty.call(updateData, key)) {
+        (category as any)[key] = (updateData as any)[key];
+      }
+    }
+
+    category.updatedAt = new Date();
+
+    const saved = await category.save();
+    res.json(createResponse(saved, '图片分类更新成功'));
   } catch (error) {
     console.error('更新图片分类失败:', error);
     res.status(500).json(createErrorResponse('更新图片分类失败', 500));
@@ -1035,12 +1072,19 @@ app.delete('/api/photo-categories/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     
-    const category = await PhotoCategory.findOneAndDelete({ id });
+    // 尝试使用id字段删除，如果没找到则使用_id字段删除
+    let category = await PhotoCategory.findOneAndDelete({ id });
+    
+    // 如果使用id字段没找到，尝试使用_id字段
+    if (!category) {
+      category = await PhotoCategory.findOneAndDelete({ _id: id });
+    }
+    
     if (!category) {
       return res.status(404).json(createErrorResponse('图片分类未找到', 404));
     }
     
-    // 同时删除该分类下的所有照片
+    // 同时删除该分类下的所有照片（使用原始id参数）
     await Photo.deleteMany({ categoryId: id });
     
     res.json(createResponse(null, '图片分类删除成功'));

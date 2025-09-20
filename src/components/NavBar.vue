@@ -58,10 +58,7 @@
           <span class="menu-text">相册</span>
         </el-menu-item>
 
-        <el-menu-item index="photo-category" @click="$router.push('/photo-category')">
-          <el-icon><Folder /></el-icon>
-          <span class="menu-text">相册分类</span>
-        </el-menu-item>
+        <!-- 已移除：相册分类 菜单项 -->
 
         <el-menu-item index="talk">
           <el-icon><ChatLineRound /></el-icon>
@@ -171,10 +168,7 @@
             <el-icon><Picture /></el-icon>
             <span>相册</span>
         </el-menu-item>
-        <el-menu-item index="m-photo-category" @click="handleMobileNavigation('/photo-category')">
-            <el-icon><Folder /></el-icon>
-            <span>相册分类</span>
-        </el-menu-item>
+        <!-- 已移除：移动端 相册分类 菜单项 -->
         <el-menu-item index="m-talk">
           <el-icon><ChatLineRound /></el-icon>
           <span>说说</span>
@@ -213,8 +207,7 @@ import {
   User,
   Moon,
   Sunny,
-  Menu as MenuIcon,
-  Folder
+  Menu as MenuIcon
 } from '@element-plus/icons-vue'
 
 import avatarUrl from '../assets/images/hui.svg'
@@ -234,8 +227,9 @@ const getActiveMenuItem = (path) => {
   if (path.startsWith('/frontend')) return 'frontend'
   if (path.startsWith('/backend')) return 'backend'
   if (path.startsWith('/category')) return 'category'
+  if (path.startsWith('/article/')) return 'category' // 文章详情页面高亮分类菜单
   if (path.startsWith('/photoAlbum')) return 'photos'
-  if (path.startsWith('/photo-category')) return 'photo-category'
+  // 已移除：photo-category
   if (path.startsWith('/talk')) return 'talk'
   if (path.startsWith('/links')) return 'links'
   if (path.startsWith('/board')) return 'board'
@@ -250,8 +244,9 @@ const getMobileActiveMenuItem = (path) => {
   if (path.startsWith('/frontend')) return 'm-frontend'
   if (path.startsWith('/backend')) return 'm-backend'
   if (path.startsWith('/category')) return 'm-category'
+  if (path.startsWith('/article/')) return 'm-category' // 文章详情页面高亮分类菜单
   if (path.startsWith('/photoAlbum')) return 'm-photos'
-  if (path.startsWith('/photo-category')) return 'm-photo-category'
+  // 已移除：m-photo-category
   if (path.startsWith('/talk')) return 'm-talk'
   if (path.startsWith('/links')) return 'm-links'
   if (path.startsWith('/board')) return 'm-board'

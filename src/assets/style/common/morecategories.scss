@@ -1,5 +1,7 @@
 .end_content{
   padding: 0 1rem;
+  width: 60%;
+  margin: 0 auto;
   .end-item {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -37,9 +39,10 @@
   }
 }
 
-// 中等屏幕：两列布局
+// 中等屏幕：两列布局 + 外层80%
 @media screen and (max-width: 768px) and (min-width: 577px) {
   .end_content{
+    width: 80%;
     .end-item {
       margin-top: 50px ;
       grid-template-columns: repeat(2, 1fr);
@@ -47,15 +50,25 @@
   }
 }
 
-// 小屏幕：单列80%宽度
+// 小屏幕：单列80%宽度（容器与卡片）
 @media screen and (max-width: 576px){
   .end_content{
+    width: 80%;
     .end-item {
       grid-template-columns: 1fr;
       justify-items: center; // 居中显示
       li {
         width: 80%;
       }
+    }
+  }
+}
+
+// 宽度小于1000px：三列布局，触发换行
+@media screen and (max-width: 1000px) and (min-width: 769px) {
+  .end_content{
+    .end-item {
+      grid-template-columns: repeat(3, 1fr);
     }
   }
 }

@@ -29,11 +29,17 @@ export const usePhotoCategories = () => {
     error.value = null
     
     try {
-      const response = await getPhotoCategories({
+      const requestParams: Api.PhotoCategory.SearchParams = {
         current: pagination.current,
         size: pagination.size,
         ...params
-      })
+      }
+      // 默认仅获取前台可见分类
+      if (typeof requestParams.isVisible === 'undefined') {
+        requestParams.isVisible = true
+      }
+
+      const response = await getPhotoCategories(requestParams)
       
       console.log('API响应数据:', response)
       

@@ -26,7 +26,7 @@
          placement="top"
          type="primary"
        >
-         <el-card >
+         <el-card @click="goToArticle(article)" style="cursor: pointer;">
            <div class="timeline-card">
              <el-image 
                class="timeline-card-image" 
@@ -64,9 +64,13 @@
 
 <script setup lang="ts">
 import { onMounted , watch, nextTick } from 'vue'
+import { useRouter } from 'vue-router'
 import { useArticles } from '@/composables/useArticles' // 引入获取到文章列表数据文件
 import WaveContainer from '@/components/WaveContainer.vue'
 import Footer from '@/components/Footer.vue'
+
+// 路由
+const router = useRouter()
 
 // 请求文章列表数据
 const {
@@ -93,6 +97,11 @@ const formatDate = (dateString: string | Date | undefined): string => {
   // const seconds = String(date.getSeconds()).padStart(2, '0')
   // return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
    return `${year}-${month}-${day}`
+}
+
+// 跳转到文章详情
+const goToArticle = (article: any) => {
+  router.push(`/article/${article._id}`)
 }
 
 watch([currentPage, pageSize], async () => {

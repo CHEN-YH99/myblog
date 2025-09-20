@@ -28,3 +28,20 @@ export const getPhotoCategoryDetail = (
     method: 'GET'
   })
 }
+
+/**
+ * 更新图片分类
+ * @param id 分类ID
+ * @param data 更新数据
+ * @returns 更新后的图片分类
+ */
+export const updatePhotoCategory = (
+  id: string,
+  data: Partial<Api.PhotoCategory.PhotoCategoryItem>
+): Promise<Api.PhotoCategory.DetailResponse> => {
+  return http.request<Api.PhotoCategory.DetailResponse>({
+    url: `/api/photo-categories/${id}`,
+    method: 'PUT',
+    data
+  })
+}

@@ -20,6 +20,11 @@ export default ({ mode }: { mode: string }) => {
           target: VITE_API_PROXY_URL || 'http://localhost:3001',
           changeOrigin: true,
           rewrite: (path) => path // 保持/api前缀
+        },
+        '/uploads': {
+          target: VITE_API_PROXY_URL || 'http://localhost:3001',
+          changeOrigin: true,
+          rewrite: (path) => path // 保持/uploads前缀
         }
       }
     }

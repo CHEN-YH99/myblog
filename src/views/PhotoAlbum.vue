@@ -60,7 +60,7 @@ onMounted(async () => {
 <style scoped lang="scss">
 .tags-info {
   .tag-cloud {
-    width: 70%;
+    width: 60%;
     margin: 100px auto 200px auto;
     box-shadow: 2px 2px 10px #ccc;
     ul {
@@ -128,7 +128,7 @@ onMounted(async () => {
 // 大屏幕 (1200px以上) - 保持4列
 @media (min-width: 1200px) {
   .tags-info .tag-cloud {
-    width: 80%;
+    width: 60%;
     ul li {
       flex: 0 0 calc(25% - 6px); // 4列
     }

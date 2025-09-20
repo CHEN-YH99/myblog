@@ -18,9 +18,9 @@
         <h2>{{ currentCategory.title }}</h2>
         <p class="description">{{ currentCategory.description }}</p>
         <div class="meta">
-          <span>照片数量: {{ currentCategory.photoCount }}</span>
-          <span>创建时间: {{ formatDate(currentCategory.createdAt) }}</span>
-          <span>更新时间: {{ formatDate(currentCategory.updatedAt) }}</span>
+          <span>照片数量: {{ displayedPhotoCount }}</span>
+          <span>创建时间: {{ createdAtStr }}</span>
+          <span>更新时间: {{ updatedAtStr }}</span>
         </div>
       </div>
     </div>
@@ -76,13 +76,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import WaveContainer from '@/components/WaveContainer.vue'
 import Footer from '@/components/Footer.vue'
 import defaultCover from '@/assets/images/kahs.jpeg'
 import { usePhotoCategories } from '@/composables/usePhotoCategories'
 import { usePhotos } from '@/composables/usePhotos'
+import { getPhotoCategoryDetail } from '@/api/photoCategories'
 
 // 路由信息
 const route = useRoute()
@@ -100,10 +101,41 @@ const currentCategory = ref<Api.PhotoCategory.PhotoCategoryItem | null>(null)
 const dialogVisible = ref(false)
 const selectedPhoto = ref<Api.Photo.PhotoItem | null>(null)
 
+// 刷新控制
+let isRefreshing = false
+const refreshTimer = ref<number | null>(null)
+
+// 动态展示：照片数量与时间
+const displayedPhotoCount = computed(() => {
+  const clientCount = photos.value.length
+  if (clientCount > 0) return clientCount
+  const serverCount = currentCategory.value?.photoCount
+  if (typeof serverCount === 'number') return serverCount
+  return 0
+})
+const createdAtStr = computed(() => currentCategory.value?.createdAt ? formatDate(currentCategory.value.createdAt) : '-')
+
+// 取服务端分类更新时间与客户端最新上传图片时间的较大者，确保与管理端一致或更“新”
+const latestPhotoUploadAtMs = computed(() => {
+  const times = photos.value
+    .map(p => p.uploadDate)
+    .filter(Boolean)
+    .map(d => new Date(d as string).getTime())
+    .filter(t => !Number.isNaN(t))
+  return times.length ? Math.max(...times) : 0
+})
+const computedUpdatedAtISO = computed(() => {
+  const serverMs = currentCategory.value?.updatedAt ? new Date(currentCategory.value.updatedAt).getTime() : 0
+  const ms = Math.max(serverMs, latestPhotoUploadAtMs.value)
+  return ms ? new Date(ms).toISOString() : ''
+})
+const updatedAtStr = computed(() => computedUpdatedAtISO.value ? formatDate(computedUpdatedAtISO.value) : '-')
+
 /**
  * 格式化日期
  */
 const formatDate = (dateString: string) => {
+  if (!dateString) return '-'
   const date = new Date(dateString)
   return date.toLocaleDateString('zh-CN', {
     year: 'numeric',
@@ -121,23 +153,66 @@ const showPhotoDetail = (photo: Api.Photo.PhotoItem) => {
 }
 
 /**
- * 初始化数据
+ * 拉取分类详情与照片列表（可重复调用，用于轮询）
  */
-onMounted(async () => {
-  // 初始化图片分类列表
-  await initPhotoCategories()
-  
-  // 获取当前分类ID
-  const categoryId = route.params.id as string
-  
-  // 查找当前分类
-  currentCategory.value = photoCategories.value.find(
-    category => category._id === categoryId
-  ) || null
-  
-  // 获取该分类下的照片列表
-  if (currentCategory.value) {
-    await initPhotos({ categoryId })
+const fetchCategoryAndPhotos = async (id: string) => {
+  if (!id || isRefreshing) return
+  isRefreshing = true
+  try {
+    // 先尝试从列表中匹配（兼容 id 和 _id）
+    currentCategory.value = photoCategories.value.find(
+      (category) => category._id === id || category.id === id
+    ) || currentCategory.value
+
+    // 再请求详情，确保 photoCount / createdAt / updatedAt 为最新
+    const detail = await getPhotoCategoryDetail(id)
+    if (detail) {
+      currentCategory.value = detail as Api.PhotoCategory.PhotoCategoryItem
+    }
+
+    // 计算用于查询照片列表的分类ID（优先 id，其余 _id）
+    const fetchCategoryId = currentCategory.value?.id || currentCategory.value?._id || id
+    await initPhotos({ categoryId: fetchCategoryId, isVisible: true })
+
+    // 如果按 id 查询没有数据，回退用 _id 再查一次（兼容历史数据存储 categoryId 为 _id 的情况）
+    if (photos.value.length === 0 && currentCategory.value?._id && currentCategory.value._id !== fetchCategoryId) {
+      await initPhotos({ categoryId: currentCategory.value._id, isVisible: true })
+    }
+  } catch (e) {
+    console.warn('刷新分类与照片数据失败: ', e)
+  } finally {
+    isRefreshing = false
+  }
+}
+
+/**
+ * 初始化数据 + 开启轮询
+ */
+ onMounted(async () => {
+  // 初始化图片分类列表（确保有本地缓存可匹配）
+  await initPhotoCategories({ isVisible: true })
+
+  const routeId = route.params.id as string
+  await fetchCategoryAndPhotos(routeId)
+
+  // 取消定时刷新：不再使用 setInterval 轮询
+})
+
+// 路由切换时，立即刷新到新分类
+watch(
+  () => route.params.id,
+  async (newId) => {
+    if (typeof newId === 'string' && newId) {
+      await fetchCategoryAndPhotos(newId)
+    }
+  }
+)
+
+// 组件卸载清理轮询
+onUnmounted(() => {
+  if (refreshTimer.value) {
+    clearInterval(refreshTimer.value)
+    refreshTimer.value = null
   }
 })
 </script>
@@ -146,22 +221,20 @@ onMounted(async () => {
 .photo-category-detail {
   .category-info {
     width: 80%;
-    margin: 30px auto;
+    margin: 50px auto;
     padding: 20px;
-    background: #f8f9fa;
     border-radius: 10px;
-    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 12px 0 rgba(212, 212, 212, 0.723);
     
     .category-header {
       h2 {
         font-size: 24px;
         margin-bottom: 15px;
-        color: #333;
       }
       
       .description {
         font-size: 16px;
-        color: #666;
+        color: #b1b1b1;
         margin-bottom: 20px;
         line-height: 1.6;
       }

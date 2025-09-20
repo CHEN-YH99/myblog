@@ -1,4 +1,7 @@
 <template>
+  <!-- 阅读进度条 -->
+  <ReadingProgress v-if="article && !loading" />
+  
   <!-- 头部大图 -->
   <div class="page_header">
     <div class="large-img">
@@ -21,6 +24,8 @@
     <div class="content-wrapper">
       <!-- 主要内容区域 -->
       <div class="article-main">
+        <!-- 文章内容区域 -->
+        <div class="article-content-wrapper">
         <!-- 面包屑导航 -->
         <div class="breadcrumb-container">
           <el-breadcrumb separator=" - " class="breadcrumb">
@@ -34,34 +39,56 @@
 
         <!-- 文章头部信息 -->
         <div class="article-header">
+          <!-- 分类标签 -->
+          <div v-if="article.category" class="article-category">
+            <el-tag type="primary" size="large" class="category-tag">
+              {{ article.category }}
+            </el-tag>
+          </div>
+          
           <h1 class="article-title">{{ article.title }}</h1>
+          
+          <!-- 文章摘要 -->
+          <div v-if="article.excerpt" class="article-excerpt">
+            <p>{{ article.excerpt }}</p>
+          </div>
+          
           <div class="article-meta">
-            <div class="meta-item">
-              <el-icon><User /></el-icon>
-              <span>{{ article.author }}</span>
+            <div class="meta-left">
+              <div class="author-info">
+                <div class="author-avatar">
+                  <el-avatar :size="40" :src="article.authorAvatar || '/default-avatar.png'">
+                    <el-icon><User /></el-icon>
+                  </el-avatar>
+                </div>
+                <div class="author-details">
+                  <div class="author-name">{{ article.author }}</div>
+                  <div class="publish-date">{{ formatDate(article.publishDate) }}</div>
+                </div>
+              </div>
             </div>
-            <div class="meta-item">
-              <el-icon><Calendar /></el-icon>
-              <span>{{ formatDate(article.publishDate) }}</span>
-            </div>
-            <div class="meta-item">
-              <el-icon><View /></el-icon>
-              <span>{{ formatNumber(article.views || 0) }} 次阅读</span>
-            </div>
-            <div class="meta-item">
-              <el-icon><Star /></el-icon>
-              <span>{{ formatNumber(article.likes || 0) }} 点赞</span>
+            <div class="meta-right">
+              <div class="stats-item">
+                <el-icon class="stats-icon"><View /></el-icon>
+                <span>{{ formatNumber(article.views || 0) }}</span>
+              </div>
+              <div class="stats-item">
+                <el-icon class="stats-icon"><Star /></el-icon>
+                <span>{{ formatNumber(article.likes || 0) }}</span>
+              </div>
             </div>
           </div>
           
           <!-- 标签 -->
           <div v-if="article.tags && article.tags.length > 0" class="article-tags">
+            <span class="tags-label">标签：</span>
             <el-tag
               v-for="tag in article.tags"
               :key="tag"
               :style="{ backgroundColor: colorFor(tag), color: '#fff' }"
               class="tag-item"
               @click="goToTagPage(tag)"
+              size="small"
             >
               {{ tag }}
             </el-tag>
@@ -73,13 +100,8 @@
           <el-image :src="article.image" :alt="article.title" fit="cover" />
         </div>
 
-        <!-- 文章摘要 -->
-        <div v-if="article.excerpt" class="article-excerpt">
-          <p>{{ article.excerpt }}</p>
-        </div>
-
         <!-- 文章正文 -->
-        <div class="article-content" v-html="article.content"></div>
+        <div class="article-content markdown-body" v-html="renderedContent"></div>
 
         <!-- 文章底部操作 -->
         <div class="article-actions">
@@ -98,9 +120,15 @@
             </el-button>
           </div>
         </div>
-      </div>
-    </div>
-  </div>
+        </div> <!-- 关闭 article-content-wrapper -->
+      </div> <!-- 关闭 article-main -->
+      
+      <!-- 目录侧边栏 -->
+      <aside class="toc-sidebar">
+        <TableOfContents ref="tocRef" content-selector=".article-content" />
+      </aside>
+    </div> <!-- 关闭 content-wrapper -->
+  </div> <!-- 关闭 article-container -->
 
   <!-- 错误状态 -->
   <div v-else class="error-container">
@@ -114,14 +142,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { User, Calendar, View, Star, ArrowLeft, Share } from '@element-plus/icons-vue'
 import { getArticle } from '@/api/articles'
 import { formatNumber } from '@/utils/format'
+import MarkdownIt from 'markdown-it'
+import hljs from 'highlight.js'
+import 'highlight.js/styles/github.css'
 import WaveContainer from '@/components/WaveContainer.vue'
 import Footer from '@/components/Footer.vue'
+import TableOfContents from '@/components/TableOfContents.vue'
+import ReadingProgress from '@/components/ReadingProgress.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -130,9 +163,38 @@ const router = useRouter()
 const article = ref<Api.Article.ArticleItem | null>(null)
 const loading = ref(true)
 const hasLiked = ref(false)
+const tocRef = ref<InstanceType<typeof TableOfContents> | null>(null)
 
 // 获取文章ID
 const articleId = route.params.id as string
+
+// 初始化 markdown-it
+const md = new MarkdownIt({
+  html: true,
+  linkify: true,
+  typographer: true,
+  highlight: function (str, lang) {
+    if (lang && hljs.getLanguage(lang)) {
+      try {
+        return hljs.highlight(str, { language: lang }).value
+      } catch (__) {}
+    }
+    return '' // 使用外部默认转义
+  }
+})
+
+// 计算渲染后的文章内容
+const renderedContent = computed(() => {
+  if (!article.value?.content) {
+    return '<p class="empty-content">暂无内容</p>'
+  }
+  try {
+    return md.render(article.value.content)
+  } catch (error) {
+    console.error('Markdown 解析失败:', error)
+    return article.value.content // 如果解析失败，返回原始内容
+  }
+})
 
 // 获取文章详情
 const fetchArticle = async () => {
@@ -145,6 +207,10 @@ const fetchArticle = async () => {
   try {
     loading.value = true
     article.value = await getArticle(articleId)
+    // 文章加载完成后，延迟刷新目录
+    setTimeout(() => {
+      tocRef.value?.refresh()
+    }, 200)
   } catch (error) {
     console.error('获取文章失败:', error)
     ElMessage.error('获取文章失败')
@@ -233,6 +299,18 @@ onMounted(async () => {
 }
 
 .content-wrapper {
+  display: flex;
+  gap: 40px;
+  align-items: flex-start;
+  
+  @media (max-width: 1200px) {
+    flex-direction: column;
+    gap: 20px;
+  }
+}
+
+.article-main {
+  flex: 0 0 50%;
   background: #fff;
   border-radius: 12px;
   padding: 40px;
@@ -241,6 +319,24 @@ onMounted(async () => {
   @media (max-width: 768px) {
     padding: 20px;
   }
+  
+  @media (max-width: 1200px) {
+    flex: none;
+    width: 100%;
+  }
+}
+
+.toc-sidebar {
+  flex: 0 0 280px;
+  
+  @media (max-width: 1200px) {
+    flex: none;
+    width: 100%;
+  }
+}
+
+.article-content-wrapper {
+  width: 100%;
 }
 
 .breadcrumb-container {
@@ -261,35 +357,98 @@ onMounted(async () => {
 }
 
 .article-header {
-  margin-bottom: 30px;
+  margin-bottom: 40px;
+  padding-bottom: 30px;
+  border-bottom: 1px solid #eaecef;
+  
+  .article-category {
+    margin-bottom: 16px;
+    
+    .category-tag {
+      font-weight: 500;
+      border-radius: 20px;
+      padding: 8px 16px;
+    }
+  }
   
   .article-title {
-    font-size: 32px;
-    font-weight: 700;
-    line-height: 1.3;
+    font-size: 36px;
+    font-weight: 800;
+    line-height: 1.2;
     margin-bottom: 20px;
-    color: #2c3e50;
+    color: #1a202c;
+    letter-spacing: -0.02em;
     
     @media (max-width: 768px) {
-      font-size: 24px;
+      font-size: 28px;
+    }
+  }
+  
+  .article-excerpt {
+    margin-bottom: 24px;
+    
+    p {
+      font-size: 18px;
+      line-height: 1.6;
+      color: #4a5568;
+      margin: 0;
+      font-weight: 400;
     }
   }
   
   .article-meta {
     display: flex;
-    flex-wrap: wrap;
-    gap: 20px;
-    margin-bottom: 20px;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    padding: 20px 0;
     
-    .meta-item {
+    @media (max-width: 768px) {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 16px;
+    }
+    
+    .meta-left {
+      .author-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        
+        .author-avatar {
+          flex-shrink: 0;
+        }
+        
+        .author-details {
+          .author-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 4px;
+          }
+          
+          .publish-date {
+            font-size: 14px;
+            color: #718096;
+          }
+        }
+      }
+    }
+    
+    .meta-right {
       display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 14px;
-      color: #666;
+      gap: 20px;
       
-      .el-icon {
-        font-size: 16px;
+      .stats-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 14px;
+        color: #718096;
+        
+        .stats-icon {
+          font-size: 16px;
+        }
       }
     }
   }
@@ -297,12 +456,23 @@ onMounted(async () => {
   .article-tags {
     display: flex;
     flex-wrap: wrap;
+    align-items: center;
     gap: 8px;
+    
+    .tags-label {
+      font-size: 14px;
+      color: #718096;
+      font-weight: 500;
+      margin-right: 4px;
+    }
     
     .tag-item {
       cursor: pointer;
       border: none;
       transition: all 0.3s ease;
+      border-radius: 12px;
+      font-size: 12px;
+      padding: 4px 12px;
       
       &:hover {
         transform: translateY(-2px);
@@ -313,90 +483,329 @@ onMounted(async () => {
 }
 
 .article-image {
-  margin-bottom: 30px;
-  border-radius: 8px;
+  margin-bottom: 40px;
+  border-radius: 16px;
   overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
   
   :deep(.el-image) {
     width: 100%;
-    height: 300px;
+    height: 400px;
+    transition: transform 0.3s ease;
+    
+    &:hover {
+      transform: scale(1.02);
+    }
   }
-}
-
-.article-excerpt {
-  background: #f8f9fa;
-  border-left: 4px solid #409eff;
-  padding: 20px;
-  margin-bottom: 30px;
-  border-radius: 0 8px 8px 0;
   
-  p {
-    margin: 0;
-    font-style: italic;
-    color: #555;
-    line-height: 1.6;
+  @media (max-width: 768px) {
+    :deep(.el-image) {
+      height: 250px;
+    }
   }
 }
 
 .article-content {
-  line-height: 1.8;
-  font-size: 16px;
-  color: #333;
+  line-height: 1.6;
+  font-size: 14px;
+  color: #374151;
   margin-bottom: 40px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   
   :deep(h1), :deep(h2), :deep(h3), :deep(h4), :deep(h5), :deep(h6) {
-    margin: 30px 0 15px 0;
-    font-weight: 600;
-    line-height: 1.4;
+    margin: 40px 0 24px 0;
+    font-weight: 700;
+    line-height: 1.3;
+    color: #1f2937;
+    letter-spacing: -0.02em;
+    
+    &:first-child {
+      margin-top: 0;
+    }
+    
+    &:hover {
+      .header-anchor {
+        opacity: 1;
+      }
+    }
+  }
+  
+  :deep(h1) {
+    font-size: 26px;
+    border-bottom: 2px solid #e5e7eb;
+    padding-bottom: 12px;
+  }
+  
+  :deep(h2) {
+    font-size: 22px;
+    border-bottom: 1px solid #e5e7eb;
+    padding-bottom: 10px;
+  }
+  
+  :deep(h3) {
+    font-size: 19px;
+  }
+  
+  :deep(h4) {
+    font-size: 16px;
+  }
+  
+  :deep(h5) {
+    font-size: 15px;
+  }
+  
+  :deep(h6) {
+    font-size: 14px;
+    color: #6b7280;
   }
   
   :deep(p) {
-    margin-bottom: 16px;
+    margin: 20px 0;
+    text-align: justify;
+    word-break: break-word;
+  }
+  
+  :deep(ul), :deep(ol) {
+    margin: 20px 0;
+    padding-left: 28px;
+    
+    li {
+      margin: 12px 0;
+      
+      p {
+        margin: 8px 0;
+      }
+    }
+  }
+  
+  :deep(ul) {
+    li {
+      list-style-type: disc;
+      
+      &::marker {
+        color: #6366f1;
+      }
+    }
+  }
+  
+  :deep(li) {
+    margin-bottom: 8px;
+  }
+  
+  :deep(blockquote) {
+    margin: 24px 0;
+    padding: 20px 24px;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border-left: 4px solid #6366f1;
+    border-radius: 0 12px 12px 0;
+    position: relative;
+    
+    &::before {
+      content: '"';
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      font-size: 24px;
+      color: #6366f1;
+      opacity: 0.3;
+    }
+    
+    p {
+      margin: 0;
+      color: #4b5563;
+      font-style: italic;
+      font-size: 16px;
+    }
+  }
+  
+  :deep(table) {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 24px 0;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    
+    th, td {
+      border: 1px solid #e5e7eb;
+      padding: 16px;
+      text-align: left;
+    }
+    
+    th {
+      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+      font-weight: 600;
+      color: #374151;
+    }
+    
+    tbody tr {
+      &:nth-child(even) {
+        background: #f9fafb;
+      }
+      
+      &:hover {
+        background: #f3f4f6;
+      }
+    }
+  }
+  
+  :deep(th), :deep(td) {
+    border: 1px solid #dfe2e5;
+    padding: 8px 12px;
+    text-align: left;
+  }
+  
+  :deep(th) {
+    background: #f6f8fa;
+    font-weight: 600;
   }
   
   :deep(img) {
-    max-width: 100%;
+    max-width: 80%;
     height: auto;
     border-radius: 8px;
-    margin: 20px 0;
+    margin: 16px 0;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    
+    &:hover {
+      transform: scale(1.02);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    }
   }
   
   :deep(code) {
-    background: #f1f2f6;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-family: 'Courier New', monospace;
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Monaco', 'Consolas', monospace;
+    font-size: 14px;
+    color: #dc2626;
+    font-weight: 500;
+    border: 1px solid #fed7aa;
   }
   
   :deep(pre) {
-    background: #2d3748;
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
     color: #e2e8f0;
-    padding: 20px;
-    border-radius: 8px;
+    padding: 24px;
+    border-radius: 12px;
     overflow-x: auto;
-    margin: 20px 0;
+    margin: 24px 0;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+    border: 1px solid #475569;
+    
+    code {
+      background: none;
+      padding: 0;
+      color: inherit;
+      font-size: 14px;
+      border: none;
+    }
+  }
+  
+  :deep(hr) {
+    border: none;
+    height: 2px;
+    background: linear-gradient(90deg, transparent 0%, #e5e7eb 50%, transparent 100%);
+    margin: 40px 0;
+  }
+  
+  :deep(a) {
+    color: #6366f1;
+    text-decoration: none;
+    font-weight: 500;
+    border-bottom: 1px solid transparent;
+    transition: all 0.3s ease;
+    
+    &:hover {
+      color: #4f46e5;
+      border-bottom-color: #6366f1;
+    }
+  }
+  
+  :deep(strong) {
+    font-weight: 700;
+    color: #1f2937;
+  }
+  
+  :deep(em) {
+    font-style: italic;
+    color: #4b5563;
   }
 }
 
 .article-actions {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-top: 30px;
-  border-top: 1px solid #eee;
-  
-  .action-buttons {
-    display: flex;
-    gap: 12px;
-  }
+  justify-content: center;
+  gap: 20px;
+  margin: 50px 0;
+  padding: 30px 0;
+  border-top: 2px solid #f1f5f9;
+  background: linear-gradient(135deg, #fefefe 0%, #f8fafc 100%);
+  border-radius: 16px;
   
   @media (max-width: 768px) {
     flex-direction: column;
-    gap: 20px;
-    align-items: stretch;
+    align-items: center;
+    gap: 16px;
+  }
+  
+  .el-button {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 28px;
+    border: 2px solid transparent;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    color: #4b5563;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    position: relative;
+    overflow: hidden;
     
-    .action-buttons {
-      justify-content: center;
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+      transition: left 0.5s ease;
+    }
+    
+    &:hover {
+      border-color: #6366f1;
+      color: #6366f1;
+      transform: translateY(-3px);
+      box-shadow: 0 8px 32px rgba(99, 102, 241, 0.25);
+      
+      &::before {
+        left: 100%;
+      }
+    }
+    
+    &:active {
+      transform: translateY(-1px);
+    }
+    
+    .el-icon {
+      font-size: 20px;
+    }
+  }
+  
+  .action-buttons {
+    display: flex;
+    gap: 16px;
+    
+    @media (max-width: 768px) {
+      flex-direction: column;
+      width: 100%;
+      align-items: center;
     }
   }
 }
