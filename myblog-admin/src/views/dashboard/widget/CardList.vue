@@ -1,0 +1,221 @@
+<template>
+  <el-row :gutter="20" class="card-list">
+    <el-col v-for="(item, index) in dataList" :key="index" :sm="12" :md="6" :lg="6">
+      <div class="card art-custom-card">
+        <span class="des subtitle">{{ item.des }}</span>
+        <ArtCountTo class="number box-title" :target="item.num" :duration="1300" />
+        <div class="change-box">
+          <span class="change-text">较上周</span>
+          <span
+            class="change"
+            :class="[item.change.indexOf('+') === -1 ? 'text-danger' : 'text-success']"
+          >
+            {{ item.change }}
+          </span>
+        </div>
+        <i class="iconfont-sys" v-html="item.icon"></i>
+      </div>
+    </el-col>
+  </el-row>
+
+  <el-row :gutter="20" class="stats-cards">
+    <ElCol :xs="24" :sm="12" :md="6" v-for="card in statsCards" :key="card.id">
+      <ArtStatsCard
+        :icon="card.icon"
+        :count="card.count"
+        :description="card.description"
+        :iconSize="card.iconSize"
+        :decimals="0"
+        :iconBgColor="card.iconBgColor"
+        :showArrow="card.showArrow"
+        separator=","
+        iconColor="#fff"
+      />
+    </ElCol>
+  </el-row>
+</template>
+
+<script setup lang="ts">
+  import { reactive, onMounted, ref } from 'vue'
+  import { getDashboardStats, type DashboardStats } from '@/api/dashboard'
+  import { fetchGetUserList } from '@/api/system-manage'
+
+  // 加载状态
+  const loading = ref(false)
+
+  const dataList = reactive([
+    {
+      des: '总访问次数',
+      icon: '&#xe7aa;',
+      startVal: 0,
+      duration: 1000,
+      num: 0,
+      change: '+0%'
+    },
+    {
+      des: '文章总数',
+      icon: '&#xe82a;',
+      startVal: 0,
+      duration: 1000,
+      num: 0,
+      change: '+0%'
+    },
+    {
+      des: '文章分类',
+      icon: '&#xe721;',
+      startVal: 0,
+      duration: 1000,
+      num: 0,
+      change: '+0%'
+    },
+    {
+      des: '用户总数',
+      icon: '&#xe724;',
+      startVal: 0,
+      duration: 1000,
+      num: 0,
+      change: '+0%'
+    }
+  ])
+
+  // 获取统计数据
+  const fetchDashboardStats = async () => {
+    try {
+      loading.value = true
+      const stats: DashboardStats = await getDashboardStats()
+      
+      // 获取实时用户数量
+      const userListRes = await fetchGetUserList({ current: 1, size: 1000 })
+      const totalUsers = userListRes?.data?.total || userListRes?.total || 0
+      
+      // 更新数据
+      dataList[0].num = stats.totalVisits
+      dataList[0].change = stats.visitChange
+      
+      dataList[1].num = stats.totalArticles
+      dataList[1].change = stats.articleChange
+      
+      dataList[2].num = stats.totalCategories
+      dataList[2].change = stats.categoryChange
+      
+      // 使用实时用户数量
+      dataList[3].num = totalUsers
+      dataList[3].change = stats.newUserChange
+      
+    } catch (error) {
+      console.error('获取统计数据失败:', error)
+      // 使用默认数据
+      dataList[0].num = 9120
+      dataList[0].change = '+20%'
+      dataList[1].num = 25
+      dataList[1].change = '+10%'
+      dataList[2].num = 8
+      dataList[2].change = '+5%'
+      dataList[3].num = 156
+      dataList[3].change = '+30%'
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // 组件挂载时获取数据
+  onMounted(() => {
+    fetchDashboardStats()
+  })
+
+
+</script>
+
+<style lang="scss" scoped>
+  .card-list {
+    box-sizing: border-box;
+    display: flex;
+    flex-wrap: wrap;
+    background-color: transparent !important;
+
+    .art-custom-card {
+      position: relative;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      width: 100%;
+      height: 140px;
+      padding: 0 18px;
+      list-style: none;
+      transition: all 0.3s ease;
+
+      $icon-size: 52px;
+
+      .iconfont-sys {
+        position: absolute;
+        top: 0;
+        right: 20px;
+        bottom: 0;
+        width: $icon-size;
+        height: $icon-size;
+        margin: auto;
+        overflow: hidden;
+        font-size: 22px;
+        line-height: $icon-size;
+        color: var(--el-color-primary) !important;
+        text-align: center;
+        background-color: var(--el-color-primary-light-9);
+        border-radius: 12px;
+      }
+
+      .des {
+        display: block;
+        height: 14px;
+        font-size: 14px;
+        line-height: 14px;
+      }
+
+      .number {
+        display: block;
+        margin-top: 10px;
+        font-size: 28px;
+        font-weight: 400;
+      }
+
+      .change-box {
+        display: flex;
+        align-items: center;
+        margin-top: 10px;
+
+        .change-text {
+          display: block;
+          font-size: 13px;
+          color: var(--art-text-gray-600);
+        }
+
+        .change {
+          display: block;
+          margin-left: 5px;
+          font-size: 13px;
+          font-weight: bold;
+
+          &.text-success {
+            color: var(--el-color-success);
+          }
+
+          &.text-danger {
+            color: var(--el-color-danger);
+          }
+        }
+      }
+    }
+  }
+  .stats-cards {
+    margin-bottom: 20px;
+  }
+  .dark {
+    .card-list {
+      .art-custom-card {
+        .iconfont-sys {
+          background-color: #232323 !important;
+        }
+      }
+    }
+  }
+</style>

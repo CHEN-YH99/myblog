@@ -1,0 +1,26 @@
+{
+  "extends": "../shared/config/tsconfig.base.json",
+  "compilerOptions": {
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+    "paths": {
+      "@/*": ["src/*"],
+      "@shared/*": ["../shared/*"],
+      "@views/*": ["src/views/*"],
+      "@imgs/*": ["src/assets/img/*"],
+      "@icons/*": ["src/assets/icons/*"],
+      "@utils/*": ["src/utils/*"],
+      "@stores/*": ["src/store/*"],
+      "@plugins/*": ["src/plugins/*"],
+      "@styles/*": ["src/assets/styles/*"]
+    }
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "src/**/*.vue",
+    "src/**/*.d.ts"
+  ]
+}
