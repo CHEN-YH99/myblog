@@ -19,6 +19,12 @@ export function scriptErrorHandler(
   colno?: number,
   error?: Error
 ): boolean {
+  // 过滤掉无害的 ResizeObserver 错误
+  const messageStr = typeof message === 'string' ? message : (message as any)?.message || ''
+  if (messageStr.includes('ResizeObserver loop completed with undelivered notifications')) {
+    return true // 静默处理这个无害错误
+  }
+  
   console.error('[ScriptError]', { message, source, lineno, colno, error })
   // reportError({ type: 'script', message, source, lineno, colno, error })
   return true // 阻止默认控制台报错，可根据需求改

@@ -40,35 +40,22 @@ export const asyncRoutes: AppRouteRecord[] = [
   },
 
   {
-    path: '/system',
-    name: 'System',
+    path: '/user',
+    name: 'User',
     component: RoutesAlias.Layout,
     meta: {
-      title: 'menus.system.title',
+      title: 'menus.user.title',
       icon: '&#xe7b9;',
-      showBadge: true,
       roles: ['R_SUPER', 'R_ADMIN']
     },
     children: [
       {
-        path: 'user',
-        name: 'User',
+        path: 'management',
+        name: 'UserManagement',
         component: RoutesAlias.User,
         meta: {
-          title: 'menus.system.user',
-          keepAlive: true,
-          roles: ['R_SUPER', 'R_ADMIN']
-        }
-      },
-      {
-        path: 'role',
-        name: 'Role',
-        component: RoutesAlias.Role,
-        meta: {
-          title: 'menus.system.role',
-          keepAlive: true,
-          showBadge: true,
-          roles: ['R_SUPER']
+          title: 'menus.user.title',
+          keepAlive: true
         }
       },
       {
@@ -123,15 +110,6 @@ export const asyncRoutes: AppRouteRecord[] = [
           isHide: true,
           keepAlive: true,
           activePath: '/article/article-list' // 激活菜单路径
-        }
-      },
-      {
-        path: 'comment',
-        name: 'ArticleComment',
-        component: RoutesAlias.Comment,
-        meta: {
-          title: 'menus.article.comment',
-          keepAlive: true
         }
       },
       {

@@ -38,47 +38,36 @@ export const asyncRoutes: AppRouteRecord[] = [
     ]
   },
   {
-    path: '/system',
-    name: 'System',
+    path: '/user',
+    name: 'User',
     component: RoutesAlias.Layout,
     meta: {
-      title: 'menus.system.title',
+      title: 'menus.user.title',
       icon: '&#xe7b9;',
       roles: ['R_SUPER', 'R_ADMIN']
     },
     children: [
       {
-        path: 'user',
-        name: 'User',
+        path: 'management',
+        name: 'UserManagement',
         component: RoutesAlias.User,
         meta: {
-          title: 'menus.system.user',
-          keepAlive: true,
-          roles: ['R_SUPER', 'R_ADMIN']
-        }
-      },
-      {
-        path: 'role',
-        name: 'Role',
-        component: RoutesAlias.Role,
-        meta: {
-          title: 'menus.system.role',
-          keepAlive: true,
-          roles: ['R_SUPER']
-        }
-      },
-      {
-        path: 'user-center',
-        name: 'UserCenter',
-        component: RoutesAlias.UserCenter,
-        meta: {
-          title: 'menus.system.userCenter',
-          isHide: true,
-          keepAlive: true,
-          isHideTab: true
+          title: 'menus.user.title',
+          keepAlive: true
         }
       }
     ]
+  },
+  {
+    path: '/user-center',
+    name: 'UserCenter',
+    component: RoutesAlias.UserCenter,
+    meta: {
+      title: 'menus.system.userCenter',
+      isHide: true,
+      keepAlive: true,
+      isHideTab: true
+    }
   },
   {
     path: '/article',

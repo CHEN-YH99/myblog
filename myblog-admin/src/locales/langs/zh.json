@@ -207,16 +207,21 @@
       "title": "内嵌页面"
     },
     "dashboard": {
-      "title": "首页"
+      "title": "首页",
+      "console": "控制台"
     },
-   
+    "user": {
+      "title": "用户管理"
+    },
+    "system": {
+      "userCenter": "个人中心"
+    },
     "article": {
       "title": "文章管理",
       "articleList": "文章列表",
-      "comment": "留言管理",
       "articlePublish": "文章发布",
-      "articleCategory": "分类管理",
-      "articleTags": "标签管理"
+      "articleCategory": "文章分类",
+      "articleTags": "分类标签"
     },
     "talk": {
       "title": "说说",
@@ -229,11 +234,6 @@
       "backgroundManagement": "背景管理",
       "friendLinkManagement": "友链管理"
     },
-    "system": {
-      "title": "系统管理",
-      "user": "用户管理",
-      "role": "角色管理"
-    },
     "photoAlbum": {
       "title": "相册列表"
     },
@@ -242,6 +242,12 @@
     },
     "help": {
       "title": "帮助中心"
+    },
+    "exception": {
+      "title": "异常页面",
+      "forbidden": "403",
+      "notFound": "404",
+      "serverError": "500"
     }
   },
   "table": {

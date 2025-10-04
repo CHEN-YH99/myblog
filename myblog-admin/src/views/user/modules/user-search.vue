@@ -6,11 +6,12 @@
     :rules="rules"
     @reset="handleReset"
     @search="handleSearch"
-  >
-  </ArtSearchBar>
+  />
 </template>
 
 <script setup lang="ts">
+  import { ref, computed } from 'vue'
+
   interface Props {
     modelValue: Record<string, any>
   }
@@ -34,43 +35,46 @@
     // name: [{ required: true, message: '请输入用户名', trigger: 'blur' }]
   }
 
-  // 角色状态选项
-  const statusOptions = ref([
-    { label: '启用', value: true },
-    { label: '禁用', value: false }
-  ])
-
   // 表单配置
   const formItems = computed(() => [
+    { label: '用户名', key: 'name', type: 'input', placeholder: '请输入用户名', clearable: true },
     {
-      label: '角色名称',
-      key: 'roleName',
+      label: '邮箱',
+      key: 'email',
       type: 'input',
-      placeholder: '请输入角色名称',
-      clearable: true
+      props: { placeholder: '请输入邮箱地址', clearable: true }
     },
     {
-      label: '角色编码',
-      key: 'roleCode',
+      label: '手机号',
+      key: 'phone',
       type: 'input',
-      placeholder: '请输入角色编码',
-      clearable: true
+      props: { placeholder: '请输入手机号', maxlength: '11', clearable: true }
     },
     {
-      label: '角色描述',
-      key: 'description',
-      type: 'input',
-      placeholder: '请输入角色描述',
-      clearable: true
+      label: '性别',
+      key: 'gender',
+      type: 'select',
+      props: { 
+        placeholder: '请选择性别', 
+        clearable: true,
+        options: [
+          { label: '男', value: 'male' },
+          { label: '女', value: 'female' },
+          { label: '其他', value: 'other' }
+        ]
+      }
     },
     {
-      label: '角色状态',
+      label: '状态',
       key: 'enabled',
       type: 'select',
-      props: {
-        placeholder: '请选择状态',
-        options: statusOptions.value,
-        clearable: true
+      props: { 
+        placeholder: '请选择状态', 
+        clearable: true,
+        options: [
+          { label: '启用', value: true },
+          { label: '禁用', value: false }
+        ]
       }
     },
     {
@@ -78,24 +82,12 @@
       key: 'daterange',
       type: 'datetime',
       props: {
-        style: { width: '100%' },
-        placeholder: '请选择日期范围',
         type: 'daterange',
+        valueFormat: 'YYYY-MM-DD',
         rangeSeparator: '至',
         startPlaceholder: '开始日期',
         endPlaceholder: '结束日期',
-        valueFormat: 'YYYY-MM-DD',
-        shortcuts: [
-          { text: '今日', value: [new Date(), new Date()] },
-          {
-            text: '最近一周',
-            value: [new Date(Date.now() - 604800000), new Date()]
-          },
-          {
-            text: '最近一个月',
-            value: [new Date(Date.now() - 2592000000), new Date()]
-          }
-        ]
+        clearable: true
       }
     }
   ])
