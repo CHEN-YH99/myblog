@@ -49,6 +49,36 @@ export function fetchGetRoleList(params: Api.SystemManage.RoleSearchParams) {
   })
 }
 
+// 创建角色
+export function fetchCreateRole(data: Partial<Api.SystemManage.RoleListItem>) {
+  return request.post<Api.SystemManage.RoleListItem>({
+    url: '/role/create',
+    data
+  })
+}
+
+// 更新角色
+export function fetchUpdateRole(id: number, data: Partial<Api.SystemManage.RoleListItem>) {
+  return request.put<Api.SystemManage.RoleListItem>({
+    url: `/role/update/${id}`,
+    data
+  })
+}
+
+// 删除角色
+export function fetchDeleteRole(id: number) {
+  return request.delete({
+    url: `/role/delete/${id}`
+  })
+}
+
+// 获取角色详情
+export function fetchGetRoleDetail(id: number) {
+  return request.get<Api.SystemManage.RoleListItem>({
+    url: `/role/detail/${id}`
+  })
+}
+
 interface MenuResponse {
   menuList: AppRouteRecord[]
 }

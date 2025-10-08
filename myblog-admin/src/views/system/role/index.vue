@@ -1,11 +1,11 @@
 <template>
-  <div class="user-page art-full-height">
-    <UserSearch
+  <div class="role-page art-full-height">
+    <RoleSearch
       v-show="showSearchBar"
       v-model="searchForm"
       @search="handleSearch"
       @reset="resetSearchParams"
-    ></UserSearch>
+    ></RoleSearch>
 
     <ElCard
       class="art-table-card"
@@ -20,7 +20,7 @@
       >
         <template #left>
           <ElSpace wrap>
-            <ElButton @click="showDialog('add')" v-ripple>新增用户</ElButton>
+            <ElButton @click="showDialog('add')" v-ripple>新增角色</ElButton>
           </ElSpace>
         </template>
       </ArtTableHeader>
@@ -37,34 +37,33 @@
       </ArtTable>
     </ElCard>
 
-    <!-- 用户编辑弹窗 -->
-    <UserEditDialog
+    <!-- 角色编辑弹窗 -->
+    <RoleEditDialog
       v-model="dialogVisible"
       :dialog-type="dialogType"
-      :user-data="currentUserData"
+      :role-data="currentUserData"
       @success="refreshData"
     />
   </div>
 </template>
 
 <script setup lang="ts">
-  import { ElMessage, ElMessageBox, ElTag, ElAvatar, ElSwitch } from 'element-plus'
+  import { ElMessage, ElMessageBox, ElTag, ElSwitch } from 'element-plus'
   import { ButtonMoreItem } from '@/components/core/forms/art-button-more/index.vue'
-  import { Edit, Delete, User } from '@element-plus/icons-vue'
+  import { Edit, Delete } from '@element-plus/icons-vue'
   import { useTable } from '@/composables/useTable'
-  import { fetchGetUserList, fetchCreateUser, fetchUpdateUser, fetchDeleteUser } from '@/api/system-manage'
+  import { fetchGetRoleList, fetchCreateRole, fetchUpdateRole, fetchDeleteRole } from '@/api/system-manage'
   import ArtButtonMore from '@/components/core/forms/art-button-more/index.vue'
-  import UserSearch from './modules/user-search.vue'
-  import UserEditDialog from './modules/user-edit-dialog.vue'
+  import RoleSearch from './modules/role-search.vue'
+  import RoleEditDialog from './modules/role-edit-dialog.vue'
 
-  defineOptions({ name: 'UserManage' })
+  defineOptions({ name: 'RoleManage' })
 
-  type UserListItem = Api.SystemManage.UserListItem
+  type RoleListItem = Api.SystemManage.RoleListItem
 
   // 搜索表单
   const searchForm = ref({
-    username: undefined,
-    nickname: undefined,
+    roleName: undefined,
     roleCode: undefined,
     enabled: undefined,
     daterange: undefined
@@ -73,7 +72,7 @@
   const showSearchBar = ref(false)
 
   const dialogVisible = ref(false)
-  const currentUserData = ref<UserListItem | undefined>(undefined)
+  const currentUserData = ref<RoleListItem | undefined>(undefined)
 
   const {
     columns,
@@ -90,7 +89,7 @@
   } = useTable({
     // 核心配置
     core: {
-      apiFn: fetchGetUserList,
+      apiFn: fetchGetRoleList,
       apiParams: {
         current: 1,
         size: 20
@@ -99,7 +98,7 @@
       excludeParams: ['daterange'],
       columnsFactory: () => [
         {
-          prop: 'userId',
+          prop: 'roleId',
           label: '序号',
           width: 80,
           formatter: (row, column, cellValue, index) => {
@@ -107,80 +106,21 @@
           }
         },
         {
-          prop: 'username',
-          label: '用户名',
-          minWidth: 120
-        },
-        {
-          prop: 'nickname',
-          label: '用户昵称',
-          minWidth: 120
-        },
-        {
-          prop: 'avatar',
-          label: '头像',
-          width: 80,
-          formatter: (row) => {
-            return h(ElAvatar, {
-              size: 40,
-              src: row.avatar || '',
-              icon: User
-            })
-          }
-        },
-        {
           prop: 'roleName',
-          label: '角色',
-          width: 120,
-          formatter: (row) => {
-            const roleColors = {
-              '超级管理员': 'danger',
-              '管理员': 'warning',
-              '编辑': 'primary',
-              '普通用户': 'info'
-            }
-            return h(
-              ElTag,
-              { 
-                type: roleColors[row.roleName] || 'info',
-                size: 'small'
-              },
-              () => row.roleName
-            )
-          }
+          label: '角色名称',
+          minWidth: 120
         },
         {
-          prop: 'lastLoginIp',
-          label: 'IP地址',
-          width: 140,
-          formatter: (row) => {
-            const ip = row.lastLoginIp || row.registerIp || '-'
-            // 处理IPv6映射的IPv4地址，去掉::ffff:前缀
-            if (ip.startsWith('::ffff:')) {
-              return ip.replace('::ffff:', '')
-            }
-            return ip
-          }
+          prop: 'roleCode',
+          label: '角色编码',
+          minWidth: 120
         },
         {
-          prop: 'city',
-          label: '登录城市',
-          width: 120,
+          prop: 'description',
+          label: '角色描述',
+          minWidth: 200,
           formatter: (row) => {
-            return row.city || '-'
-          }
-        },
-        {
-          prop: 'gender',
-          label: '性别',
-          width: 80,
-          formatter: (row) => {
-            const genderMap = {
-              'male': '男',
-              'female': '女',
-              'other': '其他'
-            }
-            return genderMap[row.gender] || '-'
+            return row.description || '-'
           }
         },
         {
@@ -190,15 +130,6 @@
           sortable: true,
           formatter: (row) => {
             return row.createTime ? new Date(row.createTime).toLocaleString() : '-'
-          }
-        },
-        {
-          prop: 'updateTime',
-          label: '修改日期',
-          width: 180,
-          sortable: true,
-          formatter: (row) => {
-            return row.updateTime ? new Date(row.updateTime).toLocaleString() : '-'
           }
         },
         {
@@ -245,7 +176,7 @@
 
   const dialogType = ref<'add' | 'edit'>('add')
 
-  const showDialog = (type: 'add' | 'edit', row?: UserListItem) => {
+  const showDialog = (type: 'add' | 'edit', row?: RoleListItem) => {
     dialogVisible.value = true
     dialogType.value = type
     currentUserData.value = row
@@ -265,22 +196,23 @@
     getData()
   }
 
-  const buttonMoreClick = (item: ButtonMoreItem, row: UserListItem) => {
+  const buttonMoreClick = (item: ButtonMoreItem, row: RoleListItem) => {
     switch (item.key) {
       case 'edit':
         showDialog('edit', row)
         break
       case 'delete':
-        deleteUser(row)
+        deleteRole(row)
         break
     }
   }
 
-  const handleStatusChange = async (row: UserListItem, value: boolean) => {
+  const handleStatusChange = async (row: RoleListItem, value: boolean) => {
     try {
-      await fetchUpdateUser(row.userId, { enabled: value })
+      const roleId = row.roleId
+      await fetchUpdateRole(roleId, { enabled: value })
       row.enabled = value
-      ElMessage.success(`用户状态${value ? '启用' : '禁用'}成功`)
+      ElMessage.success(`角色状态${value ? '启用' : '禁用'}成功`)
     } catch (error) {
       ElMessage.error('状态更新失败')
       // 恢复原状态
@@ -288,22 +220,34 @@
     }
   }
 
-  const deleteUser = (row: UserListItem) => {
-    ElMessageBox.confirm(`确定删除用户"${row.username}"吗？此操作不可恢复！`, '删除确认', {
+  const deleteRole = (row: RoleListItem) => {
+    console.log('=== 删除角色函数开始执行 ===')
+    console.log('传入的角色数据:', row)
+    console.log('角色ID:', row.roleId)
+    
+    ElMessageBox.confirm(`确定删除角色"${row.roleName}"吗？此操作不可恢复！`, '删除确认', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       type: 'warning'
     })
       .then(async () => {
+        console.log('用户确认删除，开始调用API')
         try {
-          await fetchDeleteUser(row.userId)
+          const roleId = row.roleId
+          console.log('调用fetchDeleteRole，参数:', roleId)
+          console.log('fetchDeleteRole函数类型:', typeof fetchDeleteRole)
+          
+          await fetchDeleteRole(roleId)
+          console.log('删除API调用成功')
           ElMessage.success('删除成功')
           refreshData()
         } catch (error) {
+          console.error('删除失败，错误信息:', error)
           ElMessage.error('删除失败')
         }
       })
       .catch(() => {
+        console.log('用户取消删除')
         ElMessage.info('已取消删除')
       })
   }

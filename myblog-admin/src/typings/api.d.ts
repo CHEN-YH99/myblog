@@ -68,7 +68,8 @@ declare namespace Api {
 
     /** 用户列表项 */
     interface UserListItem {
-      id: number
+      id: number // 前端使用的id字段，由userId映射而来
+      userId: number
       avatar: string
       status: UserStatus
       userName: string
