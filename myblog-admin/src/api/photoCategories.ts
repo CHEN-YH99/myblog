@@ -54,7 +54,7 @@ export interface PhotoCategorySearchParams {
 }
 
 // 统一的API接口
-const API_BASE_URL = ''
+const API_BASE_URL = '/api'
 
 // 将后端分类数据映射为前端使用的数据结构（补齐 status、id、sort）
 function mapCategory(item: any): PhotoCategoryItem {

@@ -32,10 +32,9 @@
       <!-- 用户弹窗 -->
       <UserDialog
         v-model:visible="dialogVisible"
-        :dialog-type="dialogType"
+        :type="dialogType"
         :user-data="currentUserData"
-        :role-list="roleList"
-        @confirm="handleDialogSubmit"
+        @submit="handleDialogSubmit"
       />
 
       <!-- 头像更换弹窗 -->
@@ -103,9 +102,6 @@
 
   // 选中行
   const selectedRows = ref<UserListItem[]>([])
-
-  // 角色列表
-  const roleList = ref([])
 
   // 搜索表单
   const searchForm = ref({
@@ -200,9 +196,28 @@
                   `
                 }, '更换')
               ]),
-              h('div', {}, [
-                h('p', { class: 'user-name' }, row.userName),
-                h('p', { class: 'email' }, row.userEmail)
+              h('div', { style: 'margin-left: 12px; flex: 1;' }, [
+                h('div', { style: 'display: flex; align-items: center; gap: 8px; margin-bottom: 4px;' }, [
+                  h('p', { 
+                    class: 'user-name',
+                    style: 'margin: 0; font-weight: 500; color: #303133;'
+                  }, row.userName),
+                  row.nickName && h('span', {
+                    style: `
+                      background: #f0f9ff;
+                      color: #0369a1;
+                      padding: 2px 6px;
+                      border-radius: 4px;
+                      font-size: 12px;
+                      font-weight: 400;
+                      border: 1px solid #e0f2fe;
+                    `
+                  }, row.nickName)
+                ]),
+                h('p', { 
+                  class: 'email',
+                  style: 'margin: 0; font-size: 12px; color: #909399;'
+                }, row.userEmail)
               ])
             ])
           }
@@ -213,12 +228,12 @@
           sortable: true,
           // checked: false, // 隐藏列
           formatter: (row) => {
-            if (row.userGender === 'male' || row.userGender === '1' || row.userGender === 1) {
-              return '男'
-            } else if (row.userGender === 'female' || row.userGender === '0' || row.userGender === 0) {
-              return '女'
+            const genderMap = {
+              'male': '男',
+              'female': '女',
+              'other': '其他'
             }
-            return row.userGender || '未知'
+            return genderMap[row.userGender as keyof typeof genderMap] || '未知'
           }
         },
         { prop: 'userPhone', label: '手机号' },
@@ -237,13 +252,15 @@
           formatter: (row) => {
             if (!row.createTime) return '-'
             const date = new Date(row.createTime)
-            const year = date.getFullYear()
-            const month = String(date.getMonth() + 1).padStart(2, '0')
-            const day = String(date.getDate()).padStart(2, '0')
-            const hours = String(date.getHours()).padStart(2, '0')
-            const minutes = String(date.getMinutes()).padStart(2, '0')
-            const seconds = String(date.getSeconds()).padStart(2, '0')
-            return `${year}年${month}月${day}日 ${hours}:${minutes}:${seconds}`
+            return date.toLocaleString('zh-CN', {
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit',
+              hour12: false
+            })
           }
         },
         {
@@ -389,6 +406,8 @@
     try {
       dialogVisible.value = false
       currentUserData.value = {}
+      // 刷新表格数据
+      refreshData()
     } catch (error) {
       console.error('提交失败:', error)
     }

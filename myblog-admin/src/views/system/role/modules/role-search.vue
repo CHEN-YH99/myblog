@@ -1,114 +1,97 @@
 <template>
-  <ArtSearchBar
-    ref="searchBarRef"
-    v-model="formData"
-    :items="formItems"
-    :rules="rules"
-    @reset="handleReset"
-    @search="handleSearch"
-  >
-  </ArtSearchBar>
+  <ElCard shadow="never" class="art-search-card">
+    <ElForm :model="searchForm" label-width="80px" inline>
+      <ElFormItem label="角色名称">
+        <ElInput
+          v-model="searchForm.roleName"
+          placeholder="请输入角色名称"
+          clearable
+          style="width: 200px"
+        />
+      </ElFormItem>
+      <ElFormItem label="角色编码">
+        <ElInput
+          v-model="searchForm.roleCode"
+          placeholder="请输入角色编码"
+          clearable
+          style="width: 200px"
+        />
+      </ElFormItem>
+      <ElFormItem label="状态">
+        <ElSelect
+          v-model="searchForm.enabled"
+          placeholder="请选择状态"
+          clearable
+          style="width: 120px"
+        >
+          <ElOption label="启用" :value="true" />
+          <ElOption label="禁用" :value="false" />
+        </ElSelect>
+      </ElFormItem>
+      <ElFormItem label="创建时间">
+        <ElDatePicker
+          v-model="searchForm.daterange"
+          type="daterange"
+          range-separator="至"
+          start-placeholder="开始日期"
+          end-placeholder="结束日期"
+          format="YYYY-MM-DD"
+          value-format="YYYY-MM-DD"
+          style="width: 240px"
+        />
+      </ElFormItem>
+      <ElFormItem>
+        <ElButton type="primary" @click="handleSearch">查询</ElButton>
+        <ElButton @click="handleReset">重置</ElButton>
+      </ElFormItem>
+    </ElForm>
+  </ElCard>
 </template>
 
 <script setup lang="ts">
-  interface Props {
-    modelValue: Record<string, any>
+  interface SearchForm {
+    roleName?: string
+    roleCode?: string
+    enabled?: boolean
+    daterange?: [string, string] | null
   }
+
+  interface Props {
+    modelValue: SearchForm
+  }
+
   interface Emits {
-    (e: 'update:modelValue', value: Record<string, any>): void
-    (e: 'search', params: Record<string, any>): void
+    (e: 'update:modelValue', value: SearchForm): void
+    (e: 'search', value: SearchForm): void
     (e: 'reset'): void
   }
+
   const props = defineProps<Props>()
   const emit = defineEmits<Emits>()
 
-  // 表单数据双向绑定
-  const searchBarRef = ref()
-  const formData = computed({
+  const searchForm = computed({
     get: () => props.modelValue,
-    set: (val) => emit('update:modelValue', val)
+    set: (value) => emit('update:modelValue', value)
   })
 
-  // 校验规则
-  const rules = {
-    // name: [{ required: true, message: '请输入用户名', trigger: 'blur' }]
+  const handleSearch = () => {
+    emit('search', searchForm.value)
   }
 
-  // 角色状态选项
-  const statusOptions = ref([
-    { label: '启用', value: true },
-    { label: '禁用', value: false }
-  ])
-
-  // 表单配置
-  const formItems = computed(() => [
-    {
-      label: '角色名称',
-      key: 'roleName',
-      type: 'input',
-      placeholder: '请输入角色名称',
-      clearable: true
-    },
-    {
-      label: '角色编码',
-      key: 'roleCode',
-      type: 'input',
-      placeholder: '请输入角色编码',
-      clearable: true
-    },
-    {
-      label: '角色描述',
-      key: 'description',
-      type: 'input',
-      placeholder: '请输入角色描述',
-      clearable: true
-    },
-    {
-      label: '角色状态',
-      key: 'enabled',
-      type: 'select',
-      props: {
-        placeholder: '请选择状态',
-        options: statusOptions.value,
-        clearable: true
-      }
-    },
-    {
-      label: '创建日期',
-      key: 'daterange',
-      type: 'datetime',
-      props: {
-        style: { width: '100%' },
-        placeholder: '请选择日期范围',
-        type: 'daterange',
-        rangeSeparator: '至',
-        startPlaceholder: '开始日期',
-        endPlaceholder: '结束日期',
-        valueFormat: 'YYYY-MM-DD',
-        shortcuts: [
-          { text: '今日', value: [new Date(), new Date()] },
-          {
-            text: '最近一周',
-            value: [new Date(Date.now() - 604800000), new Date()]
-          },
-          {
-            text: '最近一个月',
-            value: [new Date(Date.now() - 2592000000), new Date()]
-          }
-        ]
-      }
+  const handleReset = () => {
+    const resetForm: SearchForm = {
+      roleName: undefined,
+      roleCode: undefined,
+      enabled: undefined,
+      daterange: null
     }
-  ])
-
-  // 事件
-  function handleReset() {
-    console.log('重置表单')
+    emit('update:modelValue', resetForm)
     emit('reset')
   }
-
-  async function handleSearch() {
-    await searchBarRef.value.validate()
-    emit('search', formData.value)
-    console.log('表单数据', formData.value)
-  }
 </script>
+
+<style lang="scss" scoped>
+  .art-search-card {
+    margin-bottom: 12px;
+  }
+</style>

@@ -154,21 +154,21 @@
     {
       key: 'super',
       label: t('login.roles.super'),
-      userName: 'Super',
+      userName: 'admin',
       password: '123456',
       roles: ['R_SUPER']
     },
     {
       key: 'admin',
       label: t('login.roles.admin'),
-      userName: 'Admin',
+      userName: 'admin',
       password: '123456',
       roles: ['R_ADMIN']
     },
     {
       key: 'user',
       label: t('login.roles.user'),
-      userName: 'User',
+      userName: 'user1',
       password: '123456',
       roles: ['R_USER']
     }
@@ -234,7 +234,7 @@
       const { username, password } = formData
 
       const { token, refreshToken } = await fetchLogin({
-        userName: username,
+        username: username,
         password
       })
 

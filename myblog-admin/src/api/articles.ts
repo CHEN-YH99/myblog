@@ -64,7 +64,7 @@ export interface SearchParams {
 }
 
 // 统一的API接口
-const API_BASE_URL = ''
+const API_BASE_URL = '/api'
 
 /**
  * 获取文章列表

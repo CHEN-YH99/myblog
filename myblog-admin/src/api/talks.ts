@@ -61,7 +61,7 @@ export const getTalkList = async (params: any) => {
   
   try {
     const response = await api.get({
-      url: '/talks',
+      url: '/api/talks',
       params: backendParams
     })
     console.log('🚀 后端原始响应:', response)
@@ -85,14 +85,14 @@ export const getTalkList = async (params: any) => {
 // 获取单个说说详情
 export const getTalkById = (id: string): Promise<Talk> => {
   return api.get({
-    url: `/talks/${id}`
+    url: `/api/talks/${id}`
   })
 }
 
 // 创建说说
 export const createTalk = (data: Partial<Talk>): Promise<Talk> => {
   return api.post({
-    url: '/talks',
+    url: '/api/talks',
     data
   })
 }
@@ -100,7 +100,7 @@ export const createTalk = (data: Partial<Talk>): Promise<Talk> => {
 // 更新说说
 export const updateTalk = (id: string, data: Partial<Talk>): Promise<Talk> => {
   return api.put({
-    url: `/talks/${id}`,
+    url: `/api/talks/${id}`,
     data
   })
 }
@@ -109,36 +109,36 @@ export const updateTalk = (id: string, data: Partial<Talk>): Promise<Talk> => {
 export const deleteTalk = (id: string, permanent = false): Promise<void> => {
   return api.del({
     url: permanent 
-      ? `/talks/${id}?permanent=true`
-      : `/talks/${id}`
+      ? `/api/talks/${id}?permanent=true`
+      : `/api/talks/${id}`
   })
 }
 
 // 恢复说说
 export const restoreTalk = (id: string): Promise<void> => {
   return api.put({
-    url: `/talks/${id}/restore`
+    url: `/api/talks/${id}/restore`
   })
 }
 
 // 切换置顶状态
 export const toggleTalkTop = (id: string): Promise<void> => {
   return api.put({
-    url: `/talks/${id}/top`
+    url: `/api/talks/${id}/top`
   })
 }
 
 // 切换隐藏状态
 export const toggleTalkHidden = (id: string): Promise<void> => {
   return api.put({
-    url: `/talks/${id}/hidden`
+    url: `/api/talks/${id}/hidden`
   })
 }
 
 // 批量操作说说
 export const batchOperateTalks = (params: BatchOperateParams): Promise<void> => {
   return api.post({
-    url: '/talks/batch',
+    url: '/api/talks/batch',
     data: params
   })
 }
@@ -149,7 +149,7 @@ export const uploadTalkImage = (file: File): Promise<{ url: string }> => {
   formData.append('file', file)
   
   return api.post({
-    url: '/talks/upload',
+    url: '/api/talks/upload',
     data: formData,
     headers: {
       'Content-Type': 'multipart/form-data'

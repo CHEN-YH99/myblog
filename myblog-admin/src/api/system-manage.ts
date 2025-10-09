@@ -6,7 +6,7 @@ import { menuDataToRouter } from '@/router/utils/menuToRouter'
 // 获取用户列表
 export function fetchGetUserList(params: Api.SystemManage.UserSearchParams) {
   return request.get<Api.SystemManage.UserList>({
-    url: '/user/list',
+    url: '/api/users',
     params
   })
 }
@@ -14,7 +14,7 @@ export function fetchGetUserList(params: Api.SystemManage.UserSearchParams) {
 // 创建用户
 export function fetchCreateUser(data: Partial<Api.SystemManage.UserListItem>) {
   return request.post<Api.SystemManage.UserListItem>({
-    url: '/user/create',
+    url: '/api/users',
     data
   })
 }
@@ -22,29 +22,29 @@ export function fetchCreateUser(data: Partial<Api.SystemManage.UserListItem>) {
 // 更新用户
 export function fetchUpdateUser(id: number, data: Partial<Api.SystemManage.UserListItem>) {
   return request.put<Api.SystemManage.UserListItem>({
-    url: `/user/update/${id}`,
+    url: `/api/users/${id}`,
     data
   })
 }
 
 // 删除用户
 export function fetchDeleteUser(id: number) {
-  return request.delete({
-    url: `/user/delete/${id}`
+  return request.del({
+    url: `/api/users/${id}`
   })
 }
 
 // 获取用户详情
 export function fetchGetUserDetail(id: number) {
   return request.get<Api.SystemManage.UserListItem>({
-    url: `/user/detail/${id}`
+    url: `/api/users/${id}`
   })
 }
 
 // 获取角色列表
 export function fetchGetRoleList(params: Api.SystemManage.RoleSearchParams) {
   return request.get<Api.SystemManage.RoleList>({
-    url: '/role/list',
+    url: '/api/roles',
     params
   })
 }

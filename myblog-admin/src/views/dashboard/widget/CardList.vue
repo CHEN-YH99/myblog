@@ -17,22 +17,6 @@
       </div>
     </el-col>
   </el-row>
-
-  <el-row :gutter="20" class="stats-cards">
-    <ElCol :xs="24" :sm="12" :md="6" v-for="card in statsCards" :key="card.id">
-      <ArtStatsCard
-        :icon="card.icon"
-        :count="card.count"
-        :description="card.description"
-        :iconSize="card.iconSize"
-        :decimals="0"
-        :iconBgColor="card.iconBgColor"
-        :showArrow="card.showArrow"
-        separator=","
-        iconColor="#fff"
-      />
-    </ElCol>
-  </el-row>
 </template>
 
 <script setup lang="ts">
@@ -122,8 +106,6 @@
   onMounted(() => {
     fetchDashboardStats()
   })
-
-
 </script>
 
 <style lang="scss" scoped>
@@ -206,9 +188,7 @@
       }
     }
   }
-  .stats-cards {
-    margin-bottom: 20px;
-  }
+
   .dark {
     .card-list {
       .art-custom-card {

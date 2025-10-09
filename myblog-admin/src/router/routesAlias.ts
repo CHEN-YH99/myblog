@@ -22,8 +22,8 @@ export enum RoutesAlias {
   ArticleCategory = '/article/category', // 文章分类
   Comment = '/article/comment', // 评论
   ArticlePublish = '/article/publish', // 文章发布
-  User = '/system/user', // 账户
-  Role = '/system/role', // 角色
+  User = '/system/user/index', // 用户管理
+  Role = '/system/role/index', // 角色管理
   UserCenter = '/system/user-center', // 用户中心
   PhotoAlbum = '/photoalbum', // 相册列表
   PhotoCategoryDetail = '/photoalbum/category', // 分类图片详情

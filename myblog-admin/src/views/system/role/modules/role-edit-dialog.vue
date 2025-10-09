@@ -1,6 +1,7 @@
 <template>
   <ElDialog
-    v-model="visible"
+    :model-value="visible"
+    @update:model-value="emit('update:modelValue', $event)"
     :title="dialogType === 'add' ? '新增角色' : '编辑角色'"
     width="30%"
     align-center
