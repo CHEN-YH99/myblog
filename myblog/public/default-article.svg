@@ -1,0 +1,33 @@
+<svg width="400" height="200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- 背景 -->
+  <rect width="400" height="200" fill="url(#bgGradient)"/>
+  
+  <!-- 装饰性图案 -->
+  <circle cx="350" cy="50" r="30" fill="rgba(255,255,255,0.1)"/>
+  <circle cx="50" cy="150" r="20" fill="rgba(255,255,255,0.1)"/>
+  <circle cx="320" cy="170" r="15" fill="rgba(255,255,255,0.1)"/>
+  
+  <!-- 文档图标 -->
+  <g transform="translate(160, 60)">
+    <rect x="0" y="0" width="60" height="80" rx="4" fill="rgba(255,255,255,0.9)"/>
+    <rect x="10" y="15" width="40" height="3" fill="#667eea"/>
+    <rect x="10" y="25" width="35" height="2" fill="#999"/>
+    <rect x="10" y="32" width="30" height="2" fill="#999"/>
+    <rect x="10" y="39" width="40" height="2" fill="#999"/>
+    <rect x="10" y="46" width="25" height="2" fill="#999"/>
+    <rect x="10" y="53" width="35" height="2" fill="#999"/>
+    <rect x="10" y="60" width="30" height="2" fill="#999"/>
+  </g>
+  
+  <!-- 标题文字 -->
+  <text x="200" y="170" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="16" font-weight="bold">
+    默认文章封面
+  </text>
+</svg>

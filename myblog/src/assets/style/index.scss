@@ -1,0 +1,647 @@
+/* ========== Reset ========== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow-x: hidden;
+}
+
+#app {
+  margin: 0;
+  padding: 0;
+}
+
+/* Utility flex helper */
+.flex {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+/* ========== Typography ========== */
+h1 {
+  font-family: 'Lato', sans-serif;
+  font-weight: 600;
+  letter-spacing: 2px;
+  font-size: 36px;
+}
+
+p {
+  font-family: 'Lato', sans-serif;
+  letter-spacing: 1px;
+  font-size: 14px;
+  // color: #333333;
+}
+
+/* ========== CSS Variables ========== */
+:root {
+  /* 个人信息卡片顶部横幅高度（桌面默认） */
+  --about-banner-height: 220px;
+  /* Avatar 与横幅底边的相对偏移（近似 Avatar 半高） */
+  --avatar-offset: 40px;
+  /* 海浪高度（用于与内容顶距同步） */
+  --wave-height: 20vh;
+}
+
+/* ========== Home Layout ========== */
+.home-page {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+}
+
+/* Header：全屏背景区 */
+.header {
+  position: relative;
+  width: 100%;
+  text-align: center;
+  background: url('../images/shunsea1.jpg');
+  background-size: cover;
+  background-position: center center;
+  background-attachment: fixed;
+  // color: white;
+  margin: 0 !important;
+  padding: 48px 0 calc(var(--wave-height) + 5px) 0 !important; /* 顶部留出导航栏空间 + 预留海浪高度（+5px缓冲） */
+  overflow: hidden !important;
+  transform: translateZ(0);
+  /* 视口高度兼容：优先使用动态视口单位，其次传统 100vh */
+  height: 100vh;
+  height: 100dvh;
+  min-height: 100svh;
+}
+
+/* 向下箭头 */
+.turndown {
+  position: absolute;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  cursor: pointer;
+  z-index: 10;
+  animation: change-down 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes change-down {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(50px);
+    opacity: 0.5;
+  }
+}
+
+/* 顶部内层 */
+.inner-header {
+  height: 65vh;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.inner-header h1 {
+  // color: white;
+  font-family: 'Lato', sans-serif;
+  font-weight: bolder;
+  font-size: 3rem;
+  letter-spacing: 10px;
+  margin: 0;
+  transition: font-size 0.3s ease, letter-spacing 0.3s ease;
+}
+
+/* ========== Main Content ========== */
+.main-content {
+  position: relative;
+  width: 100%;
+  padding: 40px 20px;
+  margin-top: 0;
+  z-index: 1; /* 确保压在海浪之上，避免被遮挡 */
+}
+
+/* 返回顶部按钮 */
+.main-content .backtop {
+    right: 30px ;
+    bottom: 30px ;
+  }
+
+/* 内容列表 */
+.content-list {
+  max-width: 1100px;
+  margin: 0 auto;
+  /* padding: 0; */
+  display: flex;
+  align-items: flex-start;
+  gap: 15px; /* 卡片容器之间间距 5px */
+}
+
+/* 消除 Element Plus el-col 默认左右内边距，保证列间距仅由 gap 控制为 5px */
+.content-list > .el-col {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+/* 分页 */
+.content-list .mt-4 {
+  display: flex;
+  justify-content: center;
+  margin-top: 40px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-left: 50%;
+  transform: translateX(-50%);
+}
+
+/* ========== About Me ========== */
+.about-me {
+  position: relative;
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+/* ========== Cards ========== */
+/* el-col 容器通用阴影卡 */
+.grid-content {
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: box-shadow 0.3s ease;
+  // background: white;
+  margin: 10px 5px;
+  overflow: hidden;
+  padding: 0;
+}
+.grid-content:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.grid-content .el-image {
+  border-radius: 8px;
+  display: block;
+  width: 100%;
+}
+.grid-content .el-image img {
+  border-radius: 8px;
+}
+
+/* 文章卡片 */
+.article-card {
+  display: flex;
+  // background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  margin-bottom: 15px; /* 统一 5px 间距 */
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+.article-card:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+}
+
+/* 控制奇偶数行不同样式 */
+.article-card.reverse {
+  flex-direction: row-reverse;
+}
+
+/* 卡片图片区域 */
+.card-image {
+  width: 300px;
+  height: 250px; /* 保持固定高度 */
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f5f5f5; /* 添加背景色填充空白区域 */
+}
+
+.card-image .el-image {
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+}
+
+.card-image .el-image img {
+  border-radius: 0;
+  // object-fit: contain !important; /* 完整显示图片，不裁剪不变形 */
+  width: 100%;
+  height: 100%;
+}
+
+/* 卡片内容区域 */
+.card-content {
+  flex: 1;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+/* 文章标题 */
+.article-title {
+  font-size: 20px;
+  font-weight: 600;
+  // color: #333;
+  margin: 0 0 4px 0;
+  line-height: 1.4;
+  text-align: left;
+}
+
+/* 文章元信息 */
+.article-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+.meta-item {
+  font-size: 12px;
+  // color: #666;
+  display: flex;
+  align-items: center;
+}
+
+/* 标签 */
+.article-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.tag {
+  background: #f0f0f0;
+  color: #666;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+/* 统计 */
+.article-stats {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 4px;
+  font-size: 14px;
+  // color: #666;
+}
+
+/* 摘要 */
+.article-excerpt {
+  // color: #666;
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 0;
+  overflow: hidden;
+  display: -webkit-box;
+  /* -webkit-line-clamp: 2; */
+  -webkit-box-orient: vertical;
+  text-align: left;
+}
+
+/* ========== About Me Card ========== */
+.about-me {
+  position: relative;
+  // background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: box-shadow 0.3s ease;
+  height: fit-content;
+  padding-bottom: 16px;
+}
+.about-me:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+/* 顶部横幅图 */
+.about-me .el-image,
+.about-me img {
+  width: 100%;
+  height: var(--about-banner-height);
+  display: block;
+  object-fit: cover;
+  border-radius: 12px 12px 0 0;
+}
+
+/* 头像固定在横幅图下缘的同一相对位置（跨设备一致） */
+.about-me .avatar {
+  position: absolute;
+  left: 20px;
+  top: calc(var(--about-banner-height) - var(--avatar-offset));
+}
+
+.about-me h5 {
+  margin: 10px 0;
+  // color: #333;
+  font-weight: 600;
+  font-size: 14px !important;
+}
+
+.about-me .pub  {
+  margin: 8px 0;
+  padding: 0 10px;
+  // color: #666;
+  font-size: 12px;
+  line-height: 1.6;
+  text-align:left;
+}
+
+/* 彩色标签云 */
+.tag-cloud {
+  padding: 10px 12px;
+  border-radius: 8px;
+}
+.tag-header {
+  font-size: 14px;
+  // color: #000102;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.tags-content {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;  
+  text-align: left;
+}
+.tags-content p {
+  flex: 1 1 100%;
+  word-break: break-all; /* 如果链接太长，允许在任意位置断行 */
+}
+
+.tags-info .tag {
+  background: transparent !important;
+  border: none !important;
+  padding: 0; 
+  border-radius: 0;
+   font-size: 14px;
+  line-height: 1.6;
+  cursor: pointer;
+  text-decoration: none;
+  transition: filter .2s ease, text-shadow .2s ease;    
+}
+.tags-info .tag:hover {
+  filter: brightness(1.1);
+  text-shadow: 0 0 8px currentColor;
+}
+
+/* my-tags 按钮容器居中与按钮样式（还原） */
+.about-me .my-tags {
+  display: flex;
+  justify-content: center;
+}
+.custom-gitee-btn {
+  width: 80%;
+  height: 40px;
+  border: 1px solid #f56c6c;
+  background: transparent;
+  color: #f56c6c;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  margin: 8px auto;
+  transition: background-color 0.3s ease-in-out;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  line-height: 1;
+}
+.custom-gitee-btn .icon {
+  margin: 0 4px;
+}
+.custom-gitee-btn:hover {
+  background: #f56c6c;
+  color: white;
+}
+
+/* 个人数据区 */
+.about-me .my-data {
+  border-top: 1px solid #eee;
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* 桌面左右铺开 */
+  padding: 10px 0;
+}
+.about-me .my-data .pub-item p {
+  text-align: center;
+}
+
+/* ========== Links ========== */
+.my-links {
+  display: flex;
+  gap: 16px;
+  margin: 16px 0;
+  justify-content: center;
+}
+.my-links img {
+  width: 20px;  /* 固定为 20px */
+  height: 20px; /* 固定为 20px */
+  transition: transform 0.3s ease;
+}
+.my-links img:hover {
+  transform: scale(1.1);
+  cursor: pointer;
+}
+
+/* ========== Responsive ========== */
+/* 头部标题尺寸 */
+@media (min-width: 1200px) {
+  .inner-header h1 {
+    font-size: 3rem;
+    font-weight: 600;
+    letter-spacing: 12px;
+  }
+}
+@media (max-width: 1199px) and (min-width: 768px) {
+  .inner-header h1 {
+    font-size: 2rem;
+    letter-spacing: 8px;
+  }
+}
+@media (max-width: 767px) and (min-width: 576px) {
+  .inner-header h1 {
+    font-size: 1.5rem;
+    letter-spacing: 5px;
+  }
+}
+@media (max-width: 575px) {
+  .inner-header h1 {
+    font-size: 1.5rem;
+    letter-spacing: 3px;
+  }
+}
+
+/* 平板以下：调整海浪高度 */
+@media (max-width: 992px) {
+  :root {
+    --wave-height: 22vh;
+  }
+  .waves {
+    height: var(--wave-height);
+  }
+  .main-content {
+    margin-top: 0 !important;
+  }
+}
+
+/* 移动端（<=768px） */
+@media (max-width: 768px) {
+  /* 修复移动端 100vh 抖动与覆盖问题 */
+  .header {
+    background-attachment: scroll; /* iOS/Safari 避免 fixed 导致视口高度不准 */
+    height: 100vh;
+    height: 100dvh;
+    min-height: 100svh;
+    margin-top: 0 !important;
+    padding-top: 48px !important;
+  }
+
+  .main-content {
+    position: relative !important;
+    z-index: 0 !important;
+    margin-top: 0 !important;
+    padding: 12px 12px !important;
+    width: 100% !important;
+  }
+
+
+  /* 内容列表纵向堆叠，右栏(about-me)置顶 */
+  .content-list {
+    flex-direction: column !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    gap: 5px !important;   /* 容器间距保持 5px */
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  .content-list > * {
+    margin: 0 !important; /* 移除子项外边距，间距仅由 gap 控制 */
+  }
+  .content-list > .el-col {
+    width: 100% !important;
+    max-width: 100% !important;
+    flex: 0 0 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+  /* 将右侧列(第二个/最后一个 el-col)置顶 */
+  .content-list > .el-col:last-child {
+    order: -1 !important;
+  }
+  .content-list .mt-4 {
+    margin-top: 40px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-left: 50%;
+    transform: translateX(-50%);
+  }
+  .content-list .article-info {
+    display: none !important;
+  }
+
+  /* 个人信息卡片：移动端全宽出血（让顶部图 100vw） */
+  :root {
+    --about-banner-height: 200px; /* 移动端横幅高度 */
+  }
+  .about-me {
+    order: -1 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    border-radius: 12px !important;
+    overflow: visible !important;
+    display: block !important;
+  }
+  .about-me .el-image,
+  .about-me img {
+    width: 100% !important;
+    height: var(--about-banner-height) !important;
+    object-fit: cover !important;
+    display: block !important;
+    border-radius: 12px 12px 0 0 !important;
+  }
+  /* 头像在移动端保持与横幅的相同相对位置 */
+  .about-me .avatar {
+    left: 16px !important;
+    top: calc(var(--about-banner-height) - var(--avatar-offset)) !important;
+  }
+
+  /* 文章卡片：纵向布局但保留 5px 间距与圆角 */
+  .article-card {
+    width: 100% !important;
+    margin: 15px 0 !important; /* 由父容器 gap:5px 控制容器间距 */
+    border-radius: 12px !important;
+    overflow: hidden !important;
+    flex-direction: column !important; /* 图片上，文字下 */
+  }
+  .card-image,
+  .card-image .el-image {
+    width: 100% !important;
+    height: 200px !important;
+    flex-shrink: 0 !important;
+    order: -1 !important;
+  }
+  .card-image .el-image img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    display: block !important;
+  }
+  .card-content {
+    padding: 15px !important;
+  }
+  .article-title {
+    font-size: 16px !important;
+    margin-bottom: 10px !important;
+  }
+  .article-meta {
+    flex-direction: column !important;
+    gap: 5px !important;
+    margin-bottom: 10px !important;
+  }
+  .meta-item {
+    font-size: 11px !important;
+  }
+  .article-tags {
+    margin-bottom: 10px !important;
+  }
+  .tag {
+    font-size: 11px !important;
+    padding: 3px 6px !important;
+  }
+  .article-stats {
+    font-size: 12px !important;
+    margin-bottom: 10px !important;
+  }
+  .article-excerpt {
+    font-size: 13px !important;
+    /* -webkit-line-clamp: 3 !important; */
+  }
+
+  /* 个人数据区在移动端整体居中排列 */
+  .about-me .my-data {
+    justify-content: center !important;
+    gap: 16px !important;
+    align-items: center !important;
+  }
+
+  /* 移动端 my-links 图标固定为 20px */
+  .my-links img {
+    width: 20px !important;
+    height: 20px !important;
+  }
+
+  /* 自定义按钮恢复桌面大小（仅确保图标尺寸） */
+  .custom-gitee-btn .el-icon,
+  .custom-csdn-btn .el-icon {
+    font-size: 18px !important;
+  }
+}

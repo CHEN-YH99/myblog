@@ -1,0 +1,37 @@
+.page_header{
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  .large-img {
+    position: relative;
+    width: 100%;
+    height: 40vh; /* 在移动端使用较小的视口高度 */
+    height: 40dvh;
+    min-height: 40svh;
+    img{
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%; /* 宽度占满容器 */
+      height: 100%; /* 高度占满容器 */
+      object-fit: cover; /* 保持图片比例并覆盖容器 */
+      object-position: center; /* 图片居中显示 */
+    }
+    h1 {
+      font-family: 'Lato', sans-serif;
+      font-weight: bolder;
+    }
+    .inner-header {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      z-index: 1;
+      // padding: 0 20px;
+      // color: white;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5); /* 添加文字阴影提高可读性 */
+    }
+  }
+  
+}
