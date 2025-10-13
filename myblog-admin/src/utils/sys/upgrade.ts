@@ -1,4 +1,5 @@
-import { upgradeLogList } from '@/mock/upgrade/changeLog'
+// 升级日志数据 - 实际项目中应从API获取
+const upgradeLogList: any[] = []
 import { ElNotification } from 'element-plus'
 import { useUserStore } from '@/store/modules/user'
 import { StorageConfig } from '@/utils/storage/storage-config'

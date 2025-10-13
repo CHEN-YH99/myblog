@@ -181,6 +181,7 @@ import { useUserStore } from '@/stores/user'
 import { useArticlesStore } from '@/stores/getarticles'
 import { useTalksStore } from '@/stores/talks'
 import { getUserLikedArticles } from '@/api/articles'
+import { changePassword, type ChangePasswordParams } from '@/api/user'
 import WaveContainer from '@/components/WaveContainer.vue'
 import Footer from '@/components/Footer.vue'
 import avatarUrl from '@/assets/images/hui.svg'
@@ -291,18 +292,27 @@ const handleChangePassword = async () => {
     await passwordFormRef.value.validate()
     changingPassword.value = true
     
-    // 这里应该调用修改密码的API
-    // await changePassword(passwordForm.value)
+    // 调用修改密码的API
+    const passwordData: ChangePasswordParams = {
+      currentPassword: passwordForm.value.currentPassword,
+      newPassword: passwordForm.value.newPassword
+    }
     
-    // 模拟API调用
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    await changePassword(passwordData)
     
-    ElMessage.success('密码修改成功')
+    ElMessage.success('密码修改成功，请使用新密码重新登录')
     showPasswordDialog.value = false
     resetPasswordForm()
-  } catch (error) {
+    
+    // 修改密码成功后，退出登录让用户重新登录
+    setTimeout(() => {
+      userStore.logout()
+      router.push('/login')
+    }, 1500)
+  } catch (error: any) {
     console.error('修改密码失败:', error)
-    ElMessage.error('修改密码失败，请稍后重试')
+    const errorMessage = error?.response?.data?.message || error?.message || '修改密码失败，请稍后重试'
+    ElMessage.error(errorMessage)
   } finally {
     changingPassword.value = false
   }
@@ -432,14 +442,8 @@ const initData = async () => {
       await articlesStore.fetchArticles()
     }
     
-    // 先加载已点赞的说说列表，获取说说ID
+    // 加载已点赞的说说列表（内部会处理点赞状态初始化）
     await loadLikedTalks()
-    
-    // 使用获取到的说说ID初始化点赞状态
-    if (talksStore.likedTalks.size === 0 && likedTalksList.value.length > 0) {
-      const talkIds = likedTalksList.value.map(talk => talk._id)
-      await talksStore.initializeLikeStatus(talkIds)
-    }
     
     // 加载已点赞的文章列表
     await loadLikedArticles()

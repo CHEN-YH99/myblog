@@ -327,7 +327,9 @@ import {
   Delete
 } from '@element-plus/icons-vue'
 import AvatarUpload from '@/components/AvatarUpload.vue'
-import { upgradeLogList } from '@/mock/upgrade/changeLog'
+
+// 升级日志数据 - 实际项目中应从API获取
+const upgradeLogList = ref([])
 
 defineOptions({ name: 'PersonalCenter' })
 

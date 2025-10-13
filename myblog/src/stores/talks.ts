@@ -44,7 +44,7 @@ export const useTalksStore = defineStore('talks', {
 
       try {
         // 从本地存储获取已点赞的说说ID
-        const userId = userStore.userInfo?._id
+        const userId = userStore.userInfo?.id
         const localLikedTalks = getLikedTalks(userId)
         
         // 如果传入了talkIds，优先使用传入的ID（来自服务器）
@@ -52,7 +52,9 @@ export const useTalksStore = defineStore('talks', {
           this.likedTalks.clear()
           talkIds.forEach(id => this.likedTalks.add(id))
           // 同步到本地存储
-          saveLikedTalks(userId, Array.from(this.likedTalks))
+          if (userId) {
+            saveLikedTalks(Array.from(this.likedTalks), userId)
+          }
         } else if (localLikedTalks.length > 0) {
           // 如果没有传入talkIds，使用本地存储的数据
           this.likedTalks.clear()
@@ -70,7 +72,7 @@ export const useTalksStore = defineStore('talks', {
     // 重置点赞状态（用户登出时调用）
     resetLikeStatus() {
       const userStore = useUserStore()
-      const userId = userStore.userInfo?._id
+      const userId = userStore.userInfo?.id
       
       // 清除localStorage中的数据
       clearUserLikeData(userId)
@@ -98,7 +100,7 @@ export const useTalksStore = defineStore('talks', {
         this.likedTalks.add(talkId)
         
         // 保存到localStorage
-        const userId = userStore.userInfo?._id
+        const userId = userStore.userInfo?.id
         addLikedTalk(talkId, userId)
 
         return result
@@ -127,7 +129,7 @@ export const useTalksStore = defineStore('talks', {
         this.likedTalks.delete(talkId)
         
         // 从localStorage移除
-        const userId = userStore.userInfo?._id
+        const userId = userStore.userInfo?.id
         removeLikedTalk(talkId, userId)
         
         return result

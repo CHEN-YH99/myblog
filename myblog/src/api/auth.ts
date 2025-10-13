@@ -1,4 +1,4 @@
-import request from '@/service/request'
+import api from '@/utils/http'
 
 // 登录接口
 export interface LoginParams {
@@ -20,7 +20,7 @@ export interface LoginResponse {
 }
 
 export const loginApi = (data: LoginParams): Promise<LoginResponse> => {
-  return request.post('/api/auth/login', data)
+  return api.post({ url: '/api/auth/login', data }) as Promise<LoginResponse>
 }
 
 // 注册接口
@@ -32,25 +32,25 @@ export interface RegisterParams {
 }
 
 export const registerApi = (data: RegisterParams): Promise<void> => {
-  return request.post('/api/auth/register', data)
+  return api.post({ url: '/api/auth/register', data }) as Promise<void>
 }
 
 // 忘记密码接口
 export const forgotPasswordApi = (email: string): Promise<void> => {
-  return request.post('/api/auth/forgot-password', { email })
+  return api.post({ url: '/api/auth/forgot-password', data: { email } }) as Promise<void>
 }
 
 // 获取用户信息接口
 export const getUserInfoApi = (): Promise<LoginResponse['userInfo']> => {
-  return request.get('/api/auth/user-info')
+  return api.get({ url: '/api/auth/user-info' }) as Promise<LoginResponse['userInfo']>
 }
 
 // 刷新token接口
 export const refreshTokenApi = (refreshToken: string): Promise<{ token: string }> => {
-  return request.post('/api/auth/refresh-token', { refreshToken })
+  return api.post({ url: '/api/auth/refresh-token', data: { refreshToken } }) as Promise<{ token: string }>
 }
 
 // 登出接口
 export const logoutApi = (): Promise<void> => {
-  return request.post('/api/auth/logout')
+  return api.post({ url: '/api/auth/logout' }) as Promise<void>
 }

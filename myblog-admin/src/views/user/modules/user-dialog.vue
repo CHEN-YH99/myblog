@@ -51,7 +51,8 @@
 
 <script setup lang="ts">
   import { ref, reactive, computed, nextTick, watch } from 'vue'
-  import { ROLE_LIST_DATA } from '@/mock/temp/formData'
+  // 角色列表数据 - 实际项目中应从API获取
+  const ROLE_LIST_DATA = ref([])
   import type { FormInstance, FormRules } from 'element-plus'
   import { ElMessage } from 'element-plus'
   import { fetchCreateUser, fetchUpdateUser } from '@/api/system-manage'

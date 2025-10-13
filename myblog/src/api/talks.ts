@@ -1,42 +1,19 @@
-import request from '@/utils/http'
-import http from '@/utils/http'
+import api from '@/utils/http'
 
 /**
  * 获取说说列表
  * @param params 查询参数
  * @returns 说说列表分页数据
  */
-export function getTalkList(params?: {
-  current?: number
-  size?: number
-  status?: string
-  keyword?: string
-}) {
-  console.log('前台调用getTalkList API，参数:', params)
-  
-  return request.get<{ records: Api.Talk.TalkItem[]; total: number; current: number; size: number }>({
-    url: '/api/talks',
-    params,
-    showErrorMessage: true
-  }).then(response => {
-    console.log('前台getTalkList处理后的响应:', response)
-    
-    if (response && typeof response === 'object') {
-      if ('records' in response && Array.isArray((response as any).records)) {
-        console.log('前台收到records格式说说数据:', (response as any).records.length)
-        return response as { records: Api.Talk.TalkItem[]; total: number; current: number; size: number }
-      } else if (Array.isArray(response)) {
-        console.log('前台收到数组格式说说数据:', (response as Api.Talk.TalkItem[]).length)
-        return { records: response as Api.Talk.TalkItem[], total: (response as Api.Talk.TalkItem[]).length, current: 1, size: (response as Api.Talk.TalkItem[]).length }
-      }
-    }
-    
-    console.warn('前台getTalkList未知响应格式:', response)
-    return { records: [], total: 0, current: 1, size: 10 }
-  }).catch(error => {
-    console.error('前台getTalkList请求失败:', error)
-    return { records: [], total: 0, current: 1, size: 10 }
-  })
+export function getTalkList(params?: Api.Talk.SearchParams) {
+  return api.get({ url: '/api/talks', params })
+    .then(response => {
+      return response as Api.Talk.TalkList
+    })
+    .catch(error => {
+      console.error('前台获取说说列表失败:', error)
+      throw error
+    })
 }
 
 /**
@@ -45,18 +22,14 @@ export function getTalkList(params?: {
  * @returns 说说详情
  */
 export function getTalkDetail(id: string) {
-  console.log('前台调用getTalkDetail API，ID:', id)
-  
-  return request.get<Api.Talk.TalkItem>({
-    url: `/api/talks/${id}`,
-    showErrorMessage: true
-  }).then(response => {
-    console.log('前台getTalkDetail处理后的响应:', response)
-    return response
-  }).catch(error => {
-    console.error('前台getTalkDetail请求失败:', error)
-    throw error
-  })
+  return api.get({ url: `/api/talks/${id}` })
+    .then(response => {
+      return response as Api.Talk.TalkItem
+    })
+    .catch(error => {
+      console.error('前台获取说说详情失败:', error)
+      throw error
+    })
 }
 
 // ==================== 点赞相关API ====================
@@ -67,7 +40,7 @@ export function getTalkDetail(id: string) {
  * @returns 点赞结果
  */
 export function likeTalk(id: string) {
-  return request.post<Api.Article.LikeResponse>({
+  return api.post({
     url: `/api/talks/${id}/like`,
     showErrorMessage: true
   })
@@ -79,7 +52,7 @@ export function likeTalk(id: string) {
  * @returns 取消点赞结果
  */
 export function unlikeTalk(id: string) {
-  return request.del<Api.Article.LikeResponse>({
+  return api.del({
     url: `/api/talks/${id}/like`,
     showErrorMessage: true
   })
@@ -91,7 +64,7 @@ export function unlikeTalk(id: string) {
  * @returns 点赞状态
  */
 export function getTalkLikeStatus(id: string) {
-  return request.get<Api.Article.LikeStatusResponse>({
+  return api.get({
     url: `/api/talks/${id}/like/status`,
     showErrorMessage: false
   })
@@ -102,7 +75,7 @@ export function getTalkLikeStatus(id: string) {
  * @returns 用户已点赞的说说列表
  */
 export function getUserLikedTalks() {
-  return request.get<Api.Talk.TalkItem[]>({
+  return api.get({
     url: '/api/user/liked-talks',
     showErrorMessage: false
   })
@@ -120,7 +93,7 @@ export function getTalkReplies(id: string, params?: {
   current?: number
   size?: number
 }) {
-  return request.get<{ records: Api.Reply.ReplyItem[]; total: number; current: number; size: number }>({
+  return api.get({
     url: `/api/talks/${id}/replies`,
     params,
     showErrorMessage: true
@@ -141,7 +114,7 @@ export function addTalkReply(id: string, data: {
   parentId?: string
   replyTo?: string
 }) {
-  return request.post<Api.Reply.ReplyItem>({
+  return api.post({
     url: `/api/talks/${id}/replies`,
     data,
     showErrorMessage: true
@@ -154,7 +127,7 @@ export function addTalkReply(id: string, data: {
  * @returns 点赞结果
  */
 export function likeReply(id: string) {
-  return request.post<Api.Article.LikeResponse>({
+  return api.post({
     url: `/api/replies/${id}/like`,
     showErrorMessage: true
   })
@@ -166,20 +139,28 @@ export function likeReply(id: string) {
  * @returns 取消点赞结果
  */
 export function unlikeReply(id: string) {
-  return request.del<Api.Article.LikeResponse>({
+  return api.del({
     url: `/api/replies/${id}/like`,
     showErrorMessage: true
   })
 }
 
-export const getAllTalks = async (): Promise<Api.Talk.TalkItem[]> => {
-  try {
-    // console.log('开始获取说说数据...')
-    const response = await http.get<Api.Talk.TalkItem[]>({ url: '/talks' })
-    // console.log('获取说说数据成功:', response)
-    return response
-  } catch (error) {
-    console.error('获取说说数据失败:', error)
-    throw error
-  }
+export function getAllTalks(params?: Api.Talk.SearchParams) {
+  return api.get({ url: '/api/talks', params })
+    .then(response => {
+      const data = response
+      
+      if (Array.isArray(data)) {
+        return data
+      } else if (data && typeof data === 'object' && 'talks' in data) {
+        const talks = (data as any).talks
+        return talks
+      } else {
+        return []
+      }
+    })
+    .catch(error => {
+      console.error('前台获取说说失败:', error)
+      throw error
+    })
 }

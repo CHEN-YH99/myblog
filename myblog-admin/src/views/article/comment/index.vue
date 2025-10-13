@@ -68,8 +68,10 @@
 </template>
 
 <script setup lang="ts">
-  import { commentList } from '@/mock/temp/commentList'
   const showDrawer = ref(false)
+  
+  // 评论列表数据 - 实际项目中应从API获取
+  const commentList = ref([])
 
   defineOptions({ name: 'ArticleComment' })
 

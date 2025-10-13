@@ -120,6 +120,7 @@ const upload = multer({
 });
 
 // 中间件
+app.set('trust proxy', true); // 信任代理，正确获取客户端IP
 app.use(cors({
   origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175', 'http://localhost:5176'],
   credentials: true
@@ -134,6 +135,9 @@ app.use((req, _res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
   console.log('请求头:', req.headers);
   console.log('查询参数:', req.query);
+  console.log('客户端IP:', req.ip);
+  console.log('连接远程地址:', req.connection?.remoteAddress);
+  console.log('Socket远程地址:', req.socket?.remoteAddress);
   next();
 });
 
@@ -1703,12 +1707,37 @@ app.post('/api/talks/batch', async (req: Request, res: Response) => {
 
 // ==================== 点赞相关API ====================
 
+// IP地址标准化函数
+function normalizeIP(ip: string): string {
+  if (!ip || ip === 'unknown') return 'unknown';
+  
+  // 将IPv6的localhost (::1) 和 IPv4映射的IPv6地址 (::ffff:127.0.0.1) 都转换为 127.0.0.1
+  if (ip === '::1' || ip === '::ffff:127.0.0.1') {
+    return '127.0.0.1';
+  }
+  
+  // 如果是IPv4映射的IPv6地址，提取IPv4部分
+  if (ip.startsWith('::ffff:')) {
+    return ip.substring(7);
+  }
+  
+  return ip;
+}
+
 // 点赞说说
 app.post('/api/talks/:id/like', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const clientIP = req.ip || req.connection.remoteAddress || 'unknown';
+    const rawIP = req.ip || req.connection.remoteAddress || 'unknown';
+    const clientIP = normalizeIP(rawIP);
     const userAgent = req.get('User-Agent') || '';
+
+    console.log('=== 点赞请求 ===');
+    console.log('说说ID:', id);
+    console.log('原始IP:', rawIP);
+    console.log('标准化IP:', clientIP);
+    console.log('req.ip:', req.ip);
+    console.log('req.connection.remoteAddress:', req.connection?.remoteAddress);
 
     // 检查是否已经点赞过
     const existingLike = await Like.findOne({
@@ -1717,17 +1746,22 @@ app.post('/api/talks/:id/like', async (req: Request, res: Response) => {
       ip: clientIP
     });
 
+    console.log('查找到的现有点赞记录:', existingLike);
+
     if (existingLike) {
+      console.log('已经点赞过，返回400错误');
       return res.status(400).json(createErrorResponse('您已经点赞过', 400));
     }
 
     // 创建点赞记录
-    await Like.create({
+    const newLike = await Like.create({
       targetId: id,
       targetType: 'talk',
       ip: clientIP,
       userAgent
     });
+
+    console.log('创建的新点赞记录:', newLike);
 
     // 增加说说的点赞数
     const talk = await Talk.findByIdAndUpdate(
@@ -1740,6 +1774,7 @@ app.post('/api/talks/:id/like', async (req: Request, res: Response) => {
       return res.status(404).json(createErrorResponse('说说不存在', 404));
     }
 
+    console.log('点赞成功，当前点赞数:', talk.likes);
     res.json(createResponse({
       likes: talk.likes
     }, '点赞成功'));
@@ -1753,7 +1788,15 @@ app.post('/api/talks/:id/like', async (req: Request, res: Response) => {
 app.delete('/api/talks/:id/like', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const clientIP = req.ip || req.connection.remoteAddress || 'unknown';
+    const rawIP = req.ip || req.connection.remoteAddress || 'unknown';
+    const clientIP = normalizeIP(rawIP);
+    
+    console.log('=== 取消点赞请求 ===');
+    console.log('说说ID:', id);
+    console.log('原始IP:', rawIP);
+    console.log('标准化IP:', clientIP);
+    console.log('req.ip:', req.ip);
+    console.log('req.connection.remoteAddress:', req.connection?.remoteAddress);
 
     // 查找并删除点赞记录
     const likeRecord = await Like.findOneAndDelete({
@@ -1762,7 +1805,10 @@ app.delete('/api/talks/:id/like', async (req: Request, res: Response) => {
       ip: clientIP
     });
 
+    console.log('查找到的点赞记录:', likeRecord);
+
     if (!likeRecord) {
+      console.log('未找到点赞记录，返回400错误');
       return res.status(400).json(createErrorResponse('您还没有点赞', 400));
     }
 
@@ -1777,6 +1823,7 @@ app.delete('/api/talks/:id/like', async (req: Request, res: Response) => {
       return res.status(404).json(createErrorResponse('说说不存在', 404));
     }
 
+    console.log('取消点赞成功，当前点赞数:', talk.likes);
     res.json(createResponse({
       likes: Math.max(0, talk.likes) // 确保点赞数不为负
     }, '取消点赞成功'));
@@ -2535,6 +2582,71 @@ app.post('/api/auth/register', async (req: Request, res: Response) => {
   } catch (error: any) {
     console.error('用户注册失败:', error);
     res.status(500).json(createErrorResponse('注册失败', 500));
+  }
+});
+
+// 修改密码接口
+app.put('/api/user/change-password', async (req: Request, res: Response) => {
+  console.log('=== 修改密码接口被调用 ===');
+  console.log('请求体:', JSON.stringify(req.body, null, 2));
+  
+  try {
+    const { currentPassword, newPassword } = req.body;
+    
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json(createErrorResponse('当前密码和新密码不能为空', 400));
+    }
+    
+    // 从请求头获取token（这里简化处理，实际应该验证token获取用户信息）
+    const authorization = req.headers.authorization;
+    if (!authorization || !authorization.startsWith('mock-jwt-token-')) {
+      return res.status(401).json(createErrorResponse('未授权访问', 401));
+    }
+    
+    // 这里简化处理，假设token中包含用户名（实际应该解析JWT获取用户信息）
+    // 为了演示，我们使用默认的admin用户
+    const username = 'admin'; // 实际应该从token中解析
+    
+    // 查找用户
+    const user = await User.findOne({ username });
+    if (!user) {
+      return res.status(404).json(createErrorResponse('用户不存在', 404));
+    }
+    
+    // 验证当前密码
+    let isCurrentPasswordValid = false;
+    if (user.password === currentPassword) {
+      // 明文密码匹配
+      isCurrentPasswordValid = true;
+    } else {
+      // 尝试bcrypt比较
+      try {
+        isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
+      } catch (error) {
+        // 如果bcrypt出错，尝试直接比较
+        isCurrentPasswordValid = user.password === currentPassword;
+      }
+    }
+    
+    if (!isCurrentPasswordValid) {
+      return res.status(400).json(createErrorResponse('当前密码错误', 400));
+    }
+    
+    // 加密新密码
+    const saltRounds = 10;
+    const hashedNewPassword = await bcrypt.hash(newPassword, saltRounds);
+    
+    // 更新密码
+    user.password = hashedNewPassword;
+    user.updateTime = new Date();
+    await user.save();
+    
+    console.log('密码修改成功，用户:', username);
+    res.json(createResponse(null, '密码修改成功'));
+    
+  } catch (error: any) {
+    console.error('修改密码失败:', error);
+    res.status(500).json(createErrorResponse('修改密码失败', 500));
   }
 });
 

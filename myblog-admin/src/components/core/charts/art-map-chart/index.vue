@@ -14,7 +14,8 @@
   import { storeToRefs } from 'pinia'
   import * as echarts from 'echarts'
   import { useSettingStore } from '@/store/modules/setting'
-  import chinaMapJson from '@/mock/json/chinaMap.json'
+  // 中国地图数据 - 实际项目中应从CDN或API获取
+  const chinaMapJson = {}
   import type { MapChartProps } from '../../../../types/component/chart'
   import { ElEmpty } from 'element-plus'
 

@@ -76,7 +76,7 @@ export const useArticlesStore = defineStore('articles', {
       
       try {
         // 从localStorage恢复点赞状态
-        const userId = userStore.userInfo?._id
+        const userId = userStore.userInfo?.id
         const savedLikedArticles = getLikedArticles(userId)
         
         // 清空当前状态并设置保存的状态
@@ -116,7 +116,7 @@ export const useArticlesStore = defineStore('articles', {
     // 重置点赞状态（用户登出时调用）
     resetLikeStatus() {
       const userStore = useUserStore()
-      const userId = userStore.userInfo?._id
+      const userId = userStore.userInfo?.id
       
       // 清除localStorage中的数据
       clearUserLikeData(userId)
@@ -144,7 +144,7 @@ export const useArticlesStore = defineStore('articles', {
         this.likedArticles.add(articleId)
         
         // 保存到localStorage
-        const userId = userStore.userInfo?._id
+        const userId = userStore.userInfo?.id
         addLikedArticle(articleId, userId)
 
         // 更新文章点赞数
@@ -178,8 +178,8 @@ export const useArticlesStore = defineStore('articles', {
         
         this.likedArticles.delete(articleId)
         
-        // 从localStorage移除
-        const userId = userStore.userInfo?._id
+        // 保存到localStorage
+        const userId = userStore.userInfo?.id
         removeLikedArticle(articleId, userId)
         
         const article = this.articles.find(a => a._id === articleId)
@@ -253,9 +253,9 @@ export const useArticlesStore = defineStore('articles', {
         
         // console.log('发起新的文章数据请求')
         
-        const articles = await getAllArticlesWithSignal({
-          signal: this.abortController?.signal
-        })
+        const articles = await getAllArticlesWithSignal(
+          this.abortController?.signal
+        )
         
         if (this.abortController?.signal.aborted) {
           // console.log('请求已被取消')

@@ -251,6 +251,8 @@ import {
 } from '@element-plus/icons-vue'
 import { loginApi, registerApi } from '@/api/auth'
 import { useUserStore } from '@/stores/user'
+import { useArticlesStore } from '@/stores/getarticles'
+import { useTalksStore } from '@/stores/talks'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -483,6 +485,16 @@ const handleLogin = async () => {
     // 保存用户信息和token
     userStore.setToken(response.token)
     userStore.setUserInfo(response.userInfo)
+    
+    // 初始化用户相关数据
+    const articlesStore = useArticlesStore()
+    const talksStore = useTalksStore()
+    
+    // 并行初始化点赞状态
+    await Promise.all([
+      articlesStore.initializeLikeStatus(),
+      talksStore.initializeLikeStatus()
+    ])
     
     // 设置七天免登录
     if (loginForm.rememberMe) {

@@ -30,7 +30,7 @@
 
           <!-- 说说内容 -->
           <div class="talk-content">
-            <div class="content-text" v-html="formatContent(talk.content)"></div>
+            <div class="content-text" v-html="getCachedFormattedContent(talk.content)"></div>
             
             <!-- 图片展示 -->
             <div class="content-images" v-if="talk.images && talk.images.length > 0">
@@ -67,7 +67,7 @@
             <div class="meta-left">
               <span class="publish-time">
                 <i class="icon-time">🕒</i>
-                {{ formatTime(talk.publishDate) }}
+                {{ getCachedFormattedTime(talk.publishDate) }}
               </span>
               
               <!-- 位置信息 -->
@@ -97,7 +97,7 @@
               <button 
                 class="action-btn like-btn"
                 :class="{ 'liked': talkLikeStatus[talk._id] }"
-                @click="handleLikeTalk(talk)"
+                @click="debouncedLikeTalk(talk)"
                 :disabled="likingTalks.has(talk._id)"
               >
                 <i class="icon-like">{{ talkLikeStatus[talk._id] ? '❤️' : '🤍' }}</i>
@@ -203,13 +203,13 @@
                 <div class="reply-header">
                   <div class="reply-author">
                     <span class="author-name">{{ reply.author }}</span>
-                    <span class="reply-time">{{ formatTime(reply.publishDate) }}</span>
+                    <span class="reply-time">{{ getCachedFormattedTime(reply.publishDate) }}</span>
                   </div>
                   <div class="reply-actions">
                     <button 
                       class="reply-like-btn"
                       :class="{ 'liked': replyLikeStatus[reply._id] }"
-                      @click="handleLikeReply(reply)"
+                      @click="debouncedLikeReply(reply)"
                       :disabled="likingReplies.has(reply._id)"
                     >
                       <i class="icon-like">{{ replyLikeStatus[reply._id] ? '❤️' : '🤍' }}</i>
@@ -222,7 +222,7 @@
                   <div v-if="reply.replyTo" class="reply-to">
                     回复 @{{ reply.replyTo }}:
                   </div>
-                  <div class="reply-text" v-html="formatContent(reply.content)"></div>
+                  <div class="reply-text" v-html="getCachedFormattedContent(reply.content)"></div>
                 </div>
 
                 <!-- 子回复 -->
@@ -234,13 +234,13 @@
                   >
                     <div class="sub-reply-header">
                       <span class="sub-reply-author">{{ subReply.author }}</span>
-                      <span class="sub-reply-time">{{ formatTime(subReply.publishDate) }}</span>
+                      <span class="sub-reply-time">{{ getCachedFormattedTime(subReply.publishDate) }}</span>
                     </div>
                     <div class="sub-reply-content">
                       <div v-if="subReply.replyTo" class="reply-to">
                         回复 @{{ subReply.replyTo }}:
                       </div>
-                      <div class="sub-reply-text" v-html="formatContent(subReply.content)"></div>
+                      <div class="sub-reply-text" v-html="getCachedFormattedContent(subReply.content)"></div>
                     </div>
                   </div>
                 </div>
@@ -403,8 +403,9 @@ import { useTalksStore } from '@/stores/talks'
 import WaveContainer from '@/components/WaveContainer.vue'
 import '@/assets/style/common/headpicture.scss'
 import Footer from '@/components/Footer.vue'
+import { debounceAsync } from '@/utils/debounce'
 
-// 定义Talk类型
+// ==================== 类型定义 ====================
 interface Talk {
   _id: string
   content: string
@@ -422,7 +423,6 @@ interface Talk {
   weather?: string
 }
 
-// 定义Reply类型
 interface Reply {
   _id: string
   talkId: string
@@ -439,18 +439,14 @@ interface Reply {
   isDeleted: boolean
   children?: Reply[]
 }
- 
-// 路由实例
-const router = useRouter()
 
-// Store实例
+// ==================== 实例和Store ====================
+const router = useRouter()
 const userStore = useUserStore()
 const talksStore = useTalksStore()
-
-// 使用composable
 const { isLiked: isLikedByStore, handleLike: handleLikeByStore } = useTalkLikes()
 
-// 响应式数据
+// ==================== 基础响应式数据 ====================
 const loading = ref(false)
 const talkList = ref<Talk[]>([])
 const pagination = ref({
@@ -459,39 +455,85 @@ const pagination = ref({
   total: 0
 })
 
-// 图片预览相关
+// ==================== 图片预览相关 ====================
 const showPreview = ref(false)
 const previewImages = ref<string[]>([])
 const currentImageIndex = ref(0)
 
-// 无限滚动状态
+// ==================== 无限滚动状态 ====================
 const isEnd = ref(false)
-const loadingMore = ref(false) // 加载更多按钮的加载状态
+const loadingMore = ref(false)
 
-// 点赞和回复相关状态
-const talkLikeStatus = ref<Record<string, boolean>>({}) // 说说点赞状态
-const replyLikeStatus = ref<Record<string, boolean>>({}) // 回复点赞状态
-const likingTalks = ref<Set<string>>(new Set()) // 正在点赞的说说
-const likingReplies = ref<Set<string>>(new Set()) // 正在点赞的回复
-const activeReplyTalkId = ref<string>('') // 当前激活回复区域的说说ID
-const talkReplies = ref<Record<string, Reply[]>>({}) // 说说回复列表
-const talkReplyCount = ref<Record<string, number>>({}) // 回复总数
-const loadingReplies = ref<Set<string>>(new Set()) // 正在加载回复的说说
-const hasMoreReplies = ref<Record<string, boolean>>({}) // 是否还有更多回复
-const submittingReply = ref(false) // 是否正在提交回复
-const repliesExpanded = ref<Record<string, boolean>>({}) // 回复展开状态
+// ==================== 点赞和回复相关状态 ====================
+const talkLikeStatus = ref<Record<string, boolean>>({})
+const replyLikeStatus = ref<Record<string, boolean>>({})
+const likingTalks = ref<Set<string>>(new Set())
+const likingReplies = ref<Set<string>>(new Set())
+const activeReplyTalkId = ref<string>('')
+const talkReplies = ref<Record<string, Reply[]>>({})
+const talkReplyCount = ref<Record<string, number>>({})
+const loadingReplies = ref<Set<string>>(new Set())
+const hasMoreReplies = ref<Record<string, boolean>>({})
+const submittingReply = ref(false)
+const repliesExpanded = ref<Record<string, boolean>>({})
 
-// 回复表单数据 - 简化为只包含content字段
+// ==================== 回复表单数据 ====================
 const replyForm = ref({
   content: ''
 })
 
-// 计算属性：是否可以提交回复
+// ==================== 计算属性 ====================
+/**
+ * 是否可以提交回复
+ */
 const canSubmitReply = computed(() => {
   return replyForm.value.content.trim().length > 0
 })
 
-// 获取说说列表
+/**
+ * 缓存的格式化时间函数
+ */
+const formatTimeCache = new Map<string, string>()
+const getCachedFormattedTime = (dateStr: string): string => {
+  if (formatTimeCache.has(dateStr)) {
+    return formatTimeCache.get(dateStr)!
+  }
+  const formatted = formatTime(dateStr)
+  formatTimeCache.set(dateStr, formatted)
+  return formatted
+}
+
+/**
+ * 缓存的内容格式化函数
+ */
+const formatContentCache = new Map<string, string>()
+const getCachedFormattedContent = (content: string): string => {
+  if (formatContentCache.has(content)) {
+    return formatContentCache.get(content)!
+  }
+  const formatted = formatContent(content)
+  formatContentCache.set(content, formatted)
+  return formatted
+}
+
+/**
+ * 防抖的点赞函数
+ */
+const debouncedLikeTalk = debounceAsync(async (talk: Talk) => {
+  await handleLikeTalk(talk)
+}, 300)
+
+/**
+ * 防抖的回复点赞函数
+ */
+const debouncedLikeReply = debounceAsync(async (reply: Reply) => {
+  await handleLikeReply(reply)
+}, 300)
+
+// ==================== 数据获取方法 ====================
+/**
+ * 获取说说列表
+ */
 const fetchTalkList = async () => {
   try {
     loading.value = true
@@ -541,7 +583,9 @@ const fetchTalkList = async () => {
   }
 }
 
-// 加载更多
+/**
+ * 加载更多说说
+ */
 const loadMore = async () => {
   if (loading.value || loadingMore.value || isEnd.value) return
   if (talkList.value.length >= pagination.value.total && pagination.value.total > 0) {
@@ -573,7 +617,9 @@ const loadMore = async () => {
   }
 }
 
-// 重置列表并拉取第一页
+/**
+ * 重置列表并拉取第一页
+ */
 const resetTalks = async () => {
   pagination.value.current = 1
   pagination.value.size = 10
@@ -583,7 +629,10 @@ const resetTalks = async () => {
   await fetchTalkList()
 }
 
-// 格式化内容
+// ==================== 内容格式化方法 ====================
+/**
+ * 格式化内容，支持换行和简单的markdown语法
+ */
 const formatContent = (content: string) => {
   if (!content) return ''
   // 将换行符转换为 <br> 标签，并处理其他格式
@@ -593,20 +642,27 @@ const formatContent = (content: string) => {
     .replace(/\*(.*?)\*/g, '<em>$1</em>')
 }
 
-// 获取图片URL
+/**
+ * 获取图片URL
+ */
 const getImageUrl = (image: string) => {
   if (!image) return ''
   if (image.startsWith('http')) return image
   return `http://localhost:3001${image}`
 }
 
-// 处理图片加载错误
+/**
+ * 处理图片加载错误
+ */
 const handleImageError = (event: Event) => {
   const img = event.target as HTMLImageElement
   img.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjVmNWY1Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPuWbvueJh+WKoOi9veWksei0pTwvdGV4dD48L3N2Zz4='
 }
 
-// 格式化时间
+// ==================== 时间和状态格式化 ====================
+/**
+ * 格式化时间为相对时间
+ */
 const formatTime = (dateString: string) => {
   if (!dateString) return ''
   
@@ -647,7 +703,9 @@ const formatTime = (dateString: string) => {
   })
 }
 
-// 获取状态文本
+/**
+ * 获取状态文本
+ */
 const getStatusText = (status: number | string) => {
   if (typeof status === 'number') {
     return status === 1 ? '公开' : '私密'
@@ -655,7 +713,9 @@ const getStatusText = (status: number | string) => {
   return status === 'public' ? '公开' : '私密'
 }
 
-// 获取心情表情
+/**
+ * 获取心情表情
+ */
 const getMoodEmoji = (mood: string) => {
   const moodMap: Record<string, string> = {
     '开心': '😊',
@@ -674,7 +734,9 @@ const getMoodEmoji = (mood: string) => {
   return moodMap[mood] || '😊'
 }
 
-// 获取天气表情
+/**
+ * 获取天气表情
+ */
 const getWeatherEmoji = (weather: string) => {
   const weatherMap: Record<string, string> = {
     '晴天': '☀️',
@@ -692,7 +754,10 @@ const getWeatherEmoji = (weather: string) => {
   return weatherMap[weather] || '☀️'
 }
 
-// 分页相关
+// ==================== 分页相关 ====================
+/**
+ * 切换页码
+ */
 const changePage = (page: number) => {
   if (page < 1 || page > Math.ceil(pagination.value.total / pagination.value.size)) {
     return
@@ -704,6 +769,9 @@ const changePage = (page: number) => {
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
+/**
+ * 获取分页页码数组
+ */
 const getPageNumbers = () => {
   const current = pagination.value.current
   const total = Math.ceil(pagination.value.total / pagination.value.size)
@@ -745,7 +813,10 @@ const getPageNumbers = () => {
   return pages
 }
 
-// 图片预览相关
+// ==================== 图片预览相关 ====================
+/**
+ * 预览图片
+ */
 const previewImage = (images: string[], index: number) => {
   previewImages.value = images
   currentImageIndex.value = index
@@ -753,24 +824,36 @@ const previewImage = (images: string[], index: number) => {
   document.body.style.overflow = 'hidden'
 }
 
+/**
+ * 关闭图片预览
+ */
 const closePreview = () => {
   showPreview.value = false
   document.body.style.overflow = ''
 }
 
+/**
+ * 上一张图片
+ */
 const prevImage = () => {
   if (currentImageIndex.value > 0) {
     currentImageIndex.value--
   }
 }
 
+/**
+ * 下一张图片
+ */
 const nextImage = () => {
   if (currentImageIndex.value < previewImages.value.length - 1) {
     currentImageIndex.value++
   }
 }
 
-// 键盘事件处理
+// ==================== 事件处理 ====================
+/**
+ * 键盘事件处理
+ */
 const handleKeydown = (event: KeyboardEvent) => {
   if (!showPreview.value) return
   
@@ -787,25 +870,43 @@ const handleKeydown = (event: KeyboardEvent) => {
   }
 }
 
-// 页面可见性变化处理（用于前台自动刷新）
+/**
+ * 页面可见性变化处理（用于前台自动刷新）
+ */
 const onVisibilityChange = () => {
   if (document.visibilityState === 'visible') {
     fetchTalkList()
   }
 }
 
-// 点赞 says 
+// ==================== 点赞相关方法 ====================
+/**
+ * 处理说说点赞
+ */
 const handleLikeTalk = async (talk: Talk) => {
   if (likingTalks.value.has(talk._id)) return
   
   try {
     likingTalks.value.add(talk._id)
     
-    // 使用统一的点赞处理逻辑
-    await handleLikeByStore(talk._id, talk)
+    // 记录操作前的状态
+    const wasLiked = isLikedByStore(talk._id)
+    
+    // 使用统一的点赞处理逻辑（只传递一个参数）
+    await handleLikeByStore(talk._id)
     
     // 更新本地状态以保持一致性
-    talkLikeStatus.value[talk._id] = isLikedByStore(talk._id)
+    const isNowLiked = isLikedByStore(talk._id)
+    talkLikeStatus.value[talk._id] = isNowLiked
+    
+    // 更新点赞数
+    if (!wasLiked && isNowLiked) {
+      // 点赞：增加1
+      talk.likes = (talk.likes || 0) + 1
+    } else if (wasLiked && !isNowLiked) {
+      // 取消点赞：减少1
+      talk.likes = Math.max(0, (talk.likes || 0) - 1)
+    }
   } catch (error) {
     console.error('点赞操作失败:', error)
   } finally {
@@ -873,7 +974,7 @@ const loadTalkReplies = async (talkId: string) => {
   
   try {
     loadingReplies.value.add(talkId)
-    const response = await getTalkReplies(talkId, { current: 1, size: 10 })
+    const response = await getTalkReplies(talkId, { current: 1, size: 10 }) as Api.Reply.ReplyList
     
     if (response && response.records) {
       talkReplies.value[talkId] = response.records
@@ -900,7 +1001,7 @@ const loadMoreReplies = async (talkId: string) => {
     const currentReplies = talkReplies.value[talkId] || []
     const current = Math.floor(currentReplies.length / 10) + 1
     
-    const response = await getTalkReplies(talkId, { current, size: 10 })
+    const response = await getTalkReplies(talkId, { current, size: 10 }) as Api.Reply.ReplyList
     
     if (response && response.records) {
       talkReplies.value[talkId] = [...currentReplies, ...response.records]
@@ -931,7 +1032,7 @@ const loadAllReplies = async (talkId: string) => {
     }
     
     // 一次性加载所有回复
-    const response = await getTalkReplies(talkId, { current: 1, size: totalCount })
+    const response = await getTalkReplies(talkId, { current: 1, size: totalCount }) as Api.Reply.ReplyList
     
     if (response && response.records) {
       talkReplies.value[talkId] = response.records
@@ -978,7 +1079,7 @@ const submitReply = async (talkId: string) => {
     if (currentReplies.length > 0) {
       // 如果有回复数据，重新获取准确的总数
       try {
-        const response = await getTalkReplies(talkId, { current: 1, size: 1 })
+        const response = await getTalkReplies(talkId, { current: 1, size: 1 }) as Api.Reply.ReplyList
         talkReplyCount.value[talkId] = response?.total || currentReplies.length
       } catch (error) {
         // 如果获取失败，至少增加1（新增的回复）
@@ -1027,7 +1128,7 @@ const initializeLikeStatus = async () => {
 const initializeReplyCount = async () => {
   for (const talk of talkList.value) {
     try {
-      const response = await getTalkReplies(talk._id, { current: 1, size: 1 })
+      const response = await getTalkReplies(talk._id, { current: 1, size: 1 }) as Api.Reply.ReplyList
       // 保存真实的回复总数
       talkReplyCount.value[talk._id] = response?.total || 0
       console.log(`初始化说说 ${talk._id} 的回复数量: ${talkReplyCount.value[talk._id]}`)
@@ -1044,7 +1145,7 @@ const initializeReplyCountForNewTalks = async () => {
     // 只为还没有初始化回复数据的说说获取回复总数
     if (talkReplyCount.value[talk._id] === undefined) {
       try {
-        const response = await getTalkReplies(talk._id, { current: 1, size: 1 })
+        const response = await getTalkReplies(talk._id, { current: 1, size: 1 }) as Api.Reply.ReplyList
         // 保存真实的回复总数
         talkReplyCount.value[talk._id] = response?.total || 0
         console.log(`初始化新说说 ${talk._id} 的回复数量: ${talkReplyCount.value[talk._id]}`)
@@ -1094,11 +1195,19 @@ watch(() => userStore.isLoggedIn, async (isLoggedIn) => {
 })
  
  onUnmounted(() => {
-   document.removeEventListener('keydown', handleKeydown)
-   document.body.style.overflow = ''
+  document.removeEventListener('keydown', handleKeydown)
+  document.body.style.overflow = ''
   window.removeEventListener('focus', fetchTalkList as EventListener)
   document.removeEventListener('visibilitychange', onVisibilityChange)
- })
+  
+  // 清理缓存
+  formatTimeCache.clear()
+  formatContentCache.clear()
+  
+  // 取消防抖函数
+  debouncedLikeTalk.cancel()
+  debouncedLikeReply.cancel()
+})
  </script>
  
  <style scoped>

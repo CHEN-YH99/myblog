@@ -28,8 +28,9 @@ app.use(pinia)
 app.use(router)
 app.use(ElementPlus)
 
-// 初始化用户状态
-const userStore = useUserStore()
-userStore.initUserState()
-
-app.mount('#app')
+// 异步初始化用户状态
+;(async () => {
+  const userStore = useUserStore()
+  await userStore.initUserState()
+  app.mount('#app')
+})()

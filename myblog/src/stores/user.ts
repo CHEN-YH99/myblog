@@ -40,7 +40,7 @@ export const useUserStore = defineStore('user', () => {
   }
 
   // 初始化用户状态（从localStorage恢复）
-  const initUserState = () => {
+  const initUserState = async () => {
     const savedToken = localStorage.getItem('token')
     const savedUserInfo = localStorage.getItem('userInfo')
     
@@ -51,6 +51,18 @@ export const useUserStore = defineStore('user', () => {
     if (savedUserInfo) {
       try {
         userInfo.value = JSON.parse(savedUserInfo)
+        
+        // 如果用户信息存在，初始化相关数据
+        if (userInfo.value) {
+          const articlesStore = useArticlesStore()
+          const talksStore = useTalksStore()
+          
+          // 并行初始化点赞状态
+          await Promise.all([
+            articlesStore.initializeLikeStatus(),
+            talksStore.initializeLikeStatus()
+          ])
+        }
       } catch (error) {
         console.error('解析用户信息失败:', error)
         localStorage.removeItem('userInfo')
@@ -126,6 +138,6 @@ export const useUserStore = defineStore('user', () => {
   persist: {
     key: 'user-store',
     storage: localStorage,
-    paths: ['token', 'userInfo']
+    pick: ['token', 'userInfo']
   }
 })

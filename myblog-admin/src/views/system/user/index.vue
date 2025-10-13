@@ -81,7 +81,8 @@
 <script setup lang="ts">
   import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
   import AvatarUpload from '@/components/AvatarUpload.vue'
-  import { ACCOUNT_TABLE_DATA } from '@/mock/temp/formData'
+  // 用户头像数据 - 实际项目中应从API获取
+  const ACCOUNT_TABLE_DATA = ref([])
   import { ElMessageBox, ElMessage, ElTag, ElImage } from 'element-plus'
   import { useTable } from '@/composables/useTable'
   import { fetchGetUserList, fetchDeleteUser, fetchUpdateUser } from '@/api/system-manage'

@@ -1,5 +1,4 @@
-import request from '@/utils/http'
-import http from '@/utils/http'
+import api from '@/utils/http'
 
 type ArticleView = Api.Article.ArticleItem & {
   cover?: string
@@ -11,35 +10,23 @@ type ArticleView = Api.Article.ArticleItem & {
  * @returns 文章列表
  */
 export function getAllArticles(params?: Api.Article.SearchParams) {
-  console.log('前台调用getAllArticles API，参数:', params)
-  
-  return request.get<Api.Article.ArticleItem[] | { articles: Api.Article.ArticleItem[]; total: number; currentPage: number; pageSize: number}>({
-    url: '/api/articles',
-    params,
-    showErrorMessage: true
-  }).then((data) => {
-    console.log('前台getAllArticles处理后的响应:', data)
-    
-    if (data && typeof data === 'object') {
-      // 如果直接是数组格式
+  return api.get({ url: '/api/articles', params })
+    .then(response => {
+      const data = response
+      
       if (Array.isArray(data)) {
-        console.log('前台收到数组格式文章数据:', data.length)
         return data
-      }
-      // 如果是分页响应格式 {articles: [...], total: ...}
-      if ('articles' in data && Array.isArray((data as any).articles)) {
-        const articles = (data as any).articles as Api.Article.ArticleItem[]
-        console.log('前台收到articles格式文章数据:', articles.length)
+      } else if (data && typeof data === 'object' && 'articles' in data) {
+        const articles = (data as any).articles
         return articles
+      } else {
+        return []
       }
-    }
-    
-    console.warn('前台无法识别的文章响应格式:', data)
-    return []
-  }).catch(error => {
-    console.error('前台获取文章失败:', error)
-    throw error
-  })
+    })
+    .catch(error => {
+      console.error('前台获取文章失败:', error)
+      throw error
+    })
 }
 
 /**
@@ -48,7 +35,7 @@ export function getAllArticles(params?: Api.Article.SearchParams) {
  * @returns 文章详情
  */
 export function getArticle(idOrSlug: string) {
-  return request.get<Api.Article.ArticleItem>({
+  return api.get<Api.Article.ArticleItem>({
     url: `/api/articles/${idOrSlug}`,
     showErrorMessage: true
   })
@@ -60,7 +47,7 @@ export function getArticle(idOrSlug: string) {
  * @returns 创建的文章
  */
 export function createArticle(payload: Api.Article.CreateParams) {
-  return request.post<Api.Article.ArticleItem>({
+  return api.post<Api.Article.ArticleItem>({
     url: '/api/articles',
     data: payload,
     showSuccessMessage: true,
@@ -75,7 +62,7 @@ export function createArticle(payload: Api.Article.CreateParams) {
  * @returns 更新后的文章
  */
 export function updateArticle(id: string, payload: Api.Article.UpdateParams) {
-  return request.put<Api.Article.ArticleItem>({
+  return api.put<Api.Article.ArticleItem>({
     url: `/api/articles/${id}`,
     data: payload,
     showSuccessMessage: true,
@@ -89,7 +76,7 @@ export function updateArticle(id: string, payload: Api.Article.UpdateParams) {
  * @returns 删除结果
  */
 export function deleteArticle(id: string) {
-  return request.del<void>({
+  return api.del<void>({
     url: `/api/articles/${id}`,
     showSuccessMessage: true,
     showErrorMessage: true
@@ -105,7 +92,7 @@ export function uploadImage(file: File) {
   const formData = new FormData()
   formData.append('file', file)
   
-  return request.post<Api.Article.UploadResponse>({
+  return api.post<Api.Article.UploadResponse>({
     url: '/api/uploads',
     data: formData,
     headers: {
@@ -123,7 +110,7 @@ export function uploadImage(file: File) {
  * @returns 点赞结果
  */
 export function likeArticle(articleId: string) {
-  return request.post<Api.Article.LikeResponse>({
+  return api.post<Api.Article.LikeResponse>({
     url: `/api/articles/${articleId}/like`,
     showErrorMessage: true
   })
@@ -135,7 +122,7 @@ export function likeArticle(articleId: string) {
  * @returns 取消点赞结果
  */
 export function unlikeArticle(articleId: string) {
-  return request.post<Api.Article.LikeResponse>({
+  return api.post<Api.Article.LikeResponse>({
     url: `/api/articles/${articleId}/unlike`,
     showErrorMessage: true
   })
@@ -147,7 +134,7 @@ export function unlikeArticle(articleId: string) {
  * @returns 点赞状态
  */
 export function getLikeStatus(articleId: string) {
-  return request.get<Api.Article.LikeStatusResponse>({
+  return api.get<Api.Article.LikeStatusResponse>({
     url: `/api/articles/${articleId}/like-status`,
     showErrorMessage: false // 静默获取，不显示错误
   })
@@ -159,7 +146,7 @@ export function getLikeStatus(articleId: string) {
  * @returns 批量点赞状态
  */
 export function getBatchLikeStatus(articleIds: string[]) {
-  return request.post<Api.Article.BatchLikeStatusResponse>({
+  return api.post<Api.Article.BatchLikeStatusResponse>({
     url: '/api/articles/batch-like-status',
     data: { articleIds },
     showErrorMessage: false
@@ -172,7 +159,7 @@ export function getBatchLikeStatus(articleIds: string[]) {
  * @returns 点赞数
  */
 export function getArticleLikes(articleId: string) {
-  return request.get<Api.Article.LikeCountResponse>({
+  return api.get<Api.Article.LikeCountResponse>({
     url: `/api/articles/${articleId}/likes`,
     showErrorMessage: false
   })
@@ -183,7 +170,7 @@ export function getArticleLikes(articleId: string) {
  * @returns 用户已点赞的文章列表
  */
 export function getUserLikedArticles() {
-  return request.get<Api.Article.ArticleItem[]>({
+  return api.get<Api.Article.ArticleItem[]>({
     url: '/api/user/liked-articles',
     showErrorMessage: false
   })
@@ -197,7 +184,7 @@ export function getUserLikedArticles() {
  * @returns 浏览量结果
  */
 export function incrementViews(articleId: string) {
-  return request.post<Api.Article.ViewsResponse>({
+  return api.post<Api.Article.ViewsResponse>({
     url: `/api/articles/${articleId}/views`,
     showErrorMessage: false // 静默操作
   })
@@ -209,7 +196,7 @@ export function incrementViews(articleId: string) {
  * @returns 热门文章列表
  */
 export function getPopularArticles(limit: number = 10) {
-  return request.get<Api.Article.ArticleItem[]>({
+  return api.get<Api.Article.ArticleItem[]>({
     url: '/api/articles/popular',
     params: { limit },
     showErrorMessage: true
@@ -223,7 +210,7 @@ export function getPopularArticles(limit: number = 10) {
  * @returns 相关文章列表
  */
 export function getRelatedArticles(articleId: string, limit: number = 5) {
-  return request.get<Api.Article.ArticleItem[]>({
+  return api.get<Api.Article.ArticleItem[]>({
     url: `/api/articles/${articleId}/related`,
     params: { limit },
     showErrorMessage: false
@@ -238,35 +225,23 @@ export function getRelatedArticles(articleId: string, limit: number = 5) {
  * @returns 分类列表
  */
 export function getCategories(params?: Api.Article.CategorySearchParams) {
-  console.log('前台调用getCategories API，参数:', params)
-  
-  return request.get<Api.Article.CategoryListResponse | Api.Article.CategoryItem[]>({
-    url: '/api/categories',
-    params,
-    showErrorMessage: true
-  }).then((data) => {
-    console.log('前台getCategories处理后的响应:', data)
-    
-    if (data && typeof data === 'object') {
-      // 如果直接是数组格式
+  return api.get({ url: '/api/categories', params })
+    .then(response => {
+      const data = response
+      
       if (Array.isArray(data)) {
-        console.log('前台收到数组格式分类数据:', data.length)
         return data.filter((cat: any) => cat.status === 'active')
-      }
-      // 如果是分页响应格式 {categories: [...], total: ...}
-      if ('categories' in data && Array.isArray((data as any).categories)) {
-        const categories = (data as any).categories as Api.Article.CategoryItem[]
-        console.log('前台收到categories格式分类数据:', categories.length)
+      } else if (data && typeof data === 'object' && 'categories' in data) {
+        const categories = (data as any).categories
         return categories.filter((cat) => cat.status === 'active')
+      } else {
+        return []
       }
-    }
-    
-    console.warn('前台无法识别的分类响应格式:', data)
-    return []
-  }).catch(error => {
-    console.error('前台获取分类失败:', error)
-    throw error
-  })
+    })
+    .catch(error => {
+      console.error('前台获取分类失败:', error)
+      throw error
+    })
 }
 
 /**
@@ -275,7 +250,7 @@ export function getCategories(params?: Api.Article.CategorySearchParams) {
  * @returns 分类详情
  */
 export function getCategoryDetail(id: string) {
-  return request.get<Api.Article.CategoryItem>({
+  return api.get<Api.Article.CategoryItem>({
     url: `/api/categories/${id}`,
     showErrorMessage: true
   })
@@ -283,36 +258,28 @@ export function getCategoryDetail(id: string) {
 
 /**
  * 根据分类获取文章
- * @param category 分类名称或slug
+ * @param categoryId 分类ID
  * @param params 其他查询参数
  * @returns 文章列表
  */
-export function getArticlesByCategory(category: string, params?: Api.Article.SearchParams) {
-  console.log('前台调用getArticlesByCategory API，分类:', category, '参数:', params)
-  
-  return request.get<Api.Article.ArticleItem[] | { articles: Api.Article.ArticleItem[]; total: number; currentPage: number; pageSize: number}>({
-    url: '/api/articles',
-    params: { ...params, category },
-    showErrorMessage: true
-  }).then((data) => {
-    console.log('前台getArticlesByCategory处理后的响应:', data)
-    
-    if (data && typeof data === 'object') {
-      // 直接是数组格式
+export function getArticlesByCategory(categoryId: string, params?: Api.Article.SearchParams) {
+  return api.get({ url: `/api/articles/category/${categoryId}`, params })
+    .then(response => {
+      const data = response
+      
       if (Array.isArray(data)) {
         return data
+      } else if (data && typeof data === 'object' && 'articles' in data) {
+        const articles = (data as any).articles
+        return articles
+      } else {
+        return []
       }
-      // 如果是分页响应格式 {articles: [...], total: ...}
-      if ('articles' in data && Array.isArray((data as any).articles)) {
-        return (data as any).articles as Api.Article.ArticleItem[]
-      }
-    }
-    
-    return []
-  }).catch(error => {
-    console.error('前台根据分类获取文章失败:', error)
-    throw error
-  })
+    })
+    .catch(error => {
+      console.error(`前台获取分类${categoryId}文章失败:`, error)
+      throw error
+    })
 }
 
 /**
@@ -320,7 +287,7 @@ export function getArticlesByCategory(category: string, params?: Api.Article.Sea
  * @returns 标签列表
  */
 export function getTags() {
-  return request.get<Api.Article.TagItem[]>({
+  return api.get<Api.Article.TagItem[]>({
     url: '/api/tags',
     showErrorMessage: true
   })
@@ -335,7 +302,7 @@ export function getTags() {
  * @returns 文章列表
  */
 export function getArticlesByTag(tag: string, params?: Api.Article.SearchParams) {
-  return request.get<Api.Article.ArticleItem[]>({
+  return api.get<Api.Article.ArticleItem[]>({
     url: '/api/articles',
     params: { ...params, tag },
     showErrorMessage: true
@@ -351,7 +318,7 @@ export function getArticlesByTag(tag: string, params?: Api.Article.SearchParams)
  * @returns 搜索结果
  */
 export function searchArticles(keyword: string, params?: Api.Article.SearchParams) {
-  return request.get<Api.Article.SearchResponse>({
+  return api.get<Api.Article.SearchResponse>({
     url: '/api/articles/search',
     params: { ...params, keyword },
     showErrorMessage: true
@@ -364,30 +331,31 @@ export function searchArticles(keyword: string, params?: Api.Article.SearchParam
  * @returns 搜索建议列表
  */
 export function getSearchSuggestions(keyword: string) {
-  return request.get<Api.Article.SuggestionItem[]>({
+  return api.get<Api.Article.SuggestionItem[]>({
     url: '/api/articles/search/suggestions',
     params: { keyword },
     showErrorMessage: false
   })
 }
 
-export const getAllArticlesWithSignal = async (options?: { signal?: AbortSignal }): Promise<ArticleView[]> => {
-  try {
-    // console.log('开始获取文章数据...')
-    const response = await http.get<{articles: ArticleView[], total: number, currentPage: number, pageSize: number}>({ url: '/api/articles', signal: options?.signal })
-    // console.log('获取文章数据成功:', response)
-    // response 已经是 request 函数处理后的 data 部分，即 {articles: [...], total: ..., currentPage: ..., pageSize: ...}
-    // 检查 response 是否存在且有 articles 属性
-    if (response && typeof response === 'object' && 'articles' in response) {
-      return response.articles || []
-    }
-    // 如果 response 直接是数组（兼容性处理）
-    if (Array.isArray(response)) {
-      return response
-    }
-    return []
-  } catch (error) {
-    console.error('获取文章数据失败:', error)
-    throw error
-  }
+export function getAllArticlesWithSignal(signal?: AbortSignal, params?: Api.Article.SearchParams) {
+  return api.get({ url: '/api/articles', params, signal })
+    .then(response => {
+      const data = response
+      
+      if (Array.isArray(data)) {
+        return data
+      } else if (data && typeof data === 'object' && 'articles' in data) {
+        return (data as any).articles
+      } else {
+        return []
+      }
+    })
+    .catch(error => {
+      if (error.name === 'AbortError') {
+        throw error
+      }
+      console.error('前台获取文章失败:', error)
+      throw error
+    })
 }

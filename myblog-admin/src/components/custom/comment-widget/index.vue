@@ -26,7 +26,20 @@
 <script setup lang="ts">
   import { ref } from 'vue'
   import CommentItem from './widget/CommentItem.vue'
-  import { commentList, Comment } from '@/mock/temp/commentDetail'
+  
+  // 评论数据类型定义
+  interface Comment {
+    id: string
+    author: string
+    avatar?: string
+    content: string
+    createTime: string
+    likes: number
+    replies?: Comment[]
+  }
+  
+  // 评论列表数据 - 实际项目中应从API获取
+  const commentList: Comment[] = []
   const comments = commentList
 
   const newComment = ref<Partial<Comment>>({
