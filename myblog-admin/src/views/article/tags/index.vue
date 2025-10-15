@@ -47,7 +47,7 @@
         <ElCol :span="12">
           <ElButton
             type="danger"
-            :disabled="selectedTags.length === 0 || isLoading"
+            :disabled="selectedTags.length === 0 || isLoading || isReadOnly"
             @click="handleBatchDelete"
           >
             <ElIcon><Delete /></ElIcon>
@@ -55,7 +55,7 @@
           </ElButton>
         </ElCol>
         <ElCol :span="12" style="display: flex; justify-content: flex-end">
-          <ElButton type="primary" @click="handleAdd">
+          <ElButton type="primary" @click="handleAdd" :disabled="isReadOnly">
             <ElIcon><Plus /></ElIcon>
             新增
           </ElButton>
@@ -91,11 +91,11 @@
         </ElTableColumn>
         <ElTableColumn label="操作" align="center" width="200">
           <template #default="{ row }">
-            <ElButton type="primary" size="small" link @click="handleEdit(row)">
+            <ElButton type="primary" size="small" link @click="handleEdit(row)" :disabled="isReadOnly">
               <ElIcon><Edit /></ElIcon>
               修改
             </ElButton>
-            <ElButton type="danger" size="small" link @click="handleDelete(row)">
+            <ElButton type="danger" size="small" link @click="handleDelete(row)" :disabled="isReadOnly">
               <ElIcon><Delete /></ElIcon>
               删除
             </ElButton>
@@ -155,7 +155,7 @@
       </ElForm>
       <template #footer>
         <ElButton @click="dialogVisible = false">取消</ElButton>
-        <ElButton type="primary" @click="handleSubmit" :loading="submitLoading">确定</ElButton>
+        <ElButton type="primary" @click="handleSubmit" :loading="submitLoading" :disabled="isReadOnly">确定</ElButton>
       </template>
     </ElDialog>
   </div>
@@ -167,6 +167,8 @@
   import { Search, Refresh, Delete, Plus, Edit } from '@element-plus/icons-vue'
   import { useDateFormat } from '@vueuse/core'
   import { getTags } from '@/api/articles'
+  import { useUserStore } from '@/store/modules/user'
+  import { storeToRefs } from 'pinia'
 
   defineOptions({ name: 'TagsManagement' })
 
@@ -510,3 +512,4 @@
     }
   }
 </style>
+  const { isReadOnly } = storeToRefs(useUserStore())

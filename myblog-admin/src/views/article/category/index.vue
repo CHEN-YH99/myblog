@@ -7,7 +7,7 @@
         <p class="subtitle">管理博客文章的分类信息</p>
       </div>
       <div class="header-right">
-        <ElButton type="primary" @click="handleAdd">
+        <ElButton type="primary" @click="handleAdd" :disabled="isReadOnly">
           <ElIcon><Plus /></ElIcon>
           新增分类
         </ElButton>
@@ -75,6 +75,7 @@
               v-model="row.status"
               active-value="active"
               inactive-value="inactive"
+              :disabled="isReadOnly"
               @change="handleStatusChange(row)"
             />
           </template>
@@ -86,13 +87,13 @@
         </ElTableColumn>
         <ElTableColumn label="操作" width="200" fixed="right">
           <template #default="{ row }">
-            <ElButton size="small" @click="handleEdit(row)">编辑</ElButton>
+            <ElButton size="small" @click="handleEdit(row)" :disabled="isReadOnly">编辑</ElButton>
             <ElButton size="small" type="info" @click="handleView(row)">查看</ElButton>
             <ElButton
               size="small"
               type="danger"
               @click="handleDelete(row)"
-              :disabled="row.articleCount > 0"
+              :disabled="isReadOnly || row.articleCount > 0"
             >
               删除
             </ElButton>
@@ -118,9 +119,9 @@
     <div v-if="selectedCategories.length > 0" class="batch-actions">
       <ElAlert :title="`已选择 ${selectedCategories.length} 个分类`" type="info" :closable="false">
         <template #default>
-          <ElButton size="small" @click="handleBatchDelete">批量删除</ElButton>
-          <ElButton size="small" @click="handleBatchStatus('active')">批量启用</ElButton>
-          <ElButton size="small" @click="handleBatchStatus('inactive')">批量禁用</ElButton>
+          <ElButton size="small" @click="handleBatchDelete" :disabled="isReadOnly">批量删除</ElButton>
+          <ElButton size="small" @click="handleBatchStatus('active')" :disabled="isReadOnly">批量启用</ElButton>
+          <ElButton size="small" @click="handleBatchStatus('inactive')" :disabled="isReadOnly">批量禁用</ElButton>
         </template>
       </ElAlert>
     </div>
@@ -164,7 +165,7 @@
       </ElForm>
       <template #footer>
         <ElButton @click="dialogVisible = false">取消</ElButton>
-        <ElButton type="primary" @click="handleSubmit" :loading="submitLoading">
+        <ElButton type="primary" @click="handleSubmit" :loading="submitLoading" :disabled="isReadOnly">
           {{ dialogMode === 'add' ? '新增' : '更新' }}
         </ElButton>
       </template>
@@ -212,6 +213,8 @@
   import { ref, reactive, onMounted, nextTick } from 'vue'
   import { ElMessage, ElMessageBox } from 'element-plus'
   import { Plus, Search } from '@element-plus/icons-vue'
+  import { useUserStore } from '@/store/modules/user'
+  import { storeToRefs } from 'pinia'
   import {
     getCategories,
     createCategory,
@@ -226,6 +229,10 @@
   } from '@/api/articles'
 
   defineOptions({ name: 'CategoryManagement' })
+
+  // 用户只读状态
+  const userStore = useUserStore()
+  const { isReadOnly } = storeToRefs(userStore)
 
   // 响应式数据
   const loading = ref(false)

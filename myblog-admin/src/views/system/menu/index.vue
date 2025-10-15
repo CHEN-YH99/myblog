@@ -18,11 +18,11 @@
         @refresh="handleRefresh"
       >
         <template #left>
-          <ElButton v-auth="'add'" @click="handleAddMenu" v-ripple> 添加菜单 </ElButton>
+          <ElButton v-auth="'add'" @click="handleAddMenu" v-ripple :disabled="isReadOnly"> 添加菜单 </ElButton>
           <ElButton @click="toggleExpand" v-ripple>
             {{ isExpanded ? '收起' : '展开' }}
           </ElButton>
-          <ElButton v-if="hasAuth('add')" @click="handleAddMenu" v-ripple> 添加菜单 </ElButton>
+          <ElButton v-if="hasAuth('add')" @click="handleAddMenu" v-ripple :disabled="isReadOnly"> 添加菜单 </ElButton>
         </template>
       </ArtTableHeader>
 
@@ -60,11 +60,13 @@
   import type { AppRouteRecord } from '@/types/router'
   import { useAuth } from '@/composables/useAuth'
   import MenuDialog from './modules/menu-dialog.vue'
+  import { useUserStore } from '@/store/modules/user'
 
   defineOptions({ name: 'Menus' })
 
   const { hasAuth } = useAuth()
   const { menuList } = storeToRefs(useMenuStore())
+  const { isReadOnly } = storeToRefs(useUserStore())
 
   // 状态管理
   const loading = ref(false)
@@ -83,7 +85,7 @@
     route: ''
   }
 
-  const formFilters = reactive({ ...initialSearchState })
+  const formFilters = ref({ ...initialSearchState })
   const appliedFilters = reactive({ ...initialSearchState })
 
   const formItems = computed(() => [
@@ -176,10 +178,12 @@
           return h('div', buttonStyle, [
             h(ArtButtonTable, {
               type: 'edit',
+              disabled: isReadOnly.value,
               onClick: () => handleEditAuth(row)
             }),
             h(ArtButtonTable, {
               type: 'delete',
+              disabled: isReadOnly.value,
               onClick: () => handleDeleteAuth()
             })
           ])
@@ -188,15 +192,18 @@
         return h('div', buttonStyle, [
           h(ArtButtonTable, {
             type: 'add',
+            disabled: isReadOnly.value,
             onClick: () => handleAddAuth(),
             title: '新增权限'
           }),
           h(ArtButtonTable, {
             type: 'edit',
+            disabled: isReadOnly.value,
             onClick: () => handleEditMenu(row)
           }),
           h(ArtButtonTable, {
             type: 'delete',
+            disabled: isReadOnly.value,
             onClick: () => handleDeleteMenu()
           })
         ])
@@ -209,13 +216,13 @@
 
   // 事件处理
   const handleReset = () => {
-    Object.assign(formFilters, { ...initialSearchState })
+    Object.assign(formFilters.value, { ...initialSearchState })
     Object.assign(appliedFilters, { ...initialSearchState })
     getTableData()
   }
 
   const handleSearch = () => {
-    Object.assign(appliedFilters, { ...formFilters })
+    Object.assign(appliedFilters, { ...formFilters.value })
     getTableData()
   }
 

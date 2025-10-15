@@ -142,13 +142,41 @@
         />
       </el-form-item>
       <el-form-item label="新密码" prop="newPassword">
-        <el-input
-          v-model="passwordForm.newPassword"
-          type="password"
-          placeholder="请输入新密码"
-          show-password
-        />
-      </el-form-item>
+         <el-input
+           v-model="passwordForm.newPassword"
+           type="password"
+           placeholder="请输入新密码"
+           show-password
+         />
+         <!-- 密码强度指示器 -->
+         <div v-if="passwordForm.newPassword" class="password-strength-indicator">
+           <div class="strength-bar">
+             <div 
+               class="strength-fill" 
+               :class="passwordStrength"
+               :style="{ backgroundColor: passwordStrengthColor }"
+             ></div>
+           </div>
+           <span class="strength-text" :style="{ color: passwordStrengthColor }">
+             密码强度：{{ passwordStrengthText }}
+           </span>
+         </div>
+         <!-- 密码要求提示 -->
+         <div class="password-tips">
+           <p class="tip-title">密码要求：</p>
+           <ul class="tip-list">
+             <li :class="{ 'valid': passwordForm.newPassword.length >= 6 }">
+               至少6个字符
+             </li>
+             <li :class="{ 'valid': /[a-zA-Z]/.test(passwordForm.newPassword) && /\d/.test(passwordForm.newPassword) }">
+               包含字母和数字
+             </li>
+             <li :class="{ 'valid': passwordStrength === 'strong' }">
+               建议包含大小写字母、数字和特殊字符
+             </li>
+           </ul>
+         </div>
+       </el-form-item>
       <el-form-item label="确认密码" prop="confirmPassword">
         <el-input
           v-model="passwordForm.confirmPassword"
@@ -225,14 +253,88 @@ const passwordForm = ref({
 
 const passwordFormRef = ref()
 
+// 密码强度状态
+const passwordStrength = ref<'weak' | 'medium' | 'strong'>('weak')
+const passwordStrengthText = ref('弱')
+const passwordStrengthColor = ref('#f56c6c')
+
+// 密码强度校验函数
+const checkPasswordStrength = (password: string) => {
+  if (!password) {
+    passwordStrength.value = 'weak'
+    passwordStrengthText.value = '弱'
+    passwordStrengthColor.value = '#f56c6c'
+    return
+  }
+
+  const hasUpperCase = /[A-Z]/.test(password)
+  const hasLowerCase = /[a-z]/.test(password)
+  const hasNumber = /\d/.test(password)
+  const hasSpecialChar = /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password)
+  
+  const typeCount = [hasUpperCase, hasLowerCase, hasNumber, hasSpecialChar].filter(Boolean).length
+  
+  if (password.length >= 8 && typeCount >= 3) {
+    passwordStrength.value = 'strong'
+    passwordStrengthText.value = '强'
+    passwordStrengthColor.value = '#67c23a'
+  } else if (password.length >= 6 && typeCount >= 2) {
+    passwordStrength.value = 'medium'
+    passwordStrengthText.value = '中'
+    passwordStrengthColor.value = '#e6a23c'
+  } else {
+    passwordStrength.value = 'weak'
+    passwordStrengthText.value = '弱'
+    passwordStrengthColor.value = '#f56c6c'
+  }
+}
+
 // 密码表单验证规则
 const passwordRules = {
   currentPassword: [
-    { required: true, message: '请输入当前密码', trigger: 'blur' }
+    { required: true, message: '请输入当前密码', trigger: 'blur' },
+    { min: 1, message: '当前密码不能为空', trigger: 'blur' }
   ],
   newPassword: [
     { required: true, message: '请输入新密码', trigger: 'blur' },
-    { min: 6, message: '密码长度不能少于6位', trigger: 'blur' }
+    { min: 6, message: '密码长度不能少于6位', trigger: 'blur' },
+    { max: 20, message: '密码长度不能超过20位', trigger: 'blur' },
+    {
+      validator: (rule: any, value: string, callback: Function) => {
+        if (!value) {
+          callback()
+          return
+        }
+        
+        // 检查密码强度
+        checkPasswordStrength(value)
+        
+        // 必须包含字母和数字
+        const hasLetter = /[a-zA-Z]/.test(value)
+        const hasNumber = /\d/.test(value)
+        
+        if (!hasLetter || !hasNumber) {
+          callback(new Error('密码必须包含字母和数字'))
+          return
+        }
+        
+        // 不能与当前密码相同
+        if (value === passwordForm.value.currentPassword) {
+          callback(new Error('新密码不能与当前密码相同'))
+          return
+        }
+        
+        // 不能包含常见弱密码
+        const weakPasswords = ['123456', 'password', 'qwerty', '111111', '123123']
+        if (weakPasswords.some(weak => value.toLowerCase().includes(weak))) {
+          callback(new Error('密码过于简单，请使用更复杂的密码'))
+          return
+        }
+        
+        callback()
+      },
+      trigger: 'blur'
+    }
   ],
   confirmPassword: [
     { required: true, message: '请再次输入新密码', trigger: 'blur' },
@@ -290,6 +392,24 @@ const handleChangePassword = async () => {
   
   try {
     await passwordFormRef.value.validate()
+    
+    // 检查密码强度，如果是弱密码给出警告
+    if (passwordStrength.value === 'weak') {
+      const confirmResult = await ElMessageBox.confirm(
+        '您的新密码强度较弱，建议使用包含大小写字母、数字和特殊字符的强密码。是否继续？',
+        '密码强度提醒',
+        {
+          confirmButtonText: '继续修改',
+          cancelButtonText: '重新设置',
+          type: 'warning',
+        }
+      ).catch(() => false)
+      
+      if (!confirmResult) {
+        return
+      }
+    }
+    
     changingPassword.value = true
     
     // 调用修改密码的API
@@ -311,7 +431,24 @@ const handleChangePassword = async () => {
     }, 1500)
   } catch (error: any) {
     console.error('修改密码失败:', error)
-    const errorMessage = error?.response?.data?.message || error?.message || '修改密码失败，请稍后重试'
+    
+    // 更详细的错误处理
+    let errorMessage = '修改密码失败，请稍后重试'
+    
+    if (error?.response?.status === 400) {
+      errorMessage = '当前密码错误，请检查后重试'
+    } else if (error?.response?.status === 401) {
+      errorMessage = '登录已过期，请重新登录'
+      setTimeout(() => {
+        userStore.logout()
+        router.push('/login')
+      }, 1500)
+    } else if (error?.response?.data?.message) {
+      errorMessage = error.response.data.message
+    } else if (error?.message) {
+      errorMessage = error.message
+    }
+    
     ElMessage.error(errorMessage)
   } finally {
     changingPassword.value = false
@@ -331,8 +468,16 @@ const resetPasswordForm = () => {
     newPassword: '',
     confirmPassword: ''
   }
+  passwordStrength.value = 'weak'
+  passwordStrengthText.value = '弱'
+  passwordStrengthColor.value = '#f56c6c'
   passwordFormRef.value?.clearValidate()
 }
+
+// 监听新密码输入，实时更新密码强度
+watch(() => passwordForm.value.newPassword, (newPassword) => {
+  checkPasswordStrength(newPassword)
+})
 
 // 获取用户已点赞的文章列表
 const loadLikedArticles = async () => {
@@ -593,7 +738,6 @@ watch(activeTab, (newTab) => {
 
 .card-header h3 {
   margin: 0;
-  color: white;
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -710,10 +854,101 @@ watch(activeTab, (newTab) => {
 }
 
 /* 空状态 */
-.empty-state {
-  text-align: center;
-  padding: 2rem;
-}
+ .empty-state {
+   text-align: center;
+   padding: 2rem;
+ }
+
+ /* 密码强度指示器样式 */
+ .password-strength-indicator {
+   margin-top: 8px;
+   display: flex;
+   align-items: center;
+   gap: 8px;
+ }
+
+ .strength-bar {
+   flex: 1;
+   height: 4px;
+   background-color: #e4e7ed;
+   border-radius: 2px;
+   overflow: hidden;
+ }
+
+ .strength-fill {
+   height: 100%;
+   transition: all 0.3s ease;
+   border-radius: 2px;
+ }
+
+ .strength-fill.weak {
+   width: 33%;
+ }
+
+ .strength-fill.medium {
+   width: 66%;
+ }
+
+ .strength-fill.strong {
+   width: 100%;
+ }
+
+ .strength-text {
+   font-size: 12px;
+   font-weight: 500;
+   white-space: nowrap;
+ }
+
+ /* 密码要求提示样式 */
+ .password-tips {
+   margin-top: 12px;
+   padding: 12px;
+   background-color: #f8f9fa;
+   border-radius: 6px;
+   border: 1px solid #e9ecef;
+ }
+
+ .tip-title {
+   margin: 0 0 8px 0;
+   font-size: 13px;
+   font-weight: 500;
+   color: #495057;
+ }
+
+ .tip-list {
+   margin: 0;
+   padding: 0;
+   list-style: none;
+ }
+
+ .tip-list li {
+   font-size: 12px;
+   color: #6c757d;
+   margin-bottom: 4px;
+   position: relative;
+   padding-left: 16px;
+ }
+
+ .tip-list li:before {
+   content: '○';
+   position: absolute;
+   left: 0;
+   color: #dc3545;
+   transition: all 0.3s ease;
+ }
+
+ .tip-list li.valid {
+   color: #28a745;
+ }
+
+ .tip-list li.valid:before {
+   content: '●';
+   color: #28a745;
+ }
+
+ .tip-list li:last-child {
+   margin-bottom: 0;
+ }
 
 /* 响应式设计 */
 @media (max-width: 768px) {

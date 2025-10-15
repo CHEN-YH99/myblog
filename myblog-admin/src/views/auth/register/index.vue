@@ -18,6 +18,13 @@
               />
             </ElFormItem>
 
+            <ElFormItem prop="email">
+              <ElInput
+                v-model.trim="formData.email"
+                placeholder="请输入邮箱"
+              />
+            </ElFormItem>
+
             <ElFormItem prop="password">
               <ElInput
                 v-model.trim="formData.password"
@@ -96,6 +103,7 @@
 
   const formData = reactive({
     username: '',
+    email: '',
     password: '',
     confirmPassword: '',
     agreement: false
@@ -127,6 +135,10 @@
       { required: true, message: t('register.placeholder[0]'), trigger: 'blur' },
       { min: 3, max: 20, message: t('register.rule[2]'), trigger: 'blur' }
     ],
+    email: [
+      { required: true, message: '请输入邮箱', trigger: 'blur' },
+      { type: 'email', message: '邮箱格式不正确', trigger: ['blur', 'change'] }
+    ],
     password: [
       { required: true, validator: validatePass, trigger: 'blur' },
       { min: 6, message: t('register.rule[3]'), trigger: 'blur' }
@@ -152,13 +164,32 @@
     try {
       await formRef.value.validate()
       loading.value = true
+      // 调用后端注册接口
+      const { fetchRegister } = await import('@/api/auth')
+      await fetchRegister({
+        username: formData.username,
+        email: formData.email,
+        password: formData.password,
+        confirmPassword: formData.confirmPassword
+      })
 
-      // 模拟注册请求
-      setTimeout(() => {
-        loading.value = false
-        ElMessage.success('注册成功')
-        toLogin()
-      }, 1000)
+      // 同步到后台users表，设置为普通用户（只读权限）
+      try {
+        const { syncUserToAdmin } = await import('@/api/user')
+        await syncUserToAdmin({
+          username: formData.username,
+          email: formData.email,
+          role: '普通用户',
+          status: 'active',
+          createTime: new Date().toISOString(),
+          registerSource: 'admin'
+        })
+      } catch (syncErr) {
+        console.warn('用户同步到后台失败，但注册已成功：', syncErr)
+      }
+
+      ElMessage.success('注册成功')
+      toLogin()
     } catch (error) {
       console.log('验证失败', error)
     }

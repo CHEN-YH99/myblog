@@ -41,6 +41,36 @@ const axiosInstance = axios.create({
 /** 请求拦截器 */
 axiosInstance.interceptors.request.use(
   (request: InternalAxiosRequestConfig) => {
+    // 添加token到请求头（兼容旧格式token）
+    const token = localStorage.getItem('token')
+    const userInfo = localStorage.getItem('userInfo')
+    if (token) {
+      const tokenParts = token.split('-')
+      const isOldFormat = tokenParts.length === 4 && tokenParts[0] === 'mock' && tokenParts[1] === 'jwt' && tokenParts[2] === 'token' && /^\d+$/.test(tokenParts[3])
+      const isNewFormat = tokenParts.length >= 5 && tokenParts[0] === 'mock' && tokenParts[1] === 'jwt' && tokenParts[2] === 'token' && /^\d+$/.test(tokenParts[tokenParts.length - 1])
+
+      if (isOldFormat) {
+        if (userInfo) {
+          try {
+            const user = JSON.parse(userInfo)
+            const newToken = `mock-jwt-token-${user.username}-${Date.now()}`
+            localStorage.setItem('token', newToken)
+            request.headers.set('Authorization', newToken)
+            console.log('检测到旧格式token，已自动升级为新格式')
+          } catch (e) {
+            console.warn('旧格式token升级失败，需重新登录')
+          }
+        } else {
+          console.warn('检测到旧格式token且缺少userInfo，跳过Authorization并提示重新登录')
+          // 不设置 Authorization，后端将返回401，前端将提示重新登录
+        }
+      } else if (isNewFormat) {
+        request.headers.set('Authorization', token)
+      } else {
+        console.warn('非法token格式，跳过Authorization')
+      }
+    }
+    
     // 设置默认Content-Type
     if (request.data && !(request.data instanceof FormData) && !request.headers['Content-Type']) {
       request.headers.set('Content-Type', 'application/json')
@@ -51,8 +81,59 @@ axiosInstance.interceptors.request.use(
       url: request.url,
       method: request.method,
       params: request.params,
-      data: request.data
+      data: request.data,
+      headers: {
+        Authorization: request.headers.Authorization,
+        'Content-Type': request.headers['Content-Type']
+      }
     })
+    
+    // 特别记录密码修改请求的详细信息
+    if (request.url?.includes('change-password')) {
+      console.log('=== 密码修改请求详细信息 ===')
+      const token = localStorage.getItem('token')
+      const userInfo = localStorage.getItem('userInfo')
+      console.log('Token from localStorage:', token)
+      console.log('UserInfo from localStorage:', userInfo)
+      
+      // 检查token格式
+       if (token) {
+         const tokenParts = token.split('-')
+         console.log('Token parts:', tokenParts)
+         
+         // 正确的格式判断：mock-jwt-token-{username}-{timestamp}
+         // 旧格式：mock-jwt-token-{timestamp} (4个部分，最后一个是纯数字时间戳)
+         // 新格式：mock-jwt-token-{username}-{timestamp} (5个或更多部分)
+         const isOldFormat = tokenParts.length === 4 && /^\d+$/.test(tokenParts[3])
+         const isNewFormat = tokenParts.length >= 5
+         
+         console.log('Token format analysis:', {
+           isOldFormat,
+           isNewFormat,
+           expectedFormat: 'mock-jwt-token-{username}-{timestamp}',
+           actualParts: tokenParts.length,
+           lastPartIsTimestamp: /^\d+$/.test(tokenParts[tokenParts.length - 1])
+         })
+         
+         // 如果是旧格式token，尝试修复
+         if (isOldFormat && userInfo) {
+          try {
+            const user = JSON.parse(userInfo)
+            const newToken = `mock-jwt-token-${user.username}-${Date.now()}`
+            console.log('检测到旧格式token，生成新token:', newToken)
+            localStorage.setItem('token', newToken)
+            request.headers.set('Authorization', newToken)
+            console.log('已更新token格式')
+          } catch (error) {
+            console.error('修复token格式失败:', error)
+          }
+        }
+      }
+      
+      console.log('Request Authorization header:', request.headers.Authorization)
+      console.log('Request data:', request.data)
+      console.log('Request URL:', request.url)
+    }
 
     return request
   },

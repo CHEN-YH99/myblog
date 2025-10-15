@@ -20,7 +20,7 @@
       >
         <template #left>
           <ElSpace wrap>
-            <ElButton @click="showDialog('add')" v-ripple>新增角色</ElButton>
+            <ElButton @click="showDialog('add')" v-ripple :disabled="isReadOnly">新增角色</ElButton>
           </ElSpace>
         </template>
       </ArtTableHeader>
@@ -56,10 +56,13 @@
   import ArtButtonMore from '@/components/core/forms/art-button-more/index.vue'
   import RoleSearch from './modules/role-search.vue'
   import RoleEditDialog from './modules/role-edit-dialog.vue'
+  import { useUserStore } from '@/store/modules/user'
+  import { storeToRefs } from 'pinia'
 
   defineOptions({ name: 'RoleManage' })
 
   type RoleListItem = Api.SystemManage.RoleListItem
+  const { isReadOnly } = storeToRefs(useUserStore())
 
   // 搜索表单
   const searchForm = ref({
@@ -141,6 +144,7 @@
               modelValue: row.enabled,
               activeText: '启用',
               inactiveText: '禁用',
+              disabled: isReadOnly.value,
               onChange: (value) => handleStatusChange(row, value)
             })
           }
@@ -157,12 +161,14 @@
                   {
                     key: 'edit',
                     label: '修改',
-                    icon: Edit
+                    icon: Edit,
+                    disabled: isReadOnly.value
                   },
                   {
                     key: 'delete',
                     label: '删除',
                     icon: Delete,
+                    disabled: isReadOnly.value,
                     color: '#f56c6c'
                   }
                 ],

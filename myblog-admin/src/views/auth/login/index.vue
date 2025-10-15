@@ -202,7 +202,8 @@
   const loading = ref(false)
 
   onMounted(() => {
-    setupAccount('super')
+    // 默认选择普通用户
+    setupAccount('user')
   })
 
   // 设置账号
@@ -233,10 +234,55 @@
       // 登录请求
       const { username, password } = formData
 
-      const { token, refreshToken } = await fetchLogin({
-        username: username,
-        password
-      })
+      let token: string | undefined
+      let refreshToken: string | undefined
+      const API_PROXY_URL = import.meta.env.VITE_API_PROXY_URL as string | undefined
+
+      // 优先使用封装的请求
+      try {
+        const res = await fetchLogin({ username, password })
+        token = res.token
+        refreshToken = res.refreshToken
+      } catch (err) {
+        // 网络错误容错：回退使用原生fetch避免拦截器影响
+        const isHttpError = err instanceof HttpError
+        const isNetworkError = isHttpError && err.code === 400 && /网络连接/.test(err.message)
+        if (isNetworkError) {
+          // 先尝试通过Vite代理的相对路径
+          const resp = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+          })
+          if (!resp.ok) {
+            // 如果代理仍不可用，直接请求后端地址（已启用CORS）
+            const directUrl = `${API_PROXY_URL || 'http://localhost:3001'}/api/auth/login`
+            const directResp = await fetch(directUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ username, password })
+            })
+            if (!directResp.ok) throw new Error('登录失败')
+            const directJson = await directResp.json()
+            if (directJson && (directJson.code === 200 || directJson.code === 201) && directJson.data) {
+              token = directJson.data.token
+              refreshToken = directJson.data.refreshToken
+            } else {
+              throw new Error(directJson?.msg || '登录失败')
+            }
+          } else {
+            const json = await resp.json()
+            if (json && (json.code === 200 || json.code === 201) && json.data) {
+              token = json.data.token
+              refreshToken = json.data.refreshToken
+            } else {
+              throw new Error(json?.msg || '登录失败')
+            }
+          }
+        } else {
+          throw err
+        }
+      }
 
       // 验证token
       if (!token) {
@@ -245,7 +291,43 @@
 
       // 存储token和用户信息
       userStore.setToken(token, refreshToken)
-      const userInfo = await fetchGetUserInfo()
+      // 获取用户信息；若网络层仍异常，直接请求后端地址
+      let userInfo
+      try {
+        userInfo = await fetchGetUserInfo()
+      } catch (err) {
+        const isHttpError = err instanceof HttpError
+        const isNetworkError = isHttpError && err.code === 400 && /网络连接/.test(err.message)
+        if (isNetworkError) {
+          const resp = await fetch('/api/auth/user-info', { 
+            method: 'GET',
+            headers: { Authorization: token as string }
+          })
+          if (!resp.ok) {
+            const directUrl = `${API_PROXY_URL || 'http://localhost:3001'}/api/auth/user-info`
+            const directResp = await fetch(directUrl, { 
+              method: 'GET',
+              headers: { Authorization: token as string }
+            })
+            if (!directResp.ok) throw new Error('获取用户信息失败')
+            const directJson = await directResp.json()
+            if (directJson && (directJson.code === 200 || directJson.code === 201) && directJson.data) {
+              userInfo = directJson.data
+            } else {
+              throw new Error(directJson?.msg || '获取用户信息失败')
+            }
+          } else {
+            const json = await resp.json()
+            if (json && (json.code === 200 || json.code === 201) && json.data) {
+              userInfo = json.data
+            } else {
+              throw new Error(json?.msg || '获取用户信息失败')
+            }
+          }
+        } else {
+          throw err
+        }
+      }
       userStore.setUserInfo(userInfo)
       userStore.setLoginStatus(true)
 

@@ -183,7 +183,8 @@ export const asyncRoutes: AppRouteRecord[] = [
         component: RoutesAlias.PublishTalk,
         meta: {
           title: 'menus.talk.publishTalk',
-          keepAlive: true
+          keepAlive: true,
+          roles: ['R_SUPER', 'R_ADMIN']
         }
       },
       {
@@ -203,7 +204,8 @@ export const asyncRoutes: AppRouteRecord[] = [
     component: RoutesAlias.Layout,
     meta: {
       title: 'menus.site.title',
-      icon: '&#xe820;'
+      icon: '&#xe820;',
+      roles: ['R_SUPER', 'R_ADMIN']
     },
     children: [
       {
@@ -246,7 +248,8 @@ export const asyncRoutes: AppRouteRecord[] = [
     meta: {
       title: 'menus.photoAlbum.title',
       icon: '&#xe816;',
-      keepAlive: false
+      keepAlive: false,
+      roles: ['R_SUPER', 'R_ADMIN']
     }
   },
   // 一级菜单

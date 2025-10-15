@@ -78,7 +78,7 @@
         <!-- 用户登录状态显示 -->
         <div v-if="userStore.isLoggedIn" class="navbar__user" @click="handleUserMenuToggle">
           <el-avatar 
-            :src="userStore.userInfo?.avatar || avatarUrl" 
+            :src="displayAvatar" 
             :size="32"
             class="user-avatar"
           />
@@ -208,7 +208,7 @@
         <div v-if="userStore.isLoggedIn" class="mobile-user-section">
           <div class="mobile-user-info">
             <el-avatar 
-              :src="userStore.userInfo?.avatar || avatarUrl" 
+              :src="displayAvatar" 
               :size="40"
             />
             <span class="mobile-user-name">{{ userStore.userInfo?.nickname || userStore.userInfo?.username }}</span>
@@ -264,6 +264,22 @@ const router = useRouter()
 const route = useRoute()
 const drawer = ref(false)
 const userStore = useUserStore()
+
+// 与后台管理列表一致的默认头像生成策略
+const getDefaultAvatar = (name) => {
+  const safeName = name || 'User'
+  const colors = ['409eff', '67c23a', 'e6a23c', 'f56c6c', '909399']
+  const color = colors[safeName.length % colors.length]
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(safeName)}&background=${color}&color=fff&size=200`
+}
+
+// 统一的展示头像：优先使用用户头像；无则按用户名/ID生成默认头像
+const displayAvatar = computed(() => {
+  const user = userStore.userInfo
+  if (user && user.avatar) return user.avatar
+  const name = user?.nickname || user?.username || (user?.id ? String(user.id) : 'User')
+  return getDefaultAvatar(name)
+})
 
 // 使用 ref 来控制活动菜单项，避免跳闪
 const activeIndex = ref('')
@@ -381,6 +397,10 @@ import {
     initActiveState()
     // 添加点击外部关闭菜单的监听器
     document.addEventListener('click', handleClickOutside)
+    // 刷新用户信息，确保头像与后台同步（登录状态下）
+    if (userStore.isLoggedIn) {
+      userStore.fetchUserInfo().catch(() => {})
+    }
   })
 // 记得在组件卸载时移除监听器
   onBeforeUnmount(() => {

@@ -41,8 +41,17 @@ export const forgotPasswordApi = (email: string): Promise<void> => {
 }
 
 // 获取用户信息接口
-export const getUserInfoApi = (): Promise<LoginResponse['userInfo']> => {
-  return api.get({ url: '/api/auth/user-info' }) as Promise<LoginResponse['userInfo']>
+export const getUserInfoApi = async (): Promise<LoginResponse['userInfo']> => {
+  // 兼容后端返回的不同字段命名（userId/userName 与 id/username）
+  const raw = await api.get({ url: '/api/auth/user-info' }) as any
+  const id = String(raw?.id ?? raw?.userId ?? '')
+  const username = String(raw?.username ?? raw?.userName ?? '')
+  const email = String(raw?.email ?? '')
+  const avatar = String(raw?.avatar ?? '')
+  const nickname = String(raw?.nickname ?? username)
+  const createTime = String(raw?.createTime ?? '')
+
+  return { id, username, email, avatar, nickname, createTime }
 }
 
 // 刷新token接口

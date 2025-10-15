@@ -39,25 +39,25 @@ export const staticRoutes: AppRouteRecordRaw[] = [
     path: '/sitemanagement',
     name: 'SiteManagement',
     component: () => import('@views/site/sitemanagement/index.vue'),
-    meta: { title: 'menus.sitemanagement.title', noLogin: true }
+    meta: { title: 'menus.sitemanagement.title', noLogin: false, roles: ['R_SUPER', 'R_ADMIN'] }
   },
   {
     path: '/backgroundmanagement',
     name: 'BackgroundManagement',
     component: () => import('@views/site/backgroundmanagement/index.vue'),
-    meta: { title: 'menus.backgroundmanagement.title', noLogin: true }
+    meta: { title: 'menus.backgroundmanagement.title', noLogin: false, roles: ['R_SUPER', 'R_ADMIN'] }
   },
   {
     path: '/friendlinkmanagement',
     name: 'FriendLinkManagement',
     component: () => import('@views/site/friendLinkmanagement/index.vue'),
-    meta: { title: 'menus.friendlinkmanagement.title', noLogin: true }
+    meta: { title: 'menus.friendlinkmanagement.title', noLogin: false, roles: ['R_SUPER', 'R_ADMIN'] }
   },
   {
     path: '/photoalbum/category/:id',
     name: 'PhotoCategoryDetail',
     component: () => import('@views/photoalbum/category-detail.vue'),
-    meta: { title: '分类图片详情', noLogin: false }
+    meta: { title: '分类图片详情', noLogin: false, roles: ['R_SUPER', 'R_ADMIN'] }
   },
   {
     path: '/outside',

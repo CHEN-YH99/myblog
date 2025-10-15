@@ -78,6 +78,7 @@ export class UserSyncManager {
       status: userData.status || 'active',
       createTime: userData.createTime || new Date().toISOString(),
       updateTime: new Date().toISOString(),
+      registerSource: userData.registerSource || 'admin',
       // 生成默认头像（如果没有）
       avatar: userData.avatar || this.generateDefaultAvatar(userData.username),
       // 设置默认昵称

@@ -78,6 +78,7 @@ declare namespace Api {
       userPhone: string
       userEmail: string
       userRoles: string[]
+      registerSource?: 'frontend' | 'admin' | 'other'
       createBy: string
       createTime: string
       updateBy: string

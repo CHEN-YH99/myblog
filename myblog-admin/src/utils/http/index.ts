@@ -47,7 +47,14 @@ const axiosInstance = axios.create({
 /** 请求拦截器 */
 axiosInstance.interceptors.request.use(
   (request: InternalAxiosRequestConfig) => {
-    const { accessToken } = useUserStore()
+    const { accessToken, isReadOnly } = useUserStore()
+    // 只读用户拦截写操作
+    const method = request.method?.toUpperCase() || ''
+    const isWriteMethod = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)
+    if (isWriteMethod && isReadOnly) {
+      const err = createHttpError('当前账号为只读，禁止写操作', ApiStatus.forbidden)
+      return Promise.reject(err)
+    }
     if (accessToken) request.headers.set('Authorization', accessToken)
 
     if (request.data && !(request.data instanceof FormData) && !request.headers['Content-Type']) {

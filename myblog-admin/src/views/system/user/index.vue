@@ -9,13 +9,13 @@
 
     <ElCard class="art-table-card" shadow="never">
       <!-- 表格头部 -->
-      <ArtTableHeader v-model:columns="columnChecks" :loading="loading" @refresh="refreshData">
-        <template #left>
-          <ElSpace wrap>
-            <ElButton @click="showDialog('add')" v-ripple>新增用户</ElButton>
-          </ElSpace>
-        </template>
-      </ArtTableHeader>
+  <ArtTableHeader v-model:columns="columnChecks" :loading="loading" @refresh="refreshData">
+    <template #left>
+      <ElSpace wrap>
+        <ElButton @click="showDialog('add')" v-ripple :disabled="isReadOnly">新增用户</ElButton>
+      </ElSpace>
+    </template>
+  </ArtTableHeader>
 
       <!-- 表格 -->
       <ArtTable
@@ -88,10 +88,15 @@
   import { fetchGetUserList, fetchDeleteUser, fetchUpdateUser } from '@/api/system-manage'
   import UserSearch from './modules/user-search.vue'
   import UserDialog from './modules/user-dialog.vue'
+  import { useUserStore } from '@/store/modules/user'
+  import { storeToRefs } from 'pinia'
 
   defineOptions({ name: 'User' })
 
   type UserListItem = Api.SystemManage.UserListItem
+
+  // 只读状态
+  const { isReadOnly } = storeToRefs(useUserStore())
 
   // 弹窗相关
   const dialogType = ref<Form.DialogType>('add')
@@ -124,6 +129,14 @@
     '3': { type: 'warning' as const, text: '异常' },
     '4': { type: 'danger' as const, text: '注销' }
   } as const
+
+  // 生成默认头像（用户名首字母头像）
+  const getDefaultAvatar = (username: string) => {
+    const name = username || 'User'
+    const colors = ['409eff', '67c23a', 'e6a23c', 'f56c6c', '909399']
+    const color = colors[name.length % colors.length]
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=${color}&color=fff&size=200`
+  }
 
   /**
    * 获取用户状态配置
@@ -177,7 +190,7 @@
                 h(ElImage, {
                   class: 'avatar',
                   src: row.avatar,
-                  previewSrcList: [row.avatar],
+                  previewSrcList: row.avatar ? [row.avatar] : [],
                   // 图片预览是否插入至 body 元素上，用于解决表格内部图片预览样式异常
                   previewTeleported: true
                 }),
@@ -206,6 +219,15 @@
                 h('p', { class: 'email' }, row.userEmail)
               ])
             ])
+          }
+        },
+        {
+          prop: 'registerSource',
+          label: '注册来源',
+          width: 100,
+          formatter: (row) => {
+            const map: Record<string, string> = { frontend: '客户端', admin: '管理端', other: '其他' }
+            return map[row.registerSource as string] || '未知'
           }
         },
         {
@@ -256,10 +278,12 @@
             h('div', [
               h(ArtButtonTable, {
                 type: 'edit',
+                disabled: isReadOnly.value,
                 onClick: () => showDialog('edit', row)
               }),
               h(ArtButtonTable, {
                 type: 'delete',
+                disabled: isReadOnly.value,
                 onClick: () => {
                   console.log('=== 删除按钮被点击 ===')
                   console.log('点击事件触发，row:', row)
@@ -293,10 +317,11 @@
             userGender: item.gender || 'male', // 设置默认性别
             status: item.enabled ? '1' : '2', // 将enabled状态映射为前端的status格式
             userRoles: [item.roleName], // 将角色名称包装为数组
+            registerSource: item.registerSource || 'other',
             createBy: 'system', // 设置默认创建者
             updateBy: 'system', // 设置默认更新者
-            // 使用本地头像替换接口返回的头像
-            avatar: item.avatar || ACCOUNT_TABLE_DATA[index % ACCOUNT_TABLE_DATA.length].avatar
+            // 安全的头像回退：后端头像为空时根据用户名生成默认头像
+            avatar: item.avatar || getDefaultAvatar(item.username || String(item.userId))
           }
           console.log('转换后的数据项:', { original: item.userId, transformed: transformed.id })
           return transformed

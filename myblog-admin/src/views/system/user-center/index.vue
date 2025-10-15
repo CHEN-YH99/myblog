@@ -6,7 +6,7 @@
           <img class="bg" src="@imgs/user/bg.webp" />
           <img class="avatar" src="@imgs/user/avatar.webp" />
           <h2 class="name">{{ userInfo.userName }}</h2>
-          <p class="des">Art Design Pro 是一款漂亮的后台管理系统模版.</p>
+          <p class="des">你好，{{ userInfo.userName }}.</p>
 
           <div class="outer-info">
             <div>
@@ -148,9 +148,11 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, reactive, computed } from 'vue'
+  import { ref, reactive, computed, onMounted } from 'vue'
   import { useUserStore } from '@/store/modules/user'
-  import { ElForm, FormInstance, FormRules } from 'element-plus'
+  import { ElForm, FormInstance, FormRules, ElMessage } from 'element-plus'
+  import { fetchChangePassword } from '@/api/user'
+  import { HttpError } from '@/utils/http/error'
 
   defineOptions({ name: 'UserCenter' })
 
@@ -171,9 +173,9 @@
   })
 
   const pwdForm = reactive({
-    password: '123456',
-    newPassword: '123456',
-    confirmPassword: '123456'
+    password: '',
+    newPassword: '',
+    confirmPassword: ''
   })
 
   const ruleFormRef = ref<FormInstance>()
@@ -236,8 +238,65 @@
     isEdit.value = !isEdit.value
   }
 
-  const editPwd = () => {
-    isEditPwd.value = !isEditPwd.value
+  const editPwd = async () => {
+    // 切换到编辑模式
+    if (!isEditPwd.value) {
+      isEditPwd.value = true
+      return
+    }
+
+    // 保存修改：进行基础校验
+    if (!pwdForm.password) {
+      ElMessage.error('请输入当前密码')
+      return
+    }
+    if (!pwdForm.newPassword) {
+      ElMessage.error('请输入新密码')
+      return
+    }
+    if (!pwdForm.confirmPassword) {
+      ElMessage.error('请确认新密码')
+      return
+    }
+    if (pwdForm.newPassword !== pwdForm.confirmPassword) {
+      ElMessage.error('两次输入的新密码不一致')
+      return
+    }
+    if (pwdForm.newPassword.length < 6) {
+      ElMessage.error('新密码长度不能少于6位')
+      return
+    }
+
+    try {
+      await fetchChangePassword({
+        currentPassword: pwdForm.password,
+        newPassword: pwdForm.newPassword
+      })
+
+      // 成功提示并强制重新登录
+      ElMessage.success('密码修改成功，请使用新密码重新登录')
+      isEditPwd.value = false
+      // 重置表单
+      pwdForm.password = ''
+      pwdForm.newPassword = ''
+      pwdForm.confirmPassword = ''
+
+      // 退出登录，跳转到登录页
+      userStore.logOut()
+    } catch (error: any) {
+      if (error instanceof HttpError) {
+        if (error.code === 400) {
+          ElMessage.error('当前密码错误，请检查后重试')
+        } else if (error.code === 401) {
+          ElMessage.error('登录已过期，请重新登录')
+          userStore.logOut()
+        } else {
+          ElMessage.error(error.message || '修改密码失败')
+        }
+      } else {
+        ElMessage.error(error?.message || '修改密码失败')
+      }
+    }
   }
 </script>
 

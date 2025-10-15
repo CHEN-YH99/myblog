@@ -121,6 +121,14 @@
     '4': { type: 'danger' as const, text: '注销' }
   } as const
 
+  // 生成默认头像（用户名首字母头像）
+  const getDefaultAvatar = (username: string) => {
+    const name = username || 'User'
+    const colors = ['409eff', '67c23a', 'e6a23c', 'f56c6c', '909399']
+    const color = colors[name.length % colors.length]
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=${color}&color=fff&size=200`
+  }
+
   /**
    * 获取用户状态配置
    */
@@ -173,7 +181,7 @@
                 h(ElImage, {
                   class: 'avatar',
                   src: row.avatar,
-                  previewSrcList: [row.avatar],
+                  previewSrcList: row.avatar ? [row.avatar] : [],
                   // 图片预览是否插入至 body 元素上，用于解决表格内部图片预览样式异常
                   previewTeleported: true
                 }),
@@ -312,8 +320,8 @@
             userRoles: [item.roleName], // 将角色名称包装为数组
             createBy: 'system', // 设置默认创建者
             updateBy: 'system', // 设置默认更新者
-            // 使用本地头像替换接口返回的头像
-            avatar: item.avatar || ACCOUNT_TABLE_DATA[index % ACCOUNT_TABLE_DATA.length].avatar
+            // 安全的头像回退：后端头像为空时根据用户名生成默认头像
+            avatar: item.avatar || getDefaultAvatar(item.username || String(item.userId))
           }
           console.log('转换后的数据项:', { original: item.userId, transformed: transformed.id })
           return transformed

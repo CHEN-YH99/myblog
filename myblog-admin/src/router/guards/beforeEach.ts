@@ -101,6 +101,24 @@ async function handleRouteGuard(
     return
   }
 
+  // 基于 meta.roles 的访问控制（适用于所有路由，包括静态路由）
+  const requiredRoles = (to.meta?.roles as string[] | undefined) || []
+  if (requiredRoles.length > 0) {
+    // 路由需要角色权限，未登录则跳转登录
+    if (!userStore.isLogin) {
+      userStore.logOut()
+      next(RoutesAlias.Login)
+      return
+    }
+
+    const userRoles = userStore.info.roles || []
+    const hasPermission = requiredRoles.some((role) => userRoles.includes(role))
+    if (!hasPermission) {
+      next(RoutesAlias.Exception403)
+      return
+    }
+  }
+
   // 处理根路径跳转到首页
   if (userStore.isLogin && isRouteRegistered.value && handleRootPathRedirect(to, next)) {
     return

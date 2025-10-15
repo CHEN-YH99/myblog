@@ -42,6 +42,24 @@ export const useUserStore = defineStore(
     const getWorktabState = computed(() => useWorktabStore().$state)
 
     /**
+     * 计算属性：是否只读用户
+     * 当仅包含普通用户角色（R_USER）且不包含管理员/超管角色时视为只读
+     */
+    const isReadOnly = computed(() => {
+      const roles = (info.value as any)?.roles as string[] | undefined
+      let roleCodes: string[] = Array.isArray(roles) ? roles : []
+
+      // 兼容后端返回 userRoles: { roleCode: string }[] 的情况
+      if (!roleCodes.length && Array.isArray((info.value as any)?.userRoles)) {
+        roleCodes = (info.value as any).userRoles.map((r: any) => r.roleCode)
+      }
+
+      const hasAdmin = roleCodes.includes('R_ADMIN') || roleCodes.includes('R_SUPER')
+      const isUserOnly = roleCodes.includes('R_USER') && !hasAdmin
+      return isUserOnly
+    })
+
+    /**
      * 设置用户信息
      * @param newInfo 新的用户信息
      */
@@ -143,6 +161,7 @@ export const useUserStore = defineStore(
       getUserInfo,
       getSettingState,
       getWorktabState,
+      isReadOnly,
       setUserInfo,
       setLoginStatus,
       setLanguage,

@@ -8,6 +8,13 @@ declare module 'vue-img-cutter'
 
 declare module 'file-saver'
 
+// 为 .vue 单文件组件提供类型支持，修复在 SFC 中的类型爆红
+declare module '*.vue' {
+  import type { DefineComponent } from 'vue'
+  const component: DefineComponent<{}, {}, any>
+  export default component
+}
+
 declare module 'qrcode.vue' {
   export type Level = 'L' | 'M' | 'Q' | 'H'
   export type RenderAs = 'canvas' | 'svg'

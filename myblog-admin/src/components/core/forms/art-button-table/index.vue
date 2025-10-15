@@ -1,9 +1,10 @@
 <!-- 表格按钮 -->
 <template>
   <div
-    :class="['btn-text', buttonClass]"
+    :class="['btn-text', buttonClass, { disabled }]"
     :style="{ backgroundColor: buttonBgColor, color: iconColor }"
     @click="handleClick"
+    :aria-disabled="disabled"
   >
     <i v-if="iconContent" class="iconfont-sys" v-html="iconContent"></i>
   </div>
@@ -25,9 +26,11 @@
     iconColor?: string
     /** 按钮背景色 */
     buttonBgColor?: string
+    /** 是否禁用 */
+    disabled?: boolean
   }
 
-  const props = withDefaults(defineProps<Props>(), {})
+  const props = withDefaults(defineProps<Props>(), { disabled: false })
 
   const emit = defineEmits<{
     (e: 'click'): void
@@ -53,6 +56,7 @@
   })
 
   const handleClick = () => {
+    if (props.disabled) return
     emit('click')
   }
 </script>
@@ -74,6 +78,12 @@
 
     &:hover {
       background-color: rgba(var(--art-gray-300-rgb), 0.5);
+    }
+
+    &.disabled {
+      cursor: not-allowed;
+      opacity: 0.6;
+      pointer-events: none;
     }
   }
 </style>

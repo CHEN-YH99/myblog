@@ -138,12 +138,12 @@
             popper-style="border: 1px solid var(--art-border-dashed-color); border-radius: calc(var(--custom-radius) / 2 + 4px); padding: 5px 16px; 5px 16px;"
           >
             <template #reference>
-              <img class="cover" src="@imgs/user/avatar.webp" alt="avatar" />
+              <img class="cover" :src="userAvatar" alt="avatar" />
             </template>
             <template #default>
               <div class="user-menu-box">
                 <div class="user-head">
-                  <img class="cover" src="@imgs/user/avatar.webp" style="float: left" />
+                  <img class="cover" :src="userAvatar" style="float: left" />
                   <div class="user-wrap">
                     <span class="name">{{ userInfo.userName }}</span>
                     <span class="email">{{ userInfo.email }}</span>
@@ -236,6 +236,23 @@
 
   const { language, getUserInfo: userInfo } = storeToRefs(userStore)
   const { menuList } = storeToRefs(menuStore)
+
+  // 生成默认头像（用户名首字母头像）
+  const getDefaultAvatar = (username: string) => {
+    const name = username || 'User'
+    const colors = ['409eff', '67c23a', 'e6a23c', 'f56c6c', '909399']
+    const color = colors[name.length % colors.length]
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=${color}&color=fff&size=200`
+  }
+
+  // 用户头像（优先使用用户上传，其次回退到首字母头像）
+  const userAvatar = computed(() => {
+    const name = userInfo.value?.userName || 'User'
+    const avatar = (userInfo.value as any)?.avatar
+    return avatar && typeof avatar === 'string' && avatar.length > 0
+      ? avatar
+      : getDefaultAvatar(name)
+  })
 
   const showNotice = ref(false)
   const notice = ref(null)

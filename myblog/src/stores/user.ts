@@ -70,10 +70,28 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
+  // 从 mock-jwt-token 中解析用户名（mock-jwt-token-<username>-<timestamp>）
+  const parseUsernameFromToken = (t: string): string | null => {
+    if (!t) return null
+    const parts = t.split('-')
+    if (parts.length < 5) return null
+    if (!(parts[0] === 'mock' && parts[1] === 'jwt' && parts[2] === 'token')) return null
+    const ts = parts[parts.length - 1]
+    if (!/^\d+$/.test(ts)) return null
+    return parts.slice(3, -1).join('-')
+  }
+
   // 获取用户信息
   const fetchUserInfo = async () => {
     try {
       const info = await getUserInfoApi()
+      // 如果服务端返回的用户名与token中的不一致，则忽略更新，避免错误回退为管理员
+      const expectedUsername = parseUsernameFromToken(token.value)
+      const returnedName = (info?.username || info?.nickname || '')
+      if (expectedUsername && returnedName && returnedName !== expectedUsername) {
+        console.warn('服务端返回的用户与当前令牌不匹配，已忽略更新')
+        return userInfo.value
+      }
       setUserInfo(info)
       return info
     } catch (error) {

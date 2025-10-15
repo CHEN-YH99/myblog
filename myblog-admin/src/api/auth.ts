@@ -20,10 +20,26 @@ export function fetchLogin(params: Api.Auth.LoginParams) {
  */
 export function fetchGetUserInfo() {
   return request.get<Api.Auth.UserInfo>({
-    url: '/api/user/info'
+    url: '/api/auth/user-info'
     // 自定义请求头
     // headers: {
     //   'X-Custom-Header': 'your-custom-value'
     // }
+  })
+}
+
+/**
+ * 注册（创建登录账户）
+ * @param params 注册参数
+ */
+export function fetchRegister(params: {
+  username: string
+  email: string
+  password: string
+  confirmPassword: string
+}) {
+  return request.post<void>({
+    url: '/api/auth/register',
+    data: params
   })
 }

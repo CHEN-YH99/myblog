@@ -289,8 +289,8 @@ const Reply = mongoose.model('Reply', ReplySchema);
 
 // 点赞记录模型（防止重复点赞）
 const LikeSchema = new mongoose.Schema({
-  targetId: { type: mongoose.Schema.Types.ObjectId, required: true }, // 目标ID（说说或回复）
-  targetType: { type: String, enum: ['talk', 'reply'], required: true }, // 目标类型
+  targetId: { type: mongoose.Schema.Types.ObjectId, required: true }, // 目标ID（说说、回复或文章）
+  targetType: { type: String, enum: ['talk', 'reply', 'article'], required: true }, // 目标类型
   ip: { type: String, required: true }, // 点赞者IP
   userAgent: { type: String, required: false }, // 用户代理
   publishDate: { type: Date, default: Date.now } // 点赞时间
@@ -326,6 +326,7 @@ const UserSchema = new mongoose.Schema({
   enabled: { type: Boolean, default: true },
   lastLoginTime: { type: Date },
   lastLoginIp: { type: String, default: '' },
+  registerSource: { type: String, default: 'frontend' },
   registerIp: { type: String, default: '' },
   createTime: { type: Date, default: Date.now },
   updateTime: { type: Date, default: Date.now }
@@ -731,17 +732,40 @@ app.delete('/api/articles/:id', async (req: Request, res: Response) => {
 app.post('/api/articles/:id/like', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    
+    const rawIP = req.ip || (req.connection as any)?.remoteAddress || 'unknown';
+    const clientIP = normalizeIP(rawIP);
+
+    // 检查是否已点赞，避免重复计数
+    const existingLike = await Like.findOne({
+      targetId: id,
+      targetType: 'article',
+      ip: clientIP
+    });
+    if (existingLike) {
+      return res.status(400).json(createErrorResponse('您已经点过赞', 400));
+    }
+
+    // 记录点赞
+    await Like.create({
+      targetId: id,
+      targetType: 'article',
+      ip: clientIP,
+      userAgent: req.headers['user-agent'] || ''
+    });
+
+    // 增加文章点赞数
     const article = await Article.findByIdAndUpdate(
       id,
       { $inc: { likes: 1 } },
       { new: true }
     );
-    
+
     if (!article) {
+      // 回滚点赞记录
+      await Like.deleteOne({ targetId: id, targetType: 'article', ip: clientIP });
       return res.status(404).json(createErrorResponse('文章未找到', 404));
     }
-    
+
     res.json(createResponse({ likes: article.likes }, '点赞成功'));
   } catch (error) {
     console.error('点赞失败:', error);
@@ -755,27 +779,140 @@ app.post('/api/articles/:id/like', async (req: Request, res: Response) => {
 app.post('/api/articles/:id/unlike', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    
+    const rawIP = req.ip || (req.connection as any)?.remoteAddress || 'unknown';
+    const clientIP = normalizeIP(rawIP);
+
+    // 检查是否有点赞记录
+    const likeRecord = await Like.findOne({
+      targetId: id,
+      targetType: 'article',
+      ip: clientIP
+    });
+    if (!likeRecord) {
+      return res.status(400).json(createErrorResponse('您还没有点赞', 400));
+    }
+
+    // 删除点赞记录
+    await Like.deleteOne({ _id: likeRecord._id });
+
+    // 减少文章点赞数
     const article = await Article.findByIdAndUpdate(
       id,
       { $inc: { likes: -1 } },
       { new: true }
     );
-    
+
     if (!article) {
       return res.status(404).json(createErrorResponse('文章未找到', 404));
     }
-    
+
     // 确保点赞数不为负数
     if (article.likes < 0) {
       article.likes = 0;
       await article.save();
     }
-    
+
     res.json(createResponse({ likes: article.likes }, '取消点赞成功'));
   } catch (error) {
     console.error('取消点赞失败:', error);
     res.status(500).json(createErrorResponse('取消点赞失败', 500));
+  }
+});
+
+/**
+ * 获取文章点赞状态（是否已点赞）
+ */
+app.get('/api/articles/:id/like-status', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const rawIP = req.ip || (req.connection as any)?.remoteAddress || 'unknown';
+    const clientIP = normalizeIP(rawIP);
+
+    const existingLike = await Like.findOne({
+      targetId: id,
+      targetType: 'article',
+      ip: clientIP
+    });
+
+    res.json(createResponse({ isLiked: !!existingLike }, '获取点赞状态成功'));
+  } catch (error) {
+    console.error('获取文章点赞状态失败:', error);
+    res.status(500).json(createErrorResponse('获取文章点赞状态失败', 500));
+  }
+});
+
+/**
+ * 批量获取文章点赞状态
+ */
+app.post('/api/articles/batch-like-status', async (req: Request, res: Response) => {
+  try {
+    const { articleIds } = (req.body || {}) as { articleIds: string[] };
+    const rawIP = req.ip || (req.connection as any)?.remoteAddress || 'unknown';
+    const clientIP = normalizeIP(rawIP);
+
+    if (!Array.isArray(articleIds) || articleIds.length === 0) {
+      return res.json(createResponse({}, '无文章ID'));
+    }
+
+    const likes = await Like.find({
+      targetType: 'article',
+      ip: clientIP,
+      targetId: { $in: articleIds }
+    }).select('targetId').lean();
+
+    const likedSet = new Set<string>(likes.map((l: any) => String(l.targetId)));
+    const result = articleIds.reduce((acc: Record<string, boolean>, aid: string) => {
+      acc[aid] = likedSet.has(aid);
+      return acc;
+    }, {});
+
+    res.json(createResponse(result, '获取批量点赞状态成功'));
+  } catch (error) {
+    console.error('批量获取文章点赞状态失败:', error);
+    res.status(500).json(createErrorResponse('批量获取文章点赞状态失败', 500));
+  }
+});
+
+/**
+ * 获取文章点赞数
+ */
+app.get('/api/articles/:id/likes', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const article = await Article.findById(id).select('likes');
+    if (!article) {
+      return res.status(404).json(createErrorResponse('文章未找到', 404));
+    }
+    res.json(createResponse({ likes: article.likes }, '获取点赞数成功'));
+  } catch (error) {
+    console.error('获取文章点赞数失败:', error);
+    res.status(500).json(createErrorResponse('获取文章点赞数失败', 500));
+  }
+});
+
+/**
+ * 获取当前用户（通过IP）已点赞的文章列表
+ */
+app.get('/api/user/liked-articles', async (req: Request, res: Response) => {
+  try {
+    const rawIP = req.ip || (req.connection as any)?.remoteAddress || 'unknown';
+    const clientIP = normalizeIP(rawIP);
+
+    const likeRecords = await Like.find({
+      targetType: 'article',
+      ip: clientIP
+    }).select('targetId').lean();
+
+    const ids = likeRecords.map((l: any) => l.targetId);
+    if (!ids.length) {
+      return res.json(createResponse([], '获取已点赞文章成功'));
+    }
+
+    const articles = await Article.find({ _id: { $in: ids } }).lean();
+    res.json(createResponse(articles, '获取已点赞文章成功'));
+  } catch (error) {
+    console.error('获取已点赞文章列表失败:', error);
+    res.status(500).json(createErrorResponse('获取已点赞文章列表失败', 500));
   }
 });
 
@@ -1837,7 +1974,9 @@ app.delete('/api/talks/:id/like', async (req: Request, res: Response) => {
 app.get('/api/talks/:id/like/status', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const clientIP = req.ip || req.connection.remoteAddress || 'unknown';
+    // 与点赞/取消点赞保持一致，统一标准化IP，避免 ::1 与 127.0.0.1 不一致导致状态错误
+    const rawIP = req.ip || req.connection.remoteAddress || 'unknown';
+    const clientIP = normalizeIP(rawIP);
 
     const existingLike = await Like.findOne({
       targetId: id,
@@ -2118,8 +2257,8 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
     user.lastLoginIp = req.ip || '';
     await user.save();
     
-    const token = 'mock-jwt-token-' + Date.now();
-    const refreshToken = 'mock-refresh-token-' + Date.now();
+    const token = 'mock-jwt-token-' + user.username + '-' + Date.now();
+    const refreshToken = 'mock-refresh-token-' + user.username + '-' + Date.now();
     
     // 返回登录成功响应，包含用户信息
     res.json(createResponse({
@@ -2146,25 +2285,65 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
 app.get(['/api/auth/user-info', '/api/user/info'], async (req: Request, res: Response) => {
   try {
     const authorization = req.headers.authorization;
-    
-    // 对于 /api/user/info 路径，我们暂时不验证token，直接返回用户信�?
-    if (req.path === '/api/user/info' || (authorization && authorization.startsWith('mock-jwt-token-'))) {
-      // 返回模拟用户信息
+
+    // 兼容旧路径：/api/user/info 返回固定的管理员信息
+    if (req.path === '/api/user/info') {
       const userInfo = {
         userId: 1,
         userName: 'admin',
         nickname: '管理员',
         email: 'admin@example.com',
         avatar: '',
-        roles: ['R_SUPER', 'R_ADMIN'], // 修改为与异步路由配置匹配的角色名�?
+        roles: ['R_SUPER', 'R_ADMIN'],
         permissions: ['*'],
         buttons: ['add', 'edit', 'delete']
       };
-      
-      res.json(createResponse(userInfo, '获取用户信息成功'));
-    } else {
+      return res.json(createResponse(userInfo, '获取用户信息成功'));
+    }
+
+    // 新路径：/api/auth/user-info 根据 token 返回当前登录用户信息
+    if (!authorization || !authorization.startsWith('mock-jwt-token-')) {
       return res.status(401).json(createErrorResponse('未授权访问', 401));
     }
+
+    // 解析用户名（兼容含连字符的用户名）：
+    // 新格式：mock-jwt-token-{username}-{timestamp}
+    const tokenParts = authorization.split('-');
+    const isNewFormat = (
+      tokenParts.length >= 5 &&
+      tokenParts[0] === 'mock' &&
+      tokenParts[1] === 'jwt' &&
+      tokenParts[2] === 'token' &&
+      /^\d+$/.test(tokenParts[tokenParts.length - 1])
+    );
+    if (!isNewFormat) {
+      return res.status(401).json(createErrorResponse('未授权访问，请重新登录', 401));
+    }
+    const usernameFromToken = tokenParts.slice(3, -1).join('-');
+
+    const user = await User.findOne({ username: usernameFromToken }).select('-password');
+
+    if (!user) {
+      return res.status(404).json(createErrorResponse('用户不存在', 404));
+    }
+
+    // 映射角色代码
+    let roleCode = 'R_USER';
+    if (user.roleName === '超级管理员') roleCode = 'R_SUPER';
+    else if (user.roleName === '管理员') roleCode = 'R_ADMIN';
+
+    const userInfo = {
+      userId: user.userId,
+      userName: user.username,
+      nickname: user.nickname || user.username,
+      email: user.email || '',
+      avatar: user.avatar || '',
+      roles: [roleCode],
+      permissions: ['*'],
+      buttons: ['add', 'edit', 'delete']
+    };
+
+    res.json(createResponse(userInfo, '获取用户信息成功'));
   } catch (error: any) {
     console.error('获取用户信息失败:', error);
     res.status(500).json(createErrorResponse('获取用户信息失败', 500));
@@ -2249,6 +2428,7 @@ app.get(['/api/users', '/api/user/list'], async (req: Request, res: Response) =>
       roleId: user.roleId,
       roleName: user.roleName,
       enabled: user.enabled,
+      registerSource: user.registerSource,
       lastLoginTime: user.lastLoginTime,
       lastLoginIp: user.lastLoginIp,
       registerIp: user.registerIp,
@@ -2422,6 +2602,7 @@ app.post(['/api/users', '/api/user/create'], async (req: Request, res: Response)
       roleId,
       roleName: role.roleName,
       enabled,
+      registerSource: 'admin',
       registerIp: req.ip || ''
     });
 
@@ -2437,6 +2618,7 @@ app.post(['/api/users', '/api/user/create'], async (req: Request, res: Response)
       roleId: newUser.roleId,
       roleName: newUser.roleName,
       enabled: newUser.enabled,
+      registerSource: newUser.registerSource,
       createTime: newUser.createTime
     };
 
@@ -2572,6 +2754,7 @@ app.post('/api/auth/register', async (req: Request, res: Response) => {
       roleId: userRole.roleId,
       roleName: userRole.roleName,
       enabled: true,
+      registerSource: 'frontend',
       registerIp: req.ip || ''
     });
 
@@ -2594,52 +2777,107 @@ app.put('/api/user/change-password', async (req: Request, res: Response) => {
     const { currentPassword, newPassword } = req.body;
     
     if (!currentPassword || !newPassword) {
+      console.log('密码参数验证失败: currentPassword或newPassword为空');
       return res.status(400).json(createErrorResponse('当前密码和新密码不能为空', 400));
     }
     
     // 从请求头获取token（这里简化处理，实际应该验证token获取用户信息）
     const authorization = req.headers.authorization;
     if (!authorization || !authorization.startsWith('mock-jwt-token-')) {
+      console.log('token验证失败:', authorization);
       return res.status(401).json(createErrorResponse('未授权访问', 401));
     }
     
-    // 这里简化处理，假设token中包含用户名（实际应该解析JWT获取用户信息）
-    // 为了演示，我们使用默认的admin用户
-    const username = 'admin'; // 实际应该从token中解析
+    // 从token中提取用户名（严格校验格式）
+    // 正确的新格式：mock-jwt-token-{username}-{timestamp}
+    // 旧格式：mock-jwt-token-{timestamp}
+    const tokenParts = authorization.split('-');
+    const isNewFormat = (
+      tokenParts.length >= 5 &&
+      tokenParts[0] === 'mock' &&
+      tokenParts[1] === 'jwt' &&
+      tokenParts[2] === 'token' &&
+      /^\d+$/.test(tokenParts[tokenParts.length - 1])
+    );
+
+    if (!isNewFormat) {
+      console.log('检测到旧格式或非法token，拒绝处理:', authorization, tokenParts);
+      return res.status(401).json(createErrorResponse('未授权访问，请重新登录', 401));
+    }
+
+    const username = tokenParts.slice(3, -1).join('-'); // 支持用户名内含连字符
+    
+    console.log('从token中提取的用户名:', username, '原始token:', authorization);
     
     // 查找用户
     const user = await User.findOne({ username });
     if (!user) {
+      console.log('用户不存在:', username);
       return res.status(404).json(createErrorResponse('用户不存在', 404));
     }
     
+    console.log('找到用户:', {
+      userId: user.userId,
+      username: user.username,
+      currentPasswordInDB: user.password ? '已设置' : '未设置'
+    });
+    
     // 验证当前密码
     let isCurrentPasswordValid = false;
-    if (user.password === currentPassword) {
-      // 明文密码匹配
-      isCurrentPasswordValid = true;
-    } else {
-      // 尝试bcrypt比较
+    console.log('开始验证当前密码...');
+    console.log('用户名:', username);
+    console.log('输入的当前密码:', currentPassword);
+    console.log('数据库中的密码:', user.password);
+    const isBcryptFormat = typeof user.password === 'string' && user.password.startsWith('$2b$');
+    console.log('数据库密码是否为bcrypt格式:', isBcryptFormat);
+    
+    // 判断数据库中的密码是否为bcrypt格式
+    if (isBcryptFormat) {
+      // bcrypt加密密码，使用bcrypt比较
       try {
         isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
+        console.log('bcrypt密码比较结果:', isCurrentPasswordValid);
       } catch (error) {
-        // 如果bcrypt出错，尝试直接比较
-        isCurrentPasswordValid = user.password === currentPassword;
+        console.log('bcrypt比较出错:', error);
+        isCurrentPasswordValid = false;
       }
+    } else {
+      // 明文密码，直接比较
+      isCurrentPasswordValid = user.password === currentPassword;
+      console.log('明文密码比较结果:', isCurrentPasswordValid);
     }
     
     if (!isCurrentPasswordValid) {
+      console.log('当前密码验证失败');
       return res.status(400).json(createErrorResponse('当前密码错误', 400));
     }
+    
+    console.log('当前密码验证成功，开始更新密码...');
     
     // 加密新密码
     const saltRounds = 10;
     const hashedNewPassword = await bcrypt.hash(newPassword, saltRounds);
+    console.log('新密码加密完成');
     
     // 更新密码
+    const oldPassword = user.password;
     user.password = hashedNewPassword;
     user.updateTime = new Date();
-    await user.save();
+    
+    console.log('准备保存用户数据...');
+    console.log('更新前密码:', oldPassword);
+    console.log('更新后密码:', hashedNewPassword);
+    
+    const saveResult = await user.save();
+    console.log('用户数据保存结果:', saveResult ? '成功' : '失败');
+    
+    // 验证更新是否成功
+    const updatedUser = await User.findOne({ username });
+    console.log('验证更新结果:', {
+      username: updatedUser?.username,
+      passwordChanged: updatedUser?.password !== oldPassword,
+      newPasswordHash: updatedUser?.password
+    });
     
     console.log('密码修改成功，用户:', username);
     res.json(createResponse(null, '密码修改成功'));
@@ -2656,6 +2894,40 @@ app.put('/api/user/change-password', async (req: Request, res: Response) => {
 app.use((err: Error, _req: Request, res: Response, _next: any) => {
   console.error('服务器错误:', err);
   res.status(500).json(createErrorResponse('服务器内部错误', 500));
+});
+
+// 临时调试API - 查看用户信息（仅用于调试，生产环境应删除）
+app.get('/api/debug/user/:username', async (req: Request, res: Response) => {
+  try {
+    const { username } = req.params;
+    const user = await User.findOne({ username });
+    
+    if (!user) {
+      return res.status(404).json(createErrorResponse('用户不存在', 404));
+    }
+    
+    // 返回用户信息（隐藏敏感信息）
+    const userInfo = {
+      userId: user.userId,
+      username: user.username,
+      nickname: user.nickname,
+      email: user.email,
+      passwordExists: !!user.password,
+      passwordLength: user.password ? user.password.length : 0,
+      passwordStartsWith: user.password ? user.password.substring(0, 10) + '...' : '',
+      isBcryptFormat: user.password ? user.password.startsWith('$2b$') : false,
+      enabled: user.enabled,
+      roleId: user.roleId,
+      roleName: user.roleName,
+      createTime: user.createTime,
+      updateTime: user.updateTime
+    };
+    
+    res.json(createResponse(userInfo, '获取用户信息成功'));
+  } catch (error: any) {
+    console.error('获取用户信息失败:', error);
+    res.status(500).json(createErrorResponse('获取用户信息失败', 500));
+  }
 });
 
 // 404处理
