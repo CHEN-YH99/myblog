@@ -17,7 +17,7 @@
       <!-- 用户信息卡片 -->
       <div class="user-info-card">
         <div class="user-avatar">
-          <el-avatar :size="120" :src="userInfo?.avatar || avatarUrl" />
+          <el-avatar :size="120" :src="displayAvatar" />
         </div>
         <div class="user-details">
           <h2 class="username">{{ userInfo?.nickname || userInfo?.username || '用户' }}</h2>
@@ -218,6 +218,22 @@ const router = useRouter()
 const userStore = useUserStore()
 const articlesStore = useArticlesStore()
 const talksStore = useTalksStore()
+
+// 与后台管理列表一致的默认头像生成策略
+const getDefaultAvatar = (name) => {
+  const safeName = name || 'User'
+  const colors = ['409eff', '67c23a', 'e6a23c', 'f56c6c', '909399']
+  const color = colors[safeName.length % colors.length]
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(safeName)}&background=${color}&color=fff&size=200`
+}
+
+// 统一的展示头像：优先使用用户头像；无则按用户名/ID生成默认头像
+const displayAvatar = computed(() => {
+  const user = userStore.userInfo
+  if (user && user.avatar) return user.avatar
+  const name = user?.nickname || user?.username || (user?.id ? String(user.id) : 'User')
+  return getDefaultAvatar(name)
+})
 
 // 响应式数据
 const activeTab = ref('articles')
