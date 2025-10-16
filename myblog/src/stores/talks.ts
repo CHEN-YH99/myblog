@@ -47,19 +47,17 @@ export const useTalksStore = defineStore('talks', {
         const userId = userStore.userInfo?.id
         const localLikedTalks = getLikedTalks(userId)
         
-        // 如果传入了talkIds，优先使用传入的ID（来自服务器）
-        if (talkIds.length > 0) {
-          this.likedTalks.clear()
-          talkIds.forEach(id => this.likedTalks.add(id))
-          // 同步到本地存储
-          if (userId) {
-            saveLikedTalks(Array.from(this.likedTalks), userId)
-          }
-        } else if (localLikedTalks.length > 0) {
-          // 如果没有传入talkIds，使用本地存储的数据
-          this.likedTalks.clear()
+        // 清空当前状态
+        this.likedTalks.clear()
+        
+        // 如果有本地存储的点赞数据，先恢复本地状态
+        if (localLikedTalks.length > 0) {
           localLikedTalks.forEach(id => this.likedTalks.add(id))
         }
+        
+        // 如果传入了talkIds，需要验证这些说说是否真的被用户点赞
+        // 这里应该调用API来获取用户真正点赞的说说列表，而不是直接将所有talkIds标记为已点赞
+        // 暂时保持本地存储的状态，避免错误地将所有说说标记为已点赞
         
         this.likeStatusInitialized = true
         console.log('说说点赞状态初始化完成，已点赞说说数量:', this.likedTalks.size)

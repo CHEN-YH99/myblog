@@ -1114,11 +1114,10 @@ const getTalkReplyCount = (talkId: string): number => {
 
 // 初始化点赞状态
 const initializeLikeStatus = async () => {
-  // 使用统一的点赞状态初始化
-  const talkIds = talkList.value.map(talk => talk._id)
-  await talksStore.initializeLikeStatus(talkIds)
+  // 只初始化store的点赞状态，不传入talkIds
+  await talksStore.initializeLikeStatus()
   
-  // 同步本地状态
+  // 同步本地状态 - 确保新说说默认为未点赞状态
   for (const talk of talkList.value) {
     talkLikeStatus.value[talk._id] = isLikedByStore(talk._id)
   }
