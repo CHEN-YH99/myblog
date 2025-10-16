@@ -40,10 +40,11 @@ export const forgotPasswordApi = (email: string): Promise<void> => {
   return api.post({ url: '/api/auth/forgot-password', data: { email } }) as Promise<void>
 }
 
-// 获取用户信息接口
+// 获取用户信息接口（客户端博客系统专用）
 export const getUserInfoApi = async (): Promise<LoginResponse['userInfo']> => {
-  // 兼容后端返回的不同字段命名（userId/userName 与 id/username）
-  const raw = await api.get({ url: '/api/auth/user-info' }) as any
+  // 客户端博客系统使用简化的用户信息接口，避免与后台管理系统的角色权限混淆
+  // 使用 /api/user/info 而不是 /api/auth/user-info（后者是后台管理系统专用）
+  const raw = await api.get({ url: '/api/user/info' }) as any
   const id = String(raw?.id ?? raw?.userId ?? '')
   const username = String(raw?.username ?? raw?.userName ?? '')
   const email = String(raw?.email ?? '')

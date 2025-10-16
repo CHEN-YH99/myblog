@@ -2710,17 +2710,25 @@ app.delete(['/api/users/:id', '/api/user/delete/:id'], async (req: Request, res:
  */
 app.post('/api/auth/register', async (req: Request, res: Response) => {
   try {
-    const { username, password, confirmPassword } = req.body;
+    const { username, email, password, confirmPassword } = req.body;
 
     // 验证密码确认
     if (password !== confirmPassword) {
       return res.status(400).json(createErrorResponse('两次输入的密码不一致', 400));
     }
 
-    // 检查用户名是否已存�?
+    // 检查用户名是否已存在
     const existingUser = await User.findOne({ username });
     if (existingUser) {
       return res.status(400).json(createErrorResponse('用户名已存在', 400));
+    }
+
+    // 检查邮箱是否已存在（如果提供了邮箱）
+    if (email) {
+      const existingEmail = await User.findOne({ email });
+      if (existingEmail) {
+        return res.status(400).json(createErrorResponse('邮箱已被使用', 400));
+      }
     }
 
     // 查找普通用户角色（假设roleCode�?USER'�?
@@ -2749,6 +2757,7 @@ app.post('/api/auth/register', async (req: Request, res: Response) => {
     const newUser = new User({
       userId: newUserId,
       username,
+      email: email || '', // 保存email字段
       nickname: username, // 默认昵称为用户名
       password, // 实际应用中应该加密
       roleId: userRole.roleId,

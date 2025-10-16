@@ -189,6 +189,8 @@ import { useRouter } from 'vue-router'
 import { useArticles } from '@/composables/useArticles' // 引入获取到文章列表数据文件
 import { useLikes } from '@/composables/useLikes'       // 引入获取到点赞数据文件
 import { formatNumber } from '@/utils/format'         // 引入数字格式化函数
+import { useUserStore } from '@/stores/user'          // 引入用户状态管理
+import { useArticlesStore } from '@/stores/getarticles' // 引入文章状态管理
 
 import WaveContainer from '@/components/WaveContainer.vue'
 import Footer from '@/components/Footer.vue'
@@ -197,6 +199,10 @@ import bgImage from '@/assets/images/shunsea1.jpg'  // 图片地址 - 正确的�
 
 // 路由
 const router = useRouter()
+
+// 用户状态管理
+const userStore = useUserStore()
+const articlesStore = useArticlesStore()
 
 // 使用 composable
 const {
@@ -311,6 +317,17 @@ onMounted(async () => {
   await initArticles()
   // 启用分页状态监听
   stopWatchingPagination = watchPagination()
+})
+
+// 监听用户登录状态变化
+watch(() => userStore.isLoggedIn, async (isLoggedIn) => {
+  if (isLoggedIn) {
+    // 用户登录后重新初始化点赞状态
+    await articlesStore.initializeLikeStatus()
+  } else {
+    // 用户登出后重置点赞状态
+    articlesStore.resetLikeStatus()
+  }
 })
 
 onBeforeUnmount(() => {

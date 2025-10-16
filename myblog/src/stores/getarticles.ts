@@ -79,36 +79,41 @@ export const useArticlesStore = defineStore('articles', {
         const userId = userStore.userInfo?.id
         const savedLikedArticles = getLikedArticles(userId)
         
-        // 清空当前状态并设置保存的状态
+        // 清空当前状态
         this.likedArticles.clear()
-        savedLikedArticles.forEach(articleId => {
-          this.likedArticles.add(articleId)
-        })
         
         // 如果有文章数据，同步服务器状态
         if (this.articles.length > 0) {
           const articleIds = this.articles.map(article => article._id)
           const response = await getBatchLikeStatus(articleIds)
           
-          // 合并服务器状态和本地状态
-          const serverLikedArticles = new Set<string>()
+          // 以服务器状态为准，清空本地状态后重新设置
           Object.entries(response).forEach(([articleId, isLiked]) => {
             if (isLiked) {
-              serverLikedArticles.add(articleId)
               this.likedArticles.add(articleId)
             }
           })
           
-          // 保存合并后的状态到localStorage
+          // 保存服务器状态到localStorage
           const finalLikedArticles = Array.from(this.likedArticles)
           saveLikedArticles(finalLikedArticles, userId)
+        } else {
+          // 如果没有文章数据，使用本地保存的状态
+          savedLikedArticles.forEach(articleId => {
+            this.likedArticles.add(articleId)
+          })
         }
         
         this.likeStatusInitialized = true
-        console.log('文章点赞状态初始化完成，已恢复本地状态')
+        console.log('文章点赞状态初始化完成，已同步服务器状态')
       } catch (error) {
         console.error('初始化点赞状态失败:', error)
-        // 如果服务器请求失败，仍然使用本地状态
+        // 如果服务器请求失败，使用本地状态
+        const userId = userStore.userInfo?.id
+        const savedLikedArticles = getLikedArticles(userId)
+        savedLikedArticles.forEach(articleId => {
+          this.likedArticles.add(articleId)
+        })
         this.likeStatusInitialized = true
       }
     },

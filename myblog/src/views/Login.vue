@@ -496,9 +496,12 @@ const handleLogin = async () => {
       talksStore.initializeLikeStatus()
     ])
     
-    // 设置七天免登录
+    // 设置token过期时间
     if (loginForm.rememberMe) {
       const expireTime = Date.now() + 7 * 24 * 60 * 60 * 1000 // 7天
+      localStorage.setItem('tokenExpire', expireTime.toString())
+    } else {
+      const expireTime = Date.now() + 24 * 60 * 60 * 1000 // 24小时
       localStorage.setItem('tokenExpire', expireTime.toString())
     }
     
@@ -553,22 +556,27 @@ const handleRegister = async () => {
       // 同步失败不影响注册流程
     }
     
-    ElMessage.success('注册成功，请登录')
+    ElMessage.success('注册成功！请登录')
+    
+    // 切换到登录模式
     isLogin.value = true
     
-    // 自动填充用户名到登录表单
+    // 预填登录表单
     loginForm.username = registerForm.username
+    loginForm.password = ''
     
     // 清空注册表单
-    Object.assign(registerForm, {
-      username: '',
-      email: '',
-      password: '',
-      confirmPassword: '',
-      captcha: '',
-      agreement: false
-    })
+    registerForm.username = ''
+    registerForm.email = ''
+    registerForm.password = ''
+    registerForm.confirmPassword = ''
+    registerForm.captcha = ''
+    registerForm.agreement = false
     
+    // 生成新的验证码
+    refreshCaptcha()
+    
+    console.log('注册成功，请手动登录')
   } catch (error: any) {
     ElMessage.error(error.message || '注册失败')
     refreshCaptcha()

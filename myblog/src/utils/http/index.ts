@@ -1,9 +1,17 @@
-import axios, { type AxiosRequestConfig, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios'
+import axios, { AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig } from 'axios'
 import { ApiStatus } from '@/utils/http/status'
 import { HttpError, handleError, showError, showSuccess } from '@/utils/http/error'
+import { ElMessage } from 'element-plus'
+import router from '@/router'
 
 /** 请求配置常量 */
 const REQUEST_TIMEOUT = 15000
+
+/** 401防抖状态 */
+let isUnauthorizedErrorShown = false
+let unauthorizedTimer: NodeJS.Timeout | null = null
+const UNAUTHORIZED_DEBOUNCE_TIME = 3000
+const LOGOUT_DELAY = 500
 const MAX_RETRIES = 2
 const RETRY_DELAY = 1000
 
@@ -41,7 +49,17 @@ const axiosInstance = axios.create({
 /** 请求拦截器 */
 axiosInstance.interceptors.request.use(
   (request: InternalAxiosRequestConfig) => {
-    // 添加token到请求头（兼容旧格式token）
+    // 客户端博客系统：检查token是否过期（仅检查，不执行登出操作）
+    const expireTime = localStorage.getItem('tokenExpire')
+    if (expireTime && Date.now() > parseInt(expireTime)) {
+      console.log('HTTP拦截器检测到Token已过期')
+      // 如果不是登录相关的请求，直接拒绝请求
+      if (!request.url?.includes('/auth/login') && !request.url?.includes('/auth/register')) {
+        return Promise.reject(new Error('Token已过期，请重新登录'))
+      }
+    }
+    
+    // 客户端博客系统：添加token到请求头（兼容旧格式token）
     const token = localStorage.getItem('token')
     const userInfo = localStorage.getItem('userInfo')
     if (token) {
@@ -53,7 +71,9 @@ axiosInstance.interceptors.request.use(
         if (userInfo) {
           try {
             const user = JSON.parse(userInfo)
-            const newToken = `mock-jwt-token-${user.username}-${Date.now()}`
+            // 对用户名进行编码以避免非ISO-8859-1字符问题
+            const encodedUsername = encodeURIComponent(user.username)
+            const newToken = `mock-jwt-token-${encodedUsername}-${Date.now()}`
             localStorage.setItem('token', newToken)
             request.headers.set('Authorization', newToken)
             console.log('检测到旧格式token，已自动升级为新格式')
@@ -77,7 +97,7 @@ axiosInstance.interceptors.request.use(
       request.data = JSON.stringify(request.data)
     }
     
-    console.log('发送HTTP请求:', {
+    console.log('客户端博客系统发送HTTP请求:', {
       url: request.url,
       method: request.method,
       params: request.params,
@@ -119,7 +139,9 @@ axiosInstance.interceptors.request.use(
          if (isOldFormat && userInfo) {
           try {
             const user = JSON.parse(userInfo)
-            const newToken = `mock-jwt-token-${user.username}-${Date.now()}`
+            // 对用户名进行编码以避免非ISO-8859-1字符问题
+            const encodedUsername = encodeURIComponent(user.username)
+            const newToken = `mock-jwt-token-${encodedUsername}-${Date.now()}`
             console.log('检测到旧格式token，生成新token:', newToken)
             localStorage.setItem('token', newToken)
             request.headers.set('Authorization', newToken)
@@ -146,29 +168,78 @@ axiosInstance.interceptors.request.use(
 /** 响应拦截器 */
 axiosInstance.interceptors.response.use(
   (response: AxiosResponse) => {
-    console.log('前台HTTP响应拦截器 - 原始响应:', response.data)
+    console.log('客户端博客系统HTTP响应拦截器 - 原始响应:', response.data)
     
     // 检查是否是后端的标准响应格式 {code, msg, data}
     if (response.data && typeof response.data === 'object' && 'code' in response.data) {
       const { code, msg } = response.data
       if (code === ApiStatus.success || code === 200) {
-        console.log('前台HTTP响应拦截器 - 请求成功')
+        console.log('客户端博客系统HTTP响应拦截器 - 请求成功')
         // 返回响应数据，让request函数处理data字段提取
         return response
       }
-      console.error('前台HTTP响应拦截器 - 请求失败:', msg)
+      
+      // 处理401未授权错误（客户端博客系统简化处理）
+      if (code === ApiStatus.unauthorized) {
+        handleUnauthorizedError(msg)
+        return Promise.reject(createHttpError(msg || '登录已过期，请重新登录', code))
+      }
+      
+      console.error('客户端博客系统HTTP响应拦截器 - 请求失败:', msg)
       throw createHttpError(msg || '请求失败', code)
     }
     
     // 其他格式的响应直接返回
-    console.log('前台HTTP响应拦截器 - 非标准格式响应，直接返回')
+    console.log('客户端博客系统HTTP响应拦截器 - 非标准格式响应，直接返回')
     return response
   },
   (error) => {
-    console.error('前台HTTP响应拦截器 - 网络错误:', error)
+    console.error('客户端博客系统HTTP响应拦截器 - 网络错误:', error)
+    
+    // 处理HTTP状态码401错误
+    if (error.response?.status === ApiStatus.unauthorized) {
+      handleUnauthorizedError(error.response?.data?.message)
+      return Promise.reject(handleError(error))
+    }
+    
     return Promise.reject(handleError(error))
   }
 )
+
+/** 处理401错误（带防抖） */
+function handleUnauthorizedError(message?: string): never {
+  const error = createHttpError(message || '登录已过期，请重新登录', ApiStatus.unauthorized)
+
+  if (!isUnauthorizedErrorShown) {
+    isUnauthorizedErrorShown = true
+    logOut()
+
+    unauthorizedTimer = setTimeout(resetUnauthorizedError, UNAUTHORIZED_DEBOUNCE_TIME)
+
+    ElMessage.error(error.message)
+    throw error
+  }
+
+  throw error
+}
+
+/** 重置401防抖状态 */
+function resetUnauthorizedError() {
+  isUnauthorizedErrorShown = false
+  if (unauthorizedTimer) clearTimeout(unauthorizedTimer)
+  unauthorizedTimer = null
+}
+
+/** 退出登录函数 */
+function logOut() {
+  setTimeout(async () => {
+    // 动态导入用户store以避免循环依赖
+    const { useUserStore } = await import('@/stores/user')
+    const userStore = useUserStore()
+    await userStore.logout()
+    router.push('/login')
+  }, LOGOUT_DELAY)
+}
 
 /** 统一创建HttpError */
 function createHttpError(message: string, code: number) {

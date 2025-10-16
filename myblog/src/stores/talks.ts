@@ -55,14 +55,15 @@ export const useTalksStore = defineStore('talks', {
           localLikedTalks.forEach(id => this.likedTalks.add(id))
         }
         
-        // 如果传入了talkIds，需要验证这些说说是否真的被用户点赞
-        // 这里应该调用API来获取用户真正点赞的说说列表，而不是直接将所有talkIds标记为已点赞
-        // 暂时保持本地存储的状态，避免错误地将所有说说标记为已点赞
+        // 对于新用户或没有本地存储数据的用户，确保不会错误地标记任何说说为已点赞
+        // 只有在本地存储中明确记录的说说才会被标记为已点赞
         
         this.likeStatusInitialized = true
         console.log('说说点赞状态初始化完成，已点赞说说数量:', this.likedTalks.size)
       } catch (error) {
         console.error('初始化说说点赞状态失败:', error)
+        // 即使出错，也要确保新用户从干净的状态开始
+        this.likedTalks.clear()
         this.likeStatusInitialized = true
       }
     },

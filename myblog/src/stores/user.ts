@@ -4,6 +4,7 @@ import { getUserInfoApi, logoutApi } from '@/api/auth'
 import { useArticlesStore } from '@/stores/getarticles'
 import { useTalksStore } from '@/stores/talks'
 
+// 客户端博客系统用户信息接口（简化版，不包含角色权限）
 export interface UserInfo {
   id: string
   username: string
@@ -45,6 +46,12 @@ export const useUserStore = defineStore('user', () => {
     const savedUserInfo = localStorage.getItem('userInfo')
     
     if (savedToken) {
+      // 检查token是否过期
+      if (!checkTokenExpire()) {
+        console.log('Token已过期，清理状态')
+        return
+      }
+      
       token.value = savedToken
     }
     
@@ -65,7 +72,10 @@ export const useUserStore = defineStore('user', () => {
         }
       } catch (error) {
         console.error('解析用户信息失败:', error)
+        // 清理无效数据
+        localStorage.removeItem('token')
         localStorage.removeItem('userInfo')
+        localStorage.removeItem('tokenExpire')
       }
     }
   }
