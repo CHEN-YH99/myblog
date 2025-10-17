@@ -81,12 +81,12 @@
         <ElTableColumn prop="name" label="标签" align="center" min-width="200" />
         <ElTableColumn prop="createTime" label="创建日期" align="center" width="200">
           <template #default="{ row }">
-            {{ formatDate(row.createTime) }}
+            {{ formatDetailDate(row.createTime) }}
           </template>
         </ElTableColumn>
         <ElTableColumn prop="updateTime" label="修改日期" align="center" width="200">
           <template #default="{ row }">
-            {{ formatDate(row.updateTime) }}
+            {{ formatDetailDate(row.updateTime) }}
           </template>
         </ElTableColumn>
         <ElTableColumn label="操作" align="center" width="200">
@@ -169,6 +169,7 @@
   import { getTags } from '@/api/articles'
   import { useUserStore } from '@/store/modules/user'
   import { storeToRefs } from 'pinia'
+  import { formatDetailDate } from '@shared/utils/user'
 
   defineOptions({ name: 'TagsManagement' })
 
@@ -219,10 +220,10 @@
   }
 
   // 格式化日期
-  const formatDate = (dateString: string) => {
-    if (!dateString) return '-'
-    return useDateFormat(new Date(dateString), 'YYYY-MM-DD HH:mm:ss').value
-  }
+  // const formatDate = (dateString: string) => {
+  //   if (!dateString) return '-'
+  //   return useDateFormat(new Date(dateString), 'YYYY-MM-DD HH:mm:ss').value
+  // }
 
   // 获取标签列表
   const getTagsList = async () => {

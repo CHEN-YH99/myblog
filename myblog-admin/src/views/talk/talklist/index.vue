@@ -256,6 +256,7 @@ import {
 } from '@element-plus/icons-vue'
 import { useTable } from '@/composables/useTable'
 import { getTalkList, deleteTalk, updateTalk, batchOperateTalks, restoreTalk as restoreTalkAPI } from '@/api/talks'
+import { formatDate } from '@shared/utils/user'
 
 // 路由
 const router = useRouter()
@@ -388,21 +389,8 @@ const formatContent = (content: string) => {
   // 简单的文本格式化，保留换行
   return content.replace(/\n/g, '<br>')
 }
-
-// 格式化日期
-const formatDate = (date: string | Date) => {
-  if (!date) return ''
-  const d = new Date(date)
-  return d.toLocaleString('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
-}
-
-// 获取状态类型
+  
+  // 获取状态类型
 const getStatusType = (status: string): 'primary' | 'success' | 'info' | 'warning' | 'danger' => {
   const typeMap: Record<string, 'primary' | 'success' | 'info' | 'warning' | 'danger'> = {
     public: 'success',

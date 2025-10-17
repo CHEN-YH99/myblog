@@ -313,16 +313,14 @@
   const loadCategoryList = async () => {
     loading.value = true
     try {
-      const params: CategorySearchParams = {
+      const params = {
         page: pagination.currentPage,
         size: pagination.pageSize,
-        keyword: searchForm.keyword || undefined,
+        keyword: searchForm.keyword,
         status: searchForm.status
       }
 
-      console.log('请求分类列表参数:', params)
       const response = await getCategories(params)
-      console.log('分类列表响应:', response)
 
       // 处理不同的响应格式
       if (response && typeof response === 'object') {
@@ -330,24 +328,20 @@
         if ('categories' in response && Array.isArray(response.categories)) {
           categoryList.value = response.categories
           pagination.total = response.total || response.categories.length
-          console.log('使用分页响应格式，分类数量:', response.categories.length)
         }
         // 检查是否是直接数组响应
         else if (Array.isArray(response)) {
           categoryList.value = response
           pagination.total = response.length
-          console.log('使用数组响应格式，分类数量:', response.length)
         }
         // 检查是否是包装在data中的响应
         else if (response.data) {
           if (Array.isArray(response.data)) {
             categoryList.value = response.data
             pagination.total = response.data.length
-            console.log('使用data数组响应格式，分类数量:', response.data.length)
           } else if (response.data.categories) {
             categoryList.value = response.data.categories
             pagination.total = response.data.total || response.data.categories.length
-            console.log('使用data分页响应格式，分类数量:', response.data.categories.length)
           }
         } else {
           console.warn('未知的响应格式:', response)
@@ -360,30 +354,9 @@
         pagination.total = 0
       }
 
-      console.log('最终分类列表:', categoryList.value)
-      console.log('总数:', pagination.total)
-
-      // 打印每个分类的详细信息
+      // 强制刷新组件，确保表格更新
       if (categoryList.value && categoryList.value.length > 0) {
-        console.log('分类详细信息:')
-        categoryList.value.forEach((category, index) => {
-          console.log(`分类 ${index + 1}:`, {
-            _id: category._id,
-            id: category.id,
-            name: category.name,
-            slug: category.slug,
-            description: category.description,
-            color: category.color,
-            status: category.status,
-            articleCount: category.articleCount
-          })
-        })
-
-        // 强制刷新组件，确保表格更新
         await nextTick()
-        console.log('组件已刷新，表格应该显示', categoryList.value.length, '条数据')
-      } else {
-        console.warn('没有分类数据或数据为空')
       }
     } catch (error) {
       console.error('加载分类列表失败:', error)
@@ -532,13 +505,13 @@
 
       dialogVisible.value = false
       loadCategoryList()
-    } catch (error: unknown) {
+    } catch (error: any) {
       console.error('表单提交失败:', error)
-      if (error.fields) {
+      if (error && typeof error === 'object' && 'fields' in error) {
         // 表单验证失败
         return
       }
-      const errorMsg = error && typeof error === 'object' && 'msg' in error ? (error as any).msg : '操作失败'
+      const errorMsg = error && typeof error === 'object' && 'msg' in error ? error.msg : '操作失败'
       ElMessage.error(errorMsg)
     } finally {
       submitLoading.value = false

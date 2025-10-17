@@ -81,8 +81,6 @@
 <script setup lang="ts">
   import ArtButtonTable from '@/components/core/forms/art-button-table/index.vue'
   import AvatarUpload from '@/components/AvatarUpload.vue'
-  // 用户头像数据 - 实际项目中应从API获取
-  const ACCOUNT_TABLE_DATA = ref([])
   import { ElMessageBox, ElMessage, ElTag, ElImage } from 'element-plus'
   import { useTable } from '@/composables/useTable'
   import { fetchGetUserList, fetchDeleteUser, fetchUpdateUser } from '@/api/system-manage'
@@ -90,6 +88,10 @@
   import UserDialog from './modules/user-dialog.vue'
   import { useUserStore } from '@/store/modules/user'
   import { storeToRefs } from 'pinia'
+  import { getDefaultAvatar, getUserStatusConfig, GENDER_MAP, formatDate } from '@shared/utils/user'
+
+  // 用户头像数据 - 实际项目中应从API获取
+  const ACCOUNT_TABLE_DATA = ref([])
 
   defineOptions({ name: 'User' })
 
@@ -131,24 +133,7 @@
   } as const
 
   // 生成默认头像（用户名首字母头像）
-  const getDefaultAvatar = (username: string) => {
-    const name = username || 'User'
-    const colors = ['409eff', '67c23a', 'e6a23c', 'f56c6c', '909399']
-    const color = colors[name.length % colors.length]
-    return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=${color}&color=fff&size=200`
-  }
-
-  /**
-   * 获取用户状态配置
-   */
-  const getUserStatusConfig = (status: string) => {
-    return (
-      USER_STATUS_CONFIG[status as keyof typeof USER_STATUS_CONFIG] || {
-        type: 'info' as const,
-        text: '未知'
-      }
-    )
-  }
+  // 使用共享的用户工具函数
 
   const {
     columns,
@@ -258,16 +243,8 @@
           label: '创建日期',
           sortable: true,
           formatter: (row) => {
-            if (!row.createTime) return '-'
-            const date = new Date(row.createTime)
-            const year = date.getFullYear()
-            const month = String(date.getMonth() + 1).padStart(2, '0')
-            const day = String(date.getDate()).padStart(2, '0')
-            const hours = String(date.getHours()).padStart(2, '0')
-            const minutes = String(date.getMinutes()).padStart(2, '0')
-            const seconds = String(date.getSeconds()).padStart(2, '0')
-            return `${year}年${month}月${day}日 ${hours}:${minutes}:${seconds}`
-          }
+              return formatDate(row.createTime)
+            }
         },
         {
           prop: 'operation',

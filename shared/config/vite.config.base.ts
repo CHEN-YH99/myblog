@@ -38,7 +38,7 @@ export function createViteConfig(options: {
     // 基础别名配置
     const baseAlias = {
       '@': resolve(root, './src'),
-      '@shared': resolve(root, '../../shared')
+      '@shared': resolve(root, '../shared')
     }
 
     // 管理端额外别名

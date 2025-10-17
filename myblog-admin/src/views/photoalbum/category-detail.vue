@@ -217,6 +217,7 @@ import {
 // 批量删除 API 引入
 // import { batchDeletePhotos } from '@/api/photos'
 import { useUserStore } from '@/store/modules/user'
+import { formatDate } from '@shared/utils/user'
 
 defineOptions({ name: 'PhotoCategoryDetail' })
 
@@ -574,21 +575,8 @@ const handleUploadConfirm = async () => {
     uploadLoading.value = false
   }
 }
-
-// 工具方法
-const formatDate = (dateString: string) => {
-  if (!dateString) return ''
-  const date = new Date(dateString)
-  return date.toLocaleString('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
-}
-
-const formatFileSize = (bytes: number) => {
+  
+  const formatFileSize = (bytes: number) => {
   if (bytes === 0) return '0 B'
   const k = 1024
   const sizes = ['B', 'KB', 'MB', 'GB']

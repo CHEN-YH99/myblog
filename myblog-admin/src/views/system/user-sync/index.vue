@@ -63,7 +63,7 @@
       <div class="operation-header">
         <div class="operation-info">
           <h3>用户数据同步管理</h3>
-          <p>最后同步时间：{{ formatDate(syncStatus.lastSyncTime) }}</p>
+          <p>最后同步时间：{{ formatLocaleDate(syncStatus.lastSyncTime) }}</p>
         </div>
         <div class="operation-actions">
           <el-button type="primary" :loading="syncLoading" @click="triggerSync">
@@ -111,7 +111,7 @@
         </el-table-column>
         <el-table-column label="注册时间" prop="createTime" width="180">
           <template #default="{ row }">
-            {{ formatDate(row.createTime) }}
+            {{ formatLocaleDate(row.createTime) }}
           </template>
         </el-table-column>
         <el-table-column label="操作" width="150" fixed="right">
@@ -147,7 +147,7 @@
           <div v-else>
             <div v-for="(log, index) in syncLogs" :key="index" class="log-item">
               <div class="log-header-item">
-                <div class="log-time">{{ formatDate(log.timestamp) }}</div>
+                <div class="log-time">{{ formatLocaleDate(log.timestamp) }}</div>
                 <el-tag :type="log.error ? 'danger' : 'success'">
                   {{ log.error ? '失败' : '成功' }}
                 </el-tag>
@@ -155,7 +155,7 @@
               <div class="log-content">
                 <div class="log-user">用户：{{ log.userData.username }} ({{ log.userData.email }})</div>
                 <div v-if="log.error" class="log-error">错误：{{ log.error }}</div>
-                <div v-if="log.retryTime" class="log-retry">重试时间：{{ formatDate(log.retryTime) }}</div>
+                <div v-if="log.retryTime" class="log-retry">重试时间：{{ formatLocaleDate(log.retryTime) }}</div>
               </div>
             </div>
           </div>
@@ -186,6 +186,7 @@ import {
   type UserSyncData
 } from '@/api/user-sync'
 import { getUserSyncManager } from '@/utils/userSync'
+import { formatLocaleDate } from '@shared/utils/user'
 
 defineOptions({ name: 'UserSync' })
 
@@ -357,10 +358,10 @@ const getStatusText = (status: string) => {
 }
 
 // 格式化日期
-const formatDate = (dateString: string) => {
-  if (!dateString) return '暂无'
-  return new Date(dateString).toLocaleString('zh-CN')
-}
+// const formatDate = (dateString: string) => {
+//   if (!dateString) return '暂无'
+//   return new Date(dateString).toLocaleString('zh-CN')
+// }
 
 // 组件挂载时初始化数据
 onMounted(() => {

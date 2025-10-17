@@ -103,34 +103,39 @@ const {
   cleanup
 } = useArticles()
 
-// 计算每个分类的文章数量
-const categoriesWithCount = computed(() => {
-  console.log('Category.vue - 计算分类文章数量')
-  console.log('Category.vue - 分类数据:', categories.value)
-  console.log('Category.vue - 文章数据:', articleslist.value)
-  
-  const result = categories.value.map(category => {
-    // 更精确的匹配逻辑
-    const articleCount = articleslist.value.filter(article => {
-      // 优先匹配分类名称
-      if (article.category === category.name) return true
-      // 其次匹配slug
-      if (article.category === category.slug) return true
-      // 如果文章分类为空，跳过
-      return false
-    }).length
+  // 计算每个分类的文章数量
+  const categoriesWithCount = computed(() => {
+    const result = categories.value.map(category => {
+      const articleCount = articleslist.value.filter(article => 
+        article.category === category.name
+      ).length
+      
+      return {
+        ...category,
+        articleCount
+      }
+    })
     
-    console.log(`Category.vue - 分类「${category.name}」匹配到 ${articleCount} 篇文章`)
-    
-    return {
-      ...category,
-      articleCount
+    return result
+  })
+
+  // 跳转到分类详情页
+  const goToCategoryDetail = (categorySlug: string) => {
+    router.push(`/category/${categorySlug}`)
+  }
+
+  // 初始化数据
+  onMounted(async () => {
+    try {
+      // 并行获取分类和文章数据
+      await Promise.all([
+        getCategories(),
+        getArticles()
+      ])
+    } catch (err) {
+      console.error('Category.vue - 初始化数据失败:', err)
     }
-  }).filter(category => category.status === 'active')
-  
-  console.log('Category.vue - 最终分类数据:', result)
-  return result
-})
+  })
 
 // 稳定配色：根据分类文本 -> HSL 颜色（同一分类始终同色）
 const colorFor = (str: string) => {

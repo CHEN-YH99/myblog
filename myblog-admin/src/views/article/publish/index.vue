@@ -309,8 +309,6 @@
     () => route.query.id,
     async (newId, oldId) => {
       if (newId !== oldId) {
-        console.log('路由参数变化:', { from: oldId, to: newId })
-
         // 重置组件状态
         isInitializing.value = true
 
@@ -328,8 +326,6 @@
         if (!newId) {
           restoreLocalContent()
         }
-
-        console.log('路由参数变化处理完成')
       }
     },
     { immediate: false }
@@ -394,7 +390,6 @@
 
     // 编辑模式下不恢复草稿，避免覆盖正式数据
     if (id) {
-      console.log('编辑模式下跳过草稿恢复')
       return
     }
 

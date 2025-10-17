@@ -122,24 +122,8 @@
   } as const
 
   // 生成默认头像（用户名首字母头像）
-  const getDefaultAvatar = (username: string) => {
-    const name = username || 'User'
-    const colors = ['409eff', '67c23a', 'e6a23c', 'f56c6c', '909399']
-    const color = colors[name.length % colors.length]
-    return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=${color}&color=fff&size=200`
-  }
-
-  /**
-   * 获取用户状态配置
-   */
-  const getUserStatusConfig = (status: string) => {
-    return (
-      USER_STATUS_CONFIG[status as keyof typeof USER_STATUS_CONFIG] || {
-        type: 'info' as const,
-        text: '未知'
-      }
-    )
-  }
+  // 使用共享的用户工具函数
+  import { getDefaultAvatar, getUserStatusConfig, GENDER_MAP, formatDate } from '@shared/utils/user'
 
   const {
     columns,
@@ -237,11 +221,8 @@
           sortable: true,
           // checked: false, // 隐藏列
           formatter: (row) => {
-            const genderMap = {
-              'male': '男',
-              'female': '女',
-              'other': '其他'
-            }
+            // 性别映射使用共享配置
+            const genderMap = GENDER_MAP
             return genderMap[row.userGender as keyof typeof genderMap] || '未知'
           }
         },
@@ -259,17 +240,7 @@
           label: '创建日期',
           sortable: true,
           formatter: (row) => {
-            if (!row.createTime) return '-'
-            const date = new Date(row.createTime)
-            return date.toLocaleString('zh-CN', {
-              year: 'numeric',
-              month: '2-digit',
-              day: '2-digit',
-              hour: '2-digit',
-              minute: '2-digit',
-              second: '2-digit',
-              hour12: false
-            })
+            return formatDate(row.createTime)
           }
         },
         {
@@ -350,7 +321,6 @@
    * 显示用户弹窗
    */
   const showDialog = (type: Form.DialogType, row?: UserListItem): void => {
-    console.log('打开弹窗:', { type, row })
     dialogType.value = type
     currentUserData.value = row || {}
     nextTick(() => {
@@ -362,14 +332,6 @@
    * 删除用户
    */
   const deleteUser = (row: UserListItem): void => {
-    console.log('=== 删除用户函数开始执行 ===')
-    console.log('函数调用栈:', new Error().stack)
-    console.log('删除用户被调用:', row)
-    console.log('row.id 的值:', row.id)
-    console.log('row.userId 的值:', row.userId)
-    console.log('row 对象的所有属性:', Object.keys(row))
-    console.log('row 对象完整内容:', JSON.stringify(row, null, 2))
-    
     // 检查 id 是否为空或未定义
     if (!row.id) {
       console.error('错误: row.id 为空或未定义!', { id: row.id, userId: row.userId })
@@ -377,34 +339,23 @@
       return
     }
     
-    console.log('准备显示确认弹窗...')
     ElMessageBox.confirm(`确定要删除用户 "${row.userName}" 吗？此操作不可恢复！`, '删除用户', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       type: 'error'
     }).then(async () => {
-      console.log('=== 用户点击了确认按钮 ===')
       try {
-        console.log('准备调用 fetchDeleteUser，参数:', row.id)
-        console.log('fetchDeleteUser 函数类型:', typeof fetchDeleteUser)
-        
         const result = await fetchDeleteUser(row.id) // 使用映射后的id字段
-        console.log('fetchDeleteUser 调用成功，返回结果:', result)
         
         ElMessage.success('删除成功')
         // 刷新表格数据
         refreshData()
       } catch (error) {
-        console.error('=== 删除过程中发生错误 ===')
-        console.error('错误详情:', error)
-        console.error('错误类型:', typeof error)
-        console.error('错误消息:', error?.message || '未知错误')
-        console.error('错误堆栈:', error?.stack || '无堆栈信息')
+        console.error('删除用户失败:', error)
         ElMessage.error('删除失败，请稍后重试')
       }
-    }).catch((error) => {
-      console.log('=== 用户取消了删除操作或弹窗出错 ===')
-      console.log('取消原因:', error)
+    }).catch(() => {
+      // 用户取消删除操作
     })
   }
 
@@ -427,7 +378,6 @@
    */
   const handleSelectionChange = (selection: UserListItem[]): void => {
     selectedRows.value = selection
-    console.log('选中行数据:', selectedRows.value)
   }
 
   /**

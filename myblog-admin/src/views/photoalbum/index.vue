@@ -320,9 +320,7 @@
         status: searchForm.status
       }
 
-      console.log('请求图片分类列表参数:', params)
       const response = await getPhotoCategories(params)
-      console.log('图片分类列表响应:', response)
 
       // 处理不同的响应格式
       if (response && typeof response === 'object') {
@@ -344,11 +342,9 @@
               createdAt: item.createdAt,
               updatedAt: item.updatedAt
             })
-            console.log('创建响应式分类项:', reactiveItem.name, '状态:', reactiveItem.status)
             return reactiveItem
           })
           pagination.total = response.total || response.categories.length
-          console.log('使用分页响应格式，分类数量:', response.categories.length)
         }
         // 检查是否是直接数组响应
         else if (Array.isArray(response)) {
@@ -368,11 +364,9 @@
               createdAt: item.createdAt,
               updatedAt: item.updatedAt
             })
-            console.log('创建响应式分类项:', reactiveItem.name, '状态:', reactiveItem.status)
             return reactiveItem
           })
           pagination.total = response.length
-          console.log('使用数组响应格式，分类数量:', response.length)
         }
         // 检查是否是包装在data中的响应
         else if (response.data) {
@@ -393,11 +387,9 @@
                 createdAt: item.createdAt,
                 updatedAt: item.updatedAt
               })
-              console.log('创建响应式分类项:', reactiveItem.name, '状态:', reactiveItem.status)
               return reactiveItem
             })
             pagination.total = response.data.length
-            console.log('使用data数组响应格式，分类数量:', response.data.length)
           } else if (response.data.categories) {
             // 创建完全响应式的数据
             categoryList.value = response.data.categories.map((item: PhotoCategoryItem) => {
@@ -415,11 +407,9 @@
                 createdAt: item.createdAt,
                 updatedAt: item.updatedAt
               })
-              console.log('创建响应式分类项:', reactiveItem.name, '状态:', reactiveItem.status)
               return reactiveItem
             })
             pagination.total = response.data.total || response.data.categories.length
-            console.log('使用data分页响应格式，分类数量:', response.data.categories.length)
           }
         } else {
           console.warn('未知的响应格式:', response)
@@ -436,15 +426,10 @@
       if (searchForm.status) {
         categoryList.value = categoryList.value.filter(item => item.status === searchForm.status)
         pagination.total = categoryList.value.length
-        console.log('应用状态筛选后的分类数量:', categoryList.value.length)
       }
-
-      console.log('最终图片分类列表:', categoryList.value)
-      console.log('总数:', pagination.total)
 
       // 强制刷新组件，确保表格更新
       await nextTick()
-      console.log('组件已刷新，表格应该显示', categoryList.value.length, '条数据')
     } catch (error) {
       console.error('加载图片分类列表失败:', error)
       ElMessage.error('加载图片分类列表失败: ' + (error as any)?.message || '未知错误')
@@ -526,15 +511,10 @@
     }
   }
 
-  // 状态变更
+  // 状态切换处理
   const handleStatusChange = async (row: PhotoCategoryItem) => {
-    console.log('=== 状态切换开始 ===')
-    
-    // 优先使用_id，因为它是MongoDB的真实ID
     const categoryId = row._id || row.id
-    
     if (!categoryId) {
-      console.error('分类ID不存在')
       ElMessage.error('分类ID不存在，无法更新状态')
       return
     }
@@ -543,25 +523,10 @@
     const currentStatus = row.status
     const originalStatus = currentStatus === 'active' ? 'inactive' : 'active'
     
-    console.log('分类信息:', {
-      name: row.name,
-      _id: row._id,
-      id: row.id,
-      ElSwitch当前状态: currentStatus,
-      推断的原始状态: originalStatus,
-      是否响应式: typeof row === 'object' && (row as any).__v_isReactive
-    })
-    
     try {
-      console.log('发送API请求，分类ID:', categoryId, '目标状态:', currentStatus)
       const result = await updatePhotoCategory(categoryId.toString(), { status: currentStatus })
-      console.log('API响应:', result)
-      
-      // API调用成功，状态已经是正确的（ElSwitch已经更新了）
-      console.log('UI状态确认为:', currentStatus)
       
       ElMessage.success(`${currentStatus === 'active' ? '启用' : '禁用'}成功`)
-      console.log('状态切换成功:', row.name, '最终状态:', currentStatus)
       
       // 强制响应式更新和重新渲染
       await nextTick()
@@ -570,7 +535,6 @@
       const index = categoryList.value.findIndex(item => (item._id || item.id) === categoryId)
       if (index !== -1) {
         categoryList.value[index].status = currentStatus
-        console.log('更新列表中的状态:', categoryList.value[index].name, '状态:', categoryList.value[index].status)
       }
       
     } catch (error: unknown) {
@@ -578,14 +542,11 @@
       
       // API调用失败，需要恢复ElSwitch的状态
       row.status = originalStatus
-      console.log('API失败，恢复状态为:', originalStatus)
       
       const errorMsg = error && typeof error === 'object' && 'msg' in error ? (error as any).msg : 
                         error && typeof error === 'object' && 'message' in error ? (error as any).message : '状态更新失败'
         ElMessage.error(errorMsg)
     }
-    
-    console.log('=== 状态切换结束 ===')
   }
 
   // 提交表单

@@ -13,7 +13,7 @@
             <div class="user-info">
               <h2 class="username">{{ userProfile.username }}</h2>
               <p class="user-role">{{ userProfile.role }}</p>
-              <p class="join-date">加入时间：{{ formatDate(userProfile.createTime) }}</p>
+              <p class="join-date">加入时间：{{ formatSimpleDate(userProfile.createTime) }}</p>
             </div>
           </div>
           <div class="profile-actions">
@@ -427,9 +427,9 @@ const passwordRules: FormRules = {
 }
 
 // 格式化日期
-const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString('zh-CN')
-}
+// const formatDate = (dateString: string) => {
+//   return new Date(dateString).toLocaleDateString('zh-CN')
+// }
 
 // 处理头像更换
 const handleAvatarChange = (newAvatarUrl: string) => {

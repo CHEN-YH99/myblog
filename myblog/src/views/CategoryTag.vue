@@ -134,30 +134,22 @@ const displayName = computed(() => {
 
 // 筛选当前分类或标签的文章
 const filteredArticles = computed(() => {
-  console.log('CategoryTag - 开始筛选文章')
-  console.log('CategoryTag - 参数值:', paramValue.value)
-  console.log('CategoryTag - 当前分类:', currentCategory.value)
-  console.log('CategoryTag - 所有文章数量:', articles.value.length)
+  if (!paramValue.value) return []
   
   const filtered = articles.value.filter(article => {
-    console.log(`CategoryTag - 检查文章: ${article.title}, 分类: ${article.category}`)
-    
     // 检查是否为分类匹配
     if (article.category === paramValue.value || 
         article.category === currentCategory.value?.slug ||
         article.category === currentCategory.value?.name) {
-      console.log(`CategoryTag - 匹配成功: ${article.title}`)
       return true
     }
     // 检查是否为标签匹配
     if (article.tags?.includes(paramValue.value)) {
-      console.log(`CategoryTag - 标签匹配成功: ${article.title}`)
       return true
     }
     return false
   })
   
-  console.log('CategoryTag - 筛选结果数量:', filtered.length)
   return filtered
 })
 
@@ -207,25 +199,18 @@ const loadData = async () => {
     loading.value = true
     error.value = null
     
-    console.log('CategoryTag - 开始加载数据, 分类参数:', paramValue.value)
-    
     // 并行初始化分类数据和获取所有文章
     const [allArticles] = await Promise.all([
       getAllArticles(),
       initCategories()
     ])
     
-    console.log('CategoryTag - 获取到所有文章:', allArticles?.length || 0)
-    
     // 查找当前分类
     const foundCategory = findCategory(paramValue.value)
     currentCategory.value = foundCategory || null
-    console.log('CategoryTag - 找到分类:', currentCategory.value)
     
     // 设置所有文章数据，筛选在computed中处理
     articles.value = Array.isArray(allArticles) ? allArticles : []
-    
-    console.log('CategoryTag - 筛选后的文章数量:', filteredArticles.value.length)
     
   } catch (err) {
     error.value = err instanceof Error ? err.message : '加载数据失败'
