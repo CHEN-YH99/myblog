@@ -42,6 +42,7 @@ export function getTalkDetail(id: string) {
 export function likeTalk(id: string) {
   return api.post({
     url: `/api/talks/${id}/like`,
+    data: {},
     showErrorMessage: true
   })
 }
@@ -129,6 +130,7 @@ export function addTalkReply(id: string, data: {
 export function likeReply(id: string) {
   return api.post({
     url: `/api/replies/${id}/like`,
+    data: {},
     showErrorMessage: true
   })
 }

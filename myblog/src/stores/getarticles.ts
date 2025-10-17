@@ -69,15 +69,38 @@ export const useArticlesStore = defineStore('articles', {
     async initializeLikeStatus() {
       const userStore = useUserStore()
       
-      // 如果用户未登录，直接返回
+      // 如果用户未登录，清空状态并返回
       if (!userStore.isLoggedIn) {
+        this.likedArticles.clear()
+        this.likeStatusInitialized = true
         return
       }
       
       try {
-        // 从localStorage恢复点赞状态
-        const userId = userStore.userInfo?.id
-        const savedLikedArticles = getLikedArticles(userId)
+        // 等待用户信息完全加载
+        let userInfo = userStore.userInfo
+        if (!userInfo && userStore.token) {
+          // 如果有token但没有用户信息，尝试获取用户信息
+          try {
+            userInfo = await userStore.fetchUserInfo()
+          } catch (error) {
+            console.warn('获取用户信息失败，使用空状态初始化点赞状态')
+            this.likedArticles.clear()
+            this.likeStatusInitialized = true
+            return
+          }
+        }
+        
+        // 从localStorage恢复点赞状态（用户键：优先使用id，兜底使用username）
+        const userKey = userInfo?.id || userInfo?.username
+        if (!userKey) {
+          console.warn('无法获取用户标识，使用空状态初始化点赞状态')
+          this.likedArticles.clear()
+          this.likeStatusInitialized = true
+          return
+        }
+        
+        const savedLikedArticles = getLikedArticles(userKey)
         
         // 清空当前状态
         this.likedArticles.clear()
@@ -96,7 +119,7 @@ export const useArticlesStore = defineStore('articles', {
           
           // 保存服务器状态到localStorage
           const finalLikedArticles = Array.from(this.likedArticles)
-          saveLikedArticles(finalLikedArticles, userId)
+          saveLikedArticles(finalLikedArticles, userKey)
         } else {
           // 如果没有文章数据，使用本地保存的状态
           savedLikedArticles.forEach(articleId => {
@@ -109,8 +132,8 @@ export const useArticlesStore = defineStore('articles', {
       } catch (error) {
         console.error('初始化点赞状态失败:', error)
         // 如果服务器请求失败，使用本地状态
-        const userId = userStore.userInfo?.id
-        const savedLikedArticles = getLikedArticles(userId)
+        const userKey = userStore.userInfo?.id || userStore.userInfo?.username
+        const savedLikedArticles = getLikedArticles(userKey)
         savedLikedArticles.forEach(articleId => {
           this.likedArticles.add(articleId)
         })
@@ -121,10 +144,12 @@ export const useArticlesStore = defineStore('articles', {
     // 重置点赞状态（用户登出时调用）
     resetLikeStatus() {
       const userStore = useUserStore()
-      const userId = userStore.userInfo?.id
+      const id = userStore.userInfo?.id
+      const username = userStore.userInfo?.username
       
-      // 清除localStorage中的数据
-      clearUserLikeData(userId)
+      // 清除localStorage中的数据（同时尝试按id与username清理，避免残留）
+      clearUserLikeData(id)
+      clearUserLikeData(username)
       
       // 清除内存中的状态
       this.likedArticles.clear()
@@ -148,9 +173,9 @@ export const useArticlesStore = defineStore('articles', {
         // 更新本地状态
         this.likedArticles.add(articleId)
         
-        // 保存到localStorage
-        const userId = userStore.userInfo?.id
-        addLikedArticle(articleId, userId)
+        // 保存到localStorage（按用户键隔离）
+        const userKey = userStore.userInfo?.id || userStore.userInfo?.username
+        addLikedArticle(articleId, userKey)
 
         // 更新文章点赞数
         const article = this.articles.find(a => a._id === articleId)
@@ -183,9 +208,9 @@ export const useArticlesStore = defineStore('articles', {
         
         this.likedArticles.delete(articleId)
         
-        // 保存到localStorage
-        const userId = userStore.userInfo?.id
-        removeLikedArticle(articleId, userId)
+        // 保存到localStorage（按用户键隔离）
+        const userKey = userStore.userInfo?.id || userStore.userInfo?.username
+        removeLikedArticle(articleId, userKey)
         
         const article = this.articles.find(a => a._id === articleId)
         if (article) {

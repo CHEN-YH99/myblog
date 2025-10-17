@@ -38,14 +38,36 @@ export const useTalksStore = defineStore('talks', {
     async initializeLikeStatus(talkIds: string[] = []) {
       const userStore = useUserStore()
       if (!userStore.isLoggedIn) {
+        this.likedTalks.clear()
         this.likeStatusInitialized = true
         return
       }
 
       try {
-        // 从本地存储获取已点赞的说说ID
-        const userId = userStore.userInfo?.id
-        const localLikedTalks = getLikedTalks(userId)
+        // 等待用户信息完全加载
+        let userInfo = userStore.userInfo
+        if (!userInfo && userStore.token) {
+          // 如果有token但没有用户信息，尝试获取用户信息
+          try {
+            userInfo = await userStore.fetchUserInfo()
+          } catch (error) {
+            console.warn('获取用户信息失败，使用空状态初始化点赞状态')
+            this.likedTalks.clear()
+            this.likeStatusInitialized = true
+            return
+          }
+        }
+        
+        // 从本地存储获取已点赞的说说ID（用户键：优先使用id，兜底使用username）
+        const userKey = userInfo?.id || userInfo?.username
+        if (!userKey) {
+          console.warn('无法获取用户标识，使用空状态初始化点赞状态')
+          this.likedTalks.clear()
+          this.likeStatusInitialized = true
+          return
+        }
+        
+        const localLikedTalks = getLikedTalks(userKey)
         
         // 清空当前状态
         this.likedTalks.clear()
@@ -71,10 +93,12 @@ export const useTalksStore = defineStore('talks', {
     // 重置点赞状态（用户登出时调用）
     resetLikeStatus() {
       const userStore = useUserStore()
-      const userId = userStore.userInfo?.id
+      const id = userStore.userInfo?.id
+      const username = userStore.userInfo?.username
       
-      // 清除localStorage中的数据
-      clearUserLikeData(userId)
+      // 清除localStorage中的数据（同时尝试按id与username清理，避免残留）
+      clearUserLikeData(id)
+      clearUserLikeData(username)
       
       // 清除内存中的状态
       this.likedTalks.clear()
@@ -98,9 +122,9 @@ export const useTalksStore = defineStore('talks', {
         // 更新本地状态
         this.likedTalks.add(talkId)
         
-        // 保存到localStorage
-        const userId = userStore.userInfo?.id
-        addLikedTalk(talkId, userId)
+        // 保存到localStorage（按用户键隔离）
+        const userKey = userStore.userInfo?.id || userStore.userInfo?.username
+        addLikedTalk(talkId, userKey)
 
         return result
       } catch (error) {
@@ -127,9 +151,9 @@ export const useTalksStore = defineStore('talks', {
         
         this.likedTalks.delete(talkId)
         
-        // 从localStorage移除
-        const userId = userStore.userInfo?.id
-        removeLikedTalk(talkId, userId)
+        // 从localStorage移除（按用户键隔离）
+        const userKey = userStore.userInfo?.id || userStore.userInfo?.username
+        removeLikedTalk(talkId, userKey)
         
         return result
       } catch (error) {

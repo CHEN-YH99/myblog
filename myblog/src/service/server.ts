@@ -734,12 +734,24 @@ app.post('/api/articles/:id/like', async (req: Request, res: Response) => {
     const { id } = req.params;
     const rawIP = req.ip || (req.connection as any)?.remoteAddress || 'unknown';
     const clientIP = normalizeIP(rawIP);
+    const authorization = req.get('Authorization') || '';
+
+    // 获取用户标识符（优先使用token中的用户信息，开发环境下避免IP冲突）
+    let userIdentifier = clientIP;
+    if (authorization && authorization.startsWith('mock-jwt-token-')) {
+      // 从token中提取用户标识符
+      const tokenParts = authorization.split('-');
+      if (tokenParts.length >= 5) {
+        const username = decodeURIComponent(tokenParts[3]);
+        userIdentifier = `user_${username}`;
+      }
+    }
 
     // 检查是否已点赞，避免重复计数
     const existingLike = await Like.findOne({
       targetId: id,
       targetType: 'article',
-      ip: clientIP
+      ip: userIdentifier
     });
     if (existingLike) {
       return res.status(400).json(createErrorResponse('您已经点过赞', 400));
@@ -749,7 +761,7 @@ app.post('/api/articles/:id/like', async (req: Request, res: Response) => {
     await Like.create({
       targetId: id,
       targetType: 'article',
-      ip: clientIP,
+      ip: userIdentifier,
       userAgent: req.headers['user-agent'] || ''
     });
 
@@ -762,7 +774,7 @@ app.post('/api/articles/:id/like', async (req: Request, res: Response) => {
 
     if (!article) {
       // 回滚点赞记录
-      await Like.deleteOne({ targetId: id, targetType: 'article', ip: clientIP });
+      await Like.deleteOne({ targetId: id, targetType: 'article', ip: userIdentifier });
       return res.status(404).json(createErrorResponse('文章未找到', 404));
     }
 
@@ -781,12 +793,24 @@ app.post('/api/articles/:id/unlike', async (req: Request, res: Response) => {
     const { id } = req.params;
     const rawIP = req.ip || (req.connection as any)?.remoteAddress || 'unknown';
     const clientIP = normalizeIP(rawIP);
+    const authorization = req.get('Authorization') || '';
+
+    // 获取用户标识符（优先使用token中的用户信息，开发环境下避免IP冲突）
+    let userIdentifier = clientIP;
+    if (authorization && authorization.startsWith('mock-jwt-token-')) {
+      // 从token中提取用户标识符
+      const tokenParts = authorization.split('-');
+      if (tokenParts.length >= 5) {
+        const username = decodeURIComponent(tokenParts[3]);
+        userIdentifier = `user_${username}`;
+      }
+    }
 
     // 检查是否有点赞记录
     const likeRecord = await Like.findOne({
       targetId: id,
       targetType: 'article',
-      ip: clientIP
+      ip: userIdentifier
     });
     if (!likeRecord) {
       return res.status(400).json(createErrorResponse('您还没有点赞', 400));
@@ -827,11 +851,23 @@ app.get('/api/articles/:id/like-status', async (req: Request, res: Response) => 
     const { id } = req.params;
     const rawIP = req.ip || (req.connection as any)?.remoteAddress || 'unknown';
     const clientIP = normalizeIP(rawIP);
+    const authorization = req.get('Authorization') || '';
+
+    // 获取用户标识符（优先使用token中的用户信息，开发环境下避免IP冲突）
+    let userIdentifier = clientIP;
+    if (authorization && authorization.startsWith('mock-jwt-token-')) {
+      // 从token中提取用户标识符
+      const tokenParts = authorization.split('-');
+      if (tokenParts.length >= 5) {
+        const username = decodeURIComponent(tokenParts[3]);
+        userIdentifier = `user_${username}`;
+      }
+    }
 
     const existingLike = await Like.findOne({
       targetId: id,
       targetType: 'article',
-      ip: clientIP
+      ip: userIdentifier
     });
 
     res.json(createResponse({ isLiked: !!existingLike }, '获取点赞状态成功'));
@@ -1868,19 +1904,33 @@ app.post('/api/talks/:id/like', async (req: Request, res: Response) => {
     const rawIP = req.ip || req.connection.remoteAddress || 'unknown';
     const clientIP = normalizeIP(rawIP);
     const userAgent = req.get('User-Agent') || '';
+    const authorization = req.get('Authorization') || '';
 
     console.log('=== 点赞请求 ===');
     console.log('说说ID:', id);
     console.log('原始IP:', rawIP);
     console.log('标准化IP:', clientIP);
+    console.log('Authorization:', authorization);
     console.log('req.ip:', req.ip);
     console.log('req.connection.remoteAddress:', req.connection?.remoteAddress);
 
-    // 检查是否已经点赞过
+    // 获取用户标识符（优先使用token中的用户信息，开发环境下避免IP冲突）
+    let userIdentifier = clientIP;
+    if (authorization && authorization.startsWith('mock-jwt-token-')) {
+      // 从token中提取用户标识符
+      const tokenParts = authorization.split('-');
+      if (tokenParts.length >= 5) {
+        const username = decodeURIComponent(tokenParts[3]);
+        userIdentifier = `user_${username}`;
+        console.log('使用用户标识符:', userIdentifier);
+      }
+    }
+
+    // 检查是否已经点赞过（使用用户标识符而不是IP）
     const existingLike = await Like.findOne({
       targetId: id,
       targetType: 'talk',
-      ip: clientIP
+      ip: userIdentifier
     });
 
     console.log('查找到的现有点赞记录:', existingLike);
@@ -1894,7 +1944,7 @@ app.post('/api/talks/:id/like', async (req: Request, res: Response) => {
     const newLike = await Like.create({
       targetId: id,
       targetType: 'talk',
-      ip: clientIP,
+      ip: userIdentifier,
       userAgent
     });
 
@@ -1927,19 +1977,33 @@ app.delete('/api/talks/:id/like', async (req: Request, res: Response) => {
     const { id } = req.params;
     const rawIP = req.ip || req.connection.remoteAddress || 'unknown';
     const clientIP = normalizeIP(rawIP);
+    const authorization = req.get('Authorization') || '';
     
     console.log('=== 取消点赞请求 ===');
     console.log('说说ID:', id);
     console.log('原始IP:', rawIP);
     console.log('标准化IP:', clientIP);
+    console.log('Authorization:', authorization);
     console.log('req.ip:', req.ip);
     console.log('req.connection.remoteAddress:', req.connection?.remoteAddress);
+
+    // 获取用户标识符（优先使用token中的用户信息，开发环境下避免IP冲突）
+    let userIdentifier = clientIP;
+    if (authorization && authorization.startsWith('mock-jwt-token-')) {
+      // 从token中提取用户标识符
+      const tokenParts = authorization.split('-');
+      if (tokenParts.length >= 5) {
+        const username = decodeURIComponent(tokenParts[3]);
+        userIdentifier = `user_${username}`;
+        console.log('使用用户标识符:', userIdentifier);
+      }
+    }
 
     // 查找并删除点赞记录
     const likeRecord = await Like.findOneAndDelete({
       targetId: id,
       targetType: 'talk',
-      ip: clientIP
+      ip: userIdentifier
     });
 
     console.log('查找到的点赞记录:', likeRecord);
@@ -1977,11 +2041,23 @@ app.get('/api/talks/:id/like/status', async (req: Request, res: Response) => {
     // 与点赞/取消点赞保持一致，统一标准化IP，避免 ::1 与 127.0.0.1 不一致导致状态错误
     const rawIP = req.ip || req.connection.remoteAddress || 'unknown';
     const clientIP = normalizeIP(rawIP);
+    const authorization = req.get('Authorization') || '';
+
+    // 获取用户标识符（优先使用token中的用户信息，开发环境下避免IP冲突）
+    let userIdentifier = clientIP;
+    if (authorization && authorization.startsWith('mock-jwt-token-')) {
+      // 从token中提取用户标识符
+      const tokenParts = authorization.split('-');
+      if (tokenParts.length >= 5) {
+        const username = decodeURIComponent(tokenParts[3]);
+        userIdentifier = `user_${username}`;
+      }
+    }
 
     const existingLike = await Like.findOne({
       targetId: id,
       targetType: 'talk',
-      ip: clientIP
+      ip: userIdentifier
     });
 
     res.json(createResponse({
