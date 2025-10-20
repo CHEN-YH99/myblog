@@ -12,8 +12,8 @@
       <WaveContainer />
     </div>
 
-    <!-- 分类信息 -->
-    <div v-if="currentCategory" class="category-info">
+    <!-- 分类信息（仅在分类可展示时显示） -->
+    <div v-if="isCategoryActive" class="category-info">
       <div class="category-header">
         <h2>{{ currentCategory.title }}</h2>
         <p class="description">{{ currentCategory.description }}</p>
@@ -25,8 +25,8 @@
       </div>
     </div>
 
-    <!-- 照片列表 -->
-    <div class="photo-list">
+    <!-- 照片列表（仅在分类可展示时显示） -->
+    <div class="photo-list" v-if="isCategoryActive">
       <div v-if="photos.length" class="photos-grid">
         <div 
           v-for="photo in photos" 
@@ -48,6 +48,9 @@
       <div v-else class="empty">
         <el-empty description="该分类暂无照片" :image-size="200" />
       </div>
+    </div>
+    <div v-else class="empty">
+      <el-empty description="该分类已被禁用" :image-size="200" />
     </div>
 
     <!-- 照片详情弹窗 -->
@@ -105,8 +108,18 @@ const selectedPhoto = ref<Api.Photo.PhotoItem | null>(null)
 let isRefreshing = false
 const refreshTimer = ref<number | null>(null)
 
+// 分类是否展示（兼容 status/isVisible）
+const isCategoryActive = computed(() => {
+  const c: any = currentCategory.value
+  if (!c) return false
+  const statusActive = c.status ? c.status === 'active' : true
+  const visibleActive = c.isVisible !== false
+  return statusActive && visibleActive
+})
+
 // 动态展示：照片数量与时间
 const displayedPhotoCount = computed(() => {
+  if (!isCategoryActive.value) return 0
   const clientCount = photos.value.length
   if (clientCount > 0) return clientCount
   const serverCount = currentCategory.value?.photoCount
@@ -168,6 +181,13 @@ const fetchCategoryAndPhotos = async (id: string) => {
     const detail = await getPhotoCategoryDetail(id)
     if (detail) {
       currentCategory.value = detail as Api.PhotoCategory.PhotoCategoryItem
+    }
+
+    // 分类被禁用时不再加载照片并清空列表（兼容 status/inactive 与 isVisible=false）
+    const c: any = currentCategory.value
+    if (c && (c.status === 'inactive' || c.isVisible === false)) {
+      photos.value = []
+      return
     }
 
     // 计算用于查询照片列表的分类ID（优先 id，其余 _id）

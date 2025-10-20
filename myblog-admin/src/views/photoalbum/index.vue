@@ -74,7 +74,7 @@
         <ElTableColumn prop="description" label="描述" min-width="200" show-overflow-tooltip />
         <ElTableColumn prop="photoCount" label="图片数量" width="100" align="center">
           <template #default="{ row }">
-            <ElTag type="info">{{ row.photoCount || 0 }}</ElTag>
+            <ElTag type="info">{{ getDisplayPhotoCount(row) }}</ElTag>
           </template>
         </ElTableColumn>
         <ElTableColumn prop="status" label="状态" width="100" align="center">
@@ -220,7 +220,7 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, reactive, onMounted, nextTick, toRaw } from 'vue'
+  import { ref, reactive, onMounted, nextTick, toRaw, onUnmounted } from 'vue'
   import { useRouter } from 'vue-router'
   import { ElMessage, ElMessageBox } from 'element-plus'
   import { Plus, Search } from '@element-plus/icons-vue'
@@ -237,6 +237,7 @@
     type UpdatePhotoCategoryParams,
     type PhotoCategorySearchParams
   } from '@/api/photoCategories'
+  import { getPhotosByCategory } from '@/api/photos'
 
   defineOptions({ name: 'PhotoCategoryManagement' })
 
@@ -307,6 +308,13 @@
 
   onMounted(() => {
     loadCategoryList()
+    startAutoRefresh()
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+  })
+
+  onUnmounted(() => {
+    stopAutoRefresh()
+    document.removeEventListener('visibilitychange', handleVisibilityChange)
   })
 
   // 加载分类列表
@@ -430,6 +438,8 @@
 
       // 强制刷新组件，确保表格更新
       await nextTick()
+      // 刷新当前页分类的实际照片数（动态绑定）
+      await refreshCountsForDisplayedCategories()
     } catch (error) {
       console.error('加载图片分类列表失败:', error)
       ElMessage.error('加载图片分类列表失败: ' + (error as any)?.message || '未知错误')
@@ -739,6 +749,143 @@
       minute: '2-digit',
       second: '2-digit'
     })
+  }
+  const refreshIntervalMs = 15000
+  let autoRefreshTimer: number | null = null
+
+  // 解析分类响应（兼容不同返回格式）
+  const parseCategoriesFromResponse = (response: any): PhotoCategoryItem[] => {
+    if (!response) return []
+    if (Array.isArray(response)) return response as PhotoCategoryItem[]
+    if (typeof response === 'object') {
+      if ('categories' in response && Array.isArray((response as any).categories)) {
+        return (response as any).categories as PhotoCategoryItem[]
+      }
+      if ((response as any).data) {
+        const data = (response as any).data
+        if (Array.isArray(data)) return data as PhotoCategoryItem[]
+        if (Array.isArray(data.categories)) return data.categories as PhotoCategoryItem[]
+      }
+    }
+    return []
+  }
+
+  // 列表内的照片数量映射（分类ID -> 实际照片数）
+  const categoryPhotoCounts = reactive<Record<string, number>>({})
+
+  // 获取分类条目的ID（兼容 _id / id）
+  const getCategoryIdFromItem = (item: PhotoCategoryItem | any): string | undefined => {
+    const id = (item && ((item as any)._id || (item as any).id))
+    return id ? String(id) : undefined
+  }
+
+  // 解析按分类获取照片接口的总数（兼容不同返回格式）
+  const parsePhotosTotalFromResponse = (response: any): number => {
+    if (!response) return 0
+    if (Array.isArray(response)) return response.length
+    if (typeof response === 'object') {
+      if ('photos' in response && Array.isArray((response as any).photos)) {
+        return (response as any).total ?? (response as any).photos.length
+      }
+      if ((response as any).data) {
+        const data = (response as any).data
+        if (Array.isArray(data)) return data.length
+        if (Array.isArray(data.photos)) return data.total ?? data.photos.length
+      }
+    }
+    return 0
+  }
+
+  // 批量刷新当前页分类的实际照片数
+  const refreshCountsForDisplayedCategories = async () => {
+    const ids = categoryList.value
+      .map(getCategoryIdFromItem)
+      .filter((id): id is string => !!id)
+
+    if (ids.length === 0) return
+
+    try {
+      await Promise.all(
+        ids.map(async (id) => {
+          try {
+            // 使用 size=1 以获取总数（若后端支持分页返回 total），否则回退为数组长度
+            const resp = await getPhotosByCategory(id, { page: 1, size: 1 })
+            const total = parsePhotosTotalFromResponse(resp)
+            categoryPhotoCounts[id] = total
+            const idx = categoryList.value.findIndex((c) => getCategoryIdFromItem(c) === id)
+            if (idx !== -1) {
+              categoryList.value[idx].photoCount = total
+            }
+          } catch (err) {
+            console.warn('刷新分类照片数失败: ', id, err)
+          }
+        })
+      )
+    } catch (e) {
+      console.warn('批量刷新照片数失败:', e)
+    }
+  }
+
+  // 从映射或行数据获取展示的照片数量
+  const getDisplayPhotoCount = (row: PhotoCategoryItem): number => {
+    const id = getCategoryIdFromItem(row)
+    if (!id) return row.photoCount || 0
+    const mapped = categoryPhotoCounts[id]
+    return typeof mapped === 'number' ? mapped : (row.photoCount || 0)
+  }
+
+  // 刷新分类列表的 photoCount 与更新时间（服务端数据）
+  const updatePhotoCounts = async () => {
+    try {
+      const params: PhotoCategorySearchParams = {
+        page: pagination.currentPage,
+        size: pagination.pageSize,
+        keyword: searchForm.keyword || undefined,
+        status: searchForm.status
+      }
+      const response = await getPhotoCategories(params)
+      const freshList = parseCategoriesFromResponse(response)
+
+      freshList.forEach((item: PhotoCategoryItem) => {
+        const id = getCategoryIdFromItem(item)
+        if (!id) return
+        const idx = categoryList.value.findIndex((c) => getCategoryIdFromItem(c) === id)
+        if (idx !== -1) {
+          categoryList.value[idx].photoCount = item.photoCount || 0
+          categoryList.value[idx].updatedAt = item.updatedAt
+        }
+      })
+    } catch (e) {
+      console.warn('自动刷新图片数量失败:', e)
+    }
+  }
+
+  // 自动刷新：结合服务端列表与实际照片计数
+  const startAutoRefresh = () => {
+    stopAutoRefresh()
+    autoRefreshTimer = window.setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        updatePhotoCounts()
+        refreshCountsForDisplayedCategories()
+      }
+    }, refreshIntervalMs)
+  }
+
+  const stopAutoRefresh = () => {
+    if (autoRefreshTimer) {
+      clearInterval(autoRefreshTimer)
+      autoRefreshTimer = null
+    }
+  }
+
+  const handleVisibilityChange = () => {
+    if (document.visibilityState === 'hidden') {
+      stopAutoRefresh()
+    } else {
+      startAutoRefresh()
+      updatePhotoCounts()
+      refreshCountsForDisplayedCategories()
+    }
   }
 </script>
 

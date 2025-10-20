@@ -11,12 +11,13 @@
     <WaveContainer />
   </div>
    <!-- 内容 -->
-  <div v-if="photoCategories.length" class="timeline_content animate__animated animate__fadeInUp">
+  <!-- 使用 visiblePhotoCategories：已过滤出可展示分类 -->
+  <div v-if="visiblePhotoCategories.length" class="timeline_content animate__animated animate__fadeInUp">
     <!-- 标签栏 -->
     <div class= "tags-info">
       <section class="tag-cloud">
         <ul>
-          <li v-for="(item, index) in photoCategories" :key="item._id">
+          <li v-for="(item, index) in visiblePhotoCategories" :key="item._id">
             <router-link :to="'/photo-category/' + item._id" class="photo-link">
               <div class="image-container">
                 <img :src="item.coverImage" :alt="item.title" />
@@ -38,7 +39,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, computed } from 'vue'
 import { useArticles } from '@/composables/useArticles' // 引入获取到文章列表数据文件
 import { usePhotoCategories } from '@/composables/usePhotoCategories' // 引入图片分类数据文件
 import WaveContainer from '@/components/WaveContainer.vue'
@@ -46,6 +47,19 @@ import Footer from '@/components/Footer.vue'
 
 const { articles: articleslist, initArticles, cleanup } = useArticles()
 const { photoCategories, initPhotoCategories } = usePhotoCategories()
+
+// 分类显示/隐藏逻辑：禁用或不可见则隐藏
+// - 若后端返回 status = 'inactive'，视为禁用
+// - 若前端数据含 isVisible = false，同样视为禁用
+// - 仅当两者都不表示禁用时，分类可见
+const isPhotoCategoryVisible = (item: any): boolean => {
+  const disabledByStatus = item?.status === 'inactive'
+  const disabledByVisible = item?.isVisible === false
+  return !(disabledByStatus || disabledByVisible)
+}
+
+// 已过滤的分类列表（仅展示可见分类）
+const visiblePhotoCategories = computed(() => photoCategories.value.filter(isPhotoCategoryVisible))
 
 // 组件挂载时初始化数据
 onMounted(async () => {
