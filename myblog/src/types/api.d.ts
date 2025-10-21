@@ -134,6 +134,8 @@ declare namespace Api {
       views: number
       excerpt: string
       image?: string
+      isTop?: boolean
+      visible?: boolean
     }
 
     /** 文章列表 */
@@ -172,6 +174,8 @@ declare namespace Api {
       tags?: string[]
       excerpt?: string
       image?: string
+      isTop?: boolean
+      visible?: boolean
     }
 
     /** 更新文章参数 */

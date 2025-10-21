@@ -174,6 +174,7 @@ const ArticleSchema = new mongoose.Schema({
   excerpt: { type: String },
   image: { type: String },
   p_date: { type: Number }, // p_date 字段存储年份数字（如 2024�?
+  isTop: { type: Boolean, default: false }, // 文章置顶状态，默认不置顶
   visible: { type: Boolean, default: true } // 文章可见性，默认为可�?
 });
 
@@ -677,11 +678,27 @@ app.put('/api/articles/:id', async (req: Request, res: Response) => {
       updateData.p_date = publishDate.getFullYear();
     }
     
-    console.log('更新文章数据:', {
+    // 详细的调试日志，特别关注isTop字段
+    console.log('🔄 更新文章请求:', {
       id,
-      title: updateData.title,
-      updateDate: updateData.updateDate,
-      p_date: updateData.p_date
+      requestBody: req.body,
+      isTopInRequest: req.body.isTop,
+      isTopType: typeof req.body.isTop,
+      updateData: {
+        title: updateData.title,
+        isTop: updateData.isTop,
+        updateDate: updateData.updateDate,
+        p_date: updateData.p_date
+      }
+    });
+    
+    // 查询更新前的文章状态
+    const beforeUpdate = await Article.findById(id);
+    console.log('📋 更新前文章状态:', {
+      id: beforeUpdate?._id,
+      title: beforeUpdate?.title,
+      isTop: beforeUpdate?.isTop,
+      isTopType: typeof beforeUpdate?.isTop
     });
     
     const article = await Article.findByIdAndUpdate(id, updateData, { 
@@ -693,15 +710,17 @@ app.put('/api/articles/:id', async (req: Request, res: Response) => {
       return res.status(404).json(createErrorResponse('文章未找到', 404));
     }
     
-    console.log('文章更新成功:', {
+    console.log('✅ 文章更新成功:', {
       id: article._id,
       title: article.title,
+      isTop: article.isTop,
+      isTopType: typeof article.isTop,
       p_date: article.p_date
     });
     
     res.json(createResponse(article, '文章更新成功'));
   } catch (error) {
-    console.error('更新文章失败:', error);
+    console.error('❌ 更新文章失败:', error);
     res.status(500).json(createErrorResponse('更新文章失败', 500));
   }
 });

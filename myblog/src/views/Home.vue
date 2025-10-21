@@ -37,7 +37,7 @@
                 <h3 class="article-title">{{ article.title }}</h3>
 
                 <div class="article-meta">
-                  <span class="meta-item">📌 置顶</span>
+                  <span v-if="article.isTop" class="meta-item">📌 置顶</span>
                   <span class="meta-item">📅 发表于 {{ formatDate(article.publishDate) }}</span>
                   <span class="meta-item">🔄 更新于 {{ formatDate(article.updateDate) }}</span>
                 </div>

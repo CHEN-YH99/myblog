@@ -94,6 +94,7 @@
                 <span class="visibility-status" :class="{ hidden: item.visible === false }">
                   {{ item.visible === false ? '隐藏' : '公开' }}
                 </span>
+                <span v-if="item.isTop" class="top-badge">📌 置顶</span>
 
                 <!-- 删除按钮 -->
                 <div class="delete-btn" @click.stop="deleteArticle(item)">
@@ -166,7 +167,7 @@
   import { Picture as IconPicture, Delete } from '@element-plus/icons-vue'
   import { ElMessage, ElMessageBox } from 'element-plus'
 
-  import { ref, onMounted, onActivated, computed, watch } from 'vue'
+  import { ref, onMounted, onActivated, computed, watch, onUnmounted } from 'vue'
   import { router } from '@/router'
   import { useDateFormat } from '@vueuse/core'
   import { Search } from '@element-plus/icons-vue'
@@ -176,6 +177,7 @@
   import { RoutesAlias } from '@/router/routesAlias'
   import { formatNumber } from '@/utils/dataprocess/format'
   import { useRoute } from 'vue-router'
+  import { articleEventBus } from '@/composables/useArticleStats'
 
   interface Article {
     id: string
@@ -188,6 +190,7 @@
     html_content: string
     p_date?: number
     visible: boolean
+    isTop?: boolean
   }
 
   defineOptions({ name: 'ArticleList' })
@@ -243,6 +246,16 @@
 
   onMounted(() => {
     getArticleListData({ backTop: false })
+  })
+
+  const handleArticleUpdated = () => {
+    getArticleListData({ backTop: false })
+  }
+
+  articleEventBus.on('article:updated', handleArticleUpdated)
+
+  onUnmounted(() => {
+    articleEventBus.off('article:updated', handleArticleUpdated)
   })
 
   // 组件激活时检查是否需要刷新图片缓存
@@ -468,11 +481,21 @@
           brief: item.excerpt || item.brief || '',
           html_content: item.contentHtml || item.html_content || '',
           p_date: item.p_date, // 保留 p_date 字段用于年份筛选
-          visible: item.visible !== false // 处理可见性字段，默认为true
+          visible: item.visible !== false, // 处理可见性字段，默认为true
+          isTop: item.isTop === true
         }))
 
+        // 置顶优先排序；置顶内按发布时间倒序
+        const parseDate = (a: Article) => (a.create_time ? Date.parse(a.create_time) : 0)
+        const sortedList = transformedArticles.slice().sort((a, b) => {
+          const ap = a.isTop ? 1 : 0
+          const bp = b.isTop ? 1 : 0
+          if (ap !== bp) return bp - ap
+          return parseDate(b) - parseDate(a)
+        })
+
         // 后端已经处理了年份筛选，前端直接使用返回的数据
-        articleList.value = transformedArticles
+        articleList.value = sortedList
         // 强制刷新图片显示
         forceRefreshKey.value = Date.now()
         
@@ -841,7 +864,19 @@
               }
             }
 
-            // 删除按钮
+            .top-badge {
+              position: absolute;
+              top: 30px;
+              left: 5px;
+              padding: 3px 6px;
+              font-size: 11px;
+              color: #fff;
+              background: rgba(#f59e0b, 0.85);
+              border-radius: 3px;
+              font-weight: 500;
+              z-index: 5;
+            }
+
             .delete-btn {
               position: absolute;
               top: 5px;

@@ -27,6 +27,7 @@ const ArticleSchema = new mongoose.Schema({
   excerpt: { type: String },
   image: { type: String },
   p_date: { type: Number },
+  isTop: { type: Boolean, default: false },
   visible: { type: Boolean, default: true }
 });
 

@@ -47,6 +47,7 @@
               fit="contain"
               lazy
             />
++           <span v-if="article.isTop" class="top-badge">📌 置顶</span>
           </div>
           <div class="article-content">
             <h3 class="article-title">{{ article.title }}</h3>
@@ -349,6 +350,7 @@ onMounted(async () => {
   }
   
   .article-image {
++    position: relative;
     width: 100%;
     height: 140px; // 缩小图片高度
     overflow: hidden;
@@ -368,6 +370,18 @@ onMounted(async () => {
         height: 100%;
       }
     }
++    .top-badge {
++      position: absolute;
++      top: 8px;
++      left: 8px;
++      padding: 3px 6px;
++      font-size: 11px;
++      color: #fff;
++      background: rgba(245, 158, 11, 0.85);
++      border-radius: 3px;
++      font-weight: 500;
++      z-index: 5;
++    }
   }
   
   &:hover .article-image :deep(.el-image img) {

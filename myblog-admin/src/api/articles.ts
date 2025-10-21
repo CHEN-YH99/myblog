@@ -26,6 +26,8 @@ export interface ArticleItem {
   count?: number
   create_time?: string
   html_content?: string
+  isTop?: boolean
+  visible?: boolean
 }
 
 export interface ArticleListResponse {
@@ -46,6 +48,8 @@ export interface CreateArticleParams {
   excerpt?: string
   image?: string
   slug?: string
+  isTop?: boolean
+  visible?: boolean
 }
 
 export interface UpdateArticleParams extends Partial<CreateArticleParams> {
@@ -130,9 +134,22 @@ export function createArticle(data: CreateArticleParams) {
  * 更新文章
  */
 export function updateArticle(id: string, data: UpdateArticleParams) {
+  console.log('🔄 前端调用updateArticle:', {
+    id,
+    data,
+    isTop: data.isTop,
+    isTopType: typeof data.isTop
+  })
+  
   return request.put({
     url: `${API_BASE_URL}/articles/${id}`,
     data
+  }).then((res: any) => {
+    console.log('✅ updateArticle响应:', res)
+    return res
+  }).catch((error) => {
+    console.error('❌ updateArticle失败:', error)
+    throw error
   })
 }
 

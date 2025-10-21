@@ -297,8 +297,22 @@ export const useArticlesStore = defineStore('articles', {
           ...article,
           cover: article.cover || '/default-article.jpg'
         })) : []
+
+        // 过滤不可见文章；默认可见
+        const visibleArticles = articlesWithCover.filter((a: any) => a.visible !== false)
+        // 置顶优先，置顶内按发布时间倒序
+        const parseDate = (a: any) => {
+          const d = a.publishDate || a.create_time || a.updateDate
+          return d ? Date.parse(d) : 0
+        }
+        const sortedArticles = visibleArticles.sort((a: any, b: any) => {
+          const ap = a.isTop ? 1 : 0
+          const bp = b.isTop ? 1 : 0
+          if (ap !== bp) return bp - ap
+          return parseDate(b) - parseDate(a)
+        })
         
-        this.articles = articlesWithCover
+        this.articles = sortedArticles
         this.lastFetchTime = Date.now()
         this.error = null
         

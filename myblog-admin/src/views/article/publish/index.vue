@@ -188,6 +188,9 @@
             <ElFormItem label="可见">
               <ElSwitch v-model="visible" />
             </ElFormItem>
+            <ElFormItem label="置顶">
+              <ElSwitch v-model="isTop" @change="onTopChange" />
+            </ElFormItem>
           </ElForm>
 
           <div style="display: flex; justify-content: flex-end">
@@ -282,6 +285,7 @@
   const uploadProgress = ref(0) // 上传进度
   const uploading = ref(false) // 上传状态
   const visible = ref(true) // 可见
+  const isTop = ref(false) // 置顶
   const viewMode = ref('edit') // 视图模式: edit, preview, split
   // const outlineList = ref()
 
@@ -682,6 +686,7 @@
         editorHtml.value = article.contentHtml || article.content || ''
         cover.value = article.image || ''
         visible.value = article.visible !== false // 加载可见性状态，默认为true
+        isTop.value = !!article.isTop // 加载置顶状态，默认为false
 
         // 加载文章标签
         if (article.tags && Array.isArray(article.tags)) {
@@ -888,6 +893,7 @@
         tags: selectedTags.value.map((tag) => tag.name), // 提取标签名称数组
         excerpt: extractExcerpt(htmlContent) as string,
         image: cover.value,
+        isTop: isTop.value,
         visible: visible.value
       }
 
@@ -940,6 +946,7 @@
         tags: selectedTags.value.map((tag) => tag.name), // 提取标签名称数组
         excerpt: extractExcerpt(htmlContent) as string,
         image: cover.value,
+        isTop: isTop.value,
         visible: visible.value
       }
 
@@ -988,6 +995,44 @@
   const onProgress = (event: UploadProgressEvent) => {
     if (event.percent) {
       uploadProgress.value = event.percent
+    }
+  }
+
+  // 新增：置顶状态变更时立即更新到数据库（编辑模式）
+  const onTopChange = async (value: boolean) => {
+    console.log('🔄 onTopChange被调用:', {
+      value,
+      pageMode,
+      routeId: route.query.id,
+      isEditMode: pageMode === PageModeEnum.Edit,
+      hasId: !!route.query.id
+    })
+    
+    try {
+      const { id } = route.query
+      if (pageMode === PageModeEnum.Edit && id) {
+        console.log('📤 准备调用updateArticle:', { id, isTop: value })
+        const result = await updateArticle(id as string, { isTop: value })
+        console.log('📥 updateArticle结果:', result)
+        
+        if (result) {
+          ElMessage.success(value ? `已置顶 ${EmojiText[200]}` : `已取消置顶 ${EmojiText[200]}`)
+          // 触发文章更新事件，刷新列表与统计
+          const { articleEventBus } = await import('@/composables/useArticleStats')
+          articleEventBus.emit('article:updated', { id: id as string, changes: { isTop: value } })
+          articleEventBus.emit('article:stats:refresh')
+        }
+      } else {
+        console.log('📝 新建模式，保存到本地草稿')
+        // 新建模式下，仅更新本地草稿
+        saveToLocal()
+        ElMessage.success(value ? '已设置置顶（草稿已保存）' : '已取消置顶（草稿已保存）')
+      }
+    } catch (err) {
+      console.error('❌ 更新置顶状态失败:', err)
+      ElMessage.error(`更新置顶状态失败 ${EmojiText[500]}`)
+      // 回滚开关状态
+      isTop.value = !value
     }
   }
 
@@ -1153,301 +1198,6 @@
               }
             }
           }
-
-          .preview-content {
-            padding: 24px;
-            height: 460px;
-            overflow-y: auto;
-            line-height: 1.8;
-            font-size: 16px;
-            color: #262626;
-
-            .empty-content {
-              text-align: center;
-              color: #bfbfbf;
-              font-style: italic;
-              margin-top: 100px;
-            }
-
-            .error-content {
-              text-align: center;
-              color: #ff6b6b;
-              font-style: italic;
-              margin-top: 100px;
-            }
-
-            // 修复代码块预览颜色问题
-            &.markdown-body {
-              pre {
-                background-color: #282c34 !important;
-                color: #abb2bf !important;
-                padding: 16px !important;
-
-                code {
-                  color: #abb2bf !important;
-                  background: transparent !important;
-                }
-              }
-
-              // 行内代码保持深色文字
-              code:not(pre code) {
-                color: #d73a49 !important;
-                background-color: rgba(27, 31, 35, 0.05) !important;
-                padding: 0.2em 0.4em !important;
-              }
-
-              // 针对语法高亮的代码块
-              .highlight pre,
-              .highlight code {
-                color: #abb2bf !important;
-              }
-
-              // 覆盖所有可能的代码相关样式
-              * {
-                &[class*='language-'] {
-                  color: #abb2bf !important;
-                }
-
-                &[class*='hljs'] {
-                  color: #abb2bf !important;
-                }
-              }
-            }
-          }
-        }
-      }
-
-      .form-wrap {
-        padding: 20px;
-        margin-top: 20px;
-        background-color: var(--art-main-bg-color);
-        border: 1px solid var(--art-border-color);
-        border-radius: calc(var(--custom-radius) / 2 + 2px) !important;
-
-        h2 {
-          margin-bottom: 20px;
-          font-size: 20px;
-          font-weight: 500;
-        }
-      }
-    }
-
-    .outline-wrap {
-      box-sizing: border-box;
-      width: 280px;
-      padding: 20px;
-      border: 1px solid #e3e3e3;
-      border-radius: 8px;
-
-      .item {
-        p {
-          height: 30px;
-          font-size: 13px;
-          line-height: 30px;
-          cursor: pointer;
-        }
-
-        .level3 {
-          padding-left: 10px;
-        }
-      }
-    }
-
-    .upload-container {
-      .cover-uploader {
-        position: relative;
-        overflow: hidden;
-        cursor: pointer;
-        border-radius: 6px;
-        transition: var(--el-transition-duration);
-
-        &:hover {
-          border-color: var(--el-color-primary);
-        }
-
-        .upload-placeholder {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          width: 260px;
-          height: 160px;
-          border: 1px dashed #d9d9d9;
-          border-radius: 6px;
-          transition: all 0.3s;
-
-          &.uploading {
-            border-color: var(--el-color-primary);
-            background-color: #f0f9ff;
-          }
-
-          .upload-icon {
-            font-size: 28px;
-            color: #8c939d;
-          }
-
-          .upload-text {
-            margin-top: 8px;
-            font-size: 14px;
-            color: #8c939d;
-          }
-
-          .upload-progress {
-            margin-top: 4px;
-            font-size: 12px;
-            color: var(--el-color-primary);
-            font-weight: 500;
-          }
-        }
-
-        .cover-image {
-          display: block;
-          width: 260px;
-          height: 160px;
-          object-fit: cover;
-        }
-      }
-
-      .el-upload__tip {
-        margin-top: 8px;
-        font-size: 12px;
-        color: #666;
-      }
-    }
-
-    // 标签选择器样式
-    .tags-selector {
-      .selected-tags {
-        margin-bottom: 12px;
-
-        .selected-tag {
-          margin-right: 8px;
-          margin-bottom: 6px;
-        }
-      }
-
-      .tag-search-container {
-        position: relative;
-        margin-bottom: 12px;
-
-        .tag-search-input {
-          width: 100%;
-        }
-
-        .tag-options {
-          position: absolute;
-          top: 100%;
-          left: 0;
-          right: 0;
-          z-index: 1000;
-          background: white;
-          border: 1px solid #e4e7ed;
-          border-radius: 4px;
-          box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-          max-height: 300px;
-          overflow-y: auto;
-
-          .tag-section {
-            .section-title {
-              padding: 8px 12px;
-              font-size: 12px;
-              color: #909399;
-              background: #f5f7fa;
-              border-bottom: 1px solid #e4e7ed;
-            }
-
-            .tag-list {
-              .tag-option {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                padding: 8px 12px;
-                cursor: pointer;
-                transition: background-color 0.2s;
-
-                &:hover {
-                  background: #f5f7fa;
-                }
-
-                &.disabled {
-                  color: #c0c4cc;
-                  cursor: not-allowed;
-
-                  &:hover {
-                    background: transparent;
-                  }
-                }
-
-                .tag-name {
-                  font-size: 14px;
-                }
-
-                .tag-count {
-                  font-size: 12px;
-                  color: #909399;
-                }
-              }
-            }
-
-            .new-tag {
-              display: flex;
-              align-items: center;
-              padding: 8px 12px;
-              cursor: pointer;
-              transition: background-color 0.2s;
-              color: var(--el-color-primary);
-
-              &:hover {
-                background: #f5f7fa;
-              }
-
-              .el-icon {
-                margin-right: 6px;
-              }
-            }
-          }
-        }
-      }
-
-      .popular-tags {
-        margin-bottom: 12px;
-
-        .popular-tags-title {
-          font-size: 14px;
-          color: #606266;
-          margin-bottom: 8px;
-        }
-
-        .popular-tags-list {
-          .popular-tag {
-            margin-right: 8px;
-            margin-bottom: 6px;
-            cursor: pointer;
-            transition: all 0.2s;
-
-            &:not(.disabled):hover {
-              transform: translateY(-1px);
-              box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            }
-
-            &.disabled {
-              opacity: 0.6;
-              cursor: not-allowed;
-            }
-          }
-        }
-      }
-
-      .tags-help-text {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        font-size: 12px;
-        color: #909399;
-
-        .tags-count {
-          font-weight: 500;
-          color: var(--el-color-primary);
         }
       }
     }
