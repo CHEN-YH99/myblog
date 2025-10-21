@@ -158,7 +158,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { User, Calendar, View, Star, ArrowLeft, Share } from '@element-plus/icons-vue'
@@ -219,7 +219,10 @@ const renderedContent = computed(() => {
 
 // 获取文章详情
 const fetchArticle = async () => {
-  if (!articleId) {
+  // 重新获取当前路由的ID参数，确保使用最新的ID
+  const currentArticleId = route.params.id as string
+  
+  if (!currentArticleId) {
     ElMessage.error('文章ID不存在')
     router.push('/category')
     return
@@ -227,7 +230,9 @@ const fetchArticle = async () => {
 
   try {
     loading.value = true
-    article.value = await getArticle(articleId)
+    console.log('ArticleDetail: 开始获取文章详情，ID:', currentArticleId)
+    article.value = await getArticle(currentArticleId)
+    console.log('ArticleDetail: 文章获取成功:', article.value?.title)
     
     // 文章加载完成后，等待DOM更新并刷新目录
     await nextTick()
@@ -310,6 +315,17 @@ const shareArticle = () => {
 onMounted(async () => {
   await fetchArticle()
 })
+
+// 监听路由参数变化，当从一个文章页跳转到另一个文章页时重新获取数据
+watch(
+  () => route.params.id,
+  async (newId, oldId) => {
+    if (newId && newId !== oldId) {
+      console.log('ArticleDetail: 路由参数变化，重新获取文章', { newId, oldId })
+      await fetchArticle()
+    }
+  }
+)
 </script>
 
 <style scoped lang="scss">

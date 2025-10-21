@@ -141,7 +141,7 @@ defineExpose({
   padding: 20px;
   position: sticky;
   top: 100px;
-  height: 200px;
+  height: 250px;
   overflow-y: auto;
   box-shadow: 0 2px 8px rgba(193, 192, 192, 0.77);
 }

@@ -141,14 +141,10 @@ const fetchRelatedArticles = async () => {
 const navigateToArticle = async (article) => {
   console.log('RelatedArticles: 点击文章跳转')
   console.log('RelatedArticles: 文章对象:', article)
-  console.log('RelatedArticles: 文章ID字段检查:')
-  console.log('  - article.id:', article.id)
-  console.log('  - article._id:', article._id)
   
-  // 使用 id 字段而不是 _id 字段进行跳转
-  const articleId = article.id || article._id
+  // 优先使用 _id 字段，因为这是MongoDB的主键
+  const articleId = article._id || article.id
   console.log('RelatedArticles: 最终使用的ID:', articleId)
-  console.log('RelatedArticles: 跳转URL:', `/article/${articleId}`)
   
   if (!articleId) {
     console.error('RelatedArticles: 文章ID为空，无法跳转')
@@ -156,24 +152,16 @@ const navigateToArticle = async (article) => {
   }
   
   try {
-    console.log('RelatedArticles: 路由跳转开始执行')
-    console.log('RelatedArticles: 当前路由:', router.currentRoute.value.path)
+    console.log('RelatedArticles: 开始跳转到文章:', `/article/${articleId}`)
     
-    // 使用replace而不是push，避免历史记录问题
-    await router.replace(`/article/${articleId}`)
-    console.log('RelatedArticles: 路由跳转已执行')
-    
-    // 强制页面刷新以确保组件重新加载
-    setTimeout(() => {
-      console.log('RelatedArticles: 跳转后路由:', router.currentRoute.value.path)
-    }, 100)
+    // 使用push进行导航，这是标准的Vue Router导航方式
+    await router.push(`/article/${articleId}`)
+    console.log('RelatedArticles: 路由跳转成功')
     
   } catch (error) {
     console.error('RelatedArticles: 路由跳转失败:', error)
-    
-    // 如果路由跳转失败，尝试使用window.location
-    console.log('RelatedArticles: 尝试使用window.location跳转')
-    window.location.hash = `#/article/${articleId}`
+    // 如果路由跳转失败，显示错误信息
+    console.error('跳转失败，请刷新页面重试')
   }
 }
 
