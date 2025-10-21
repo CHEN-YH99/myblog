@@ -47,7 +47,7 @@
               fit="contain"
               lazy
             />
-+           <span v-if="article.isTop" class="top-badge">📌 置顶</span>
+            <span v-if="article.isTop" class="top-badge">📌 置顶</span>
           </div>
           <div class="article-content">
             <h3 class="article-title">{{ article.title }}</h3>
@@ -103,11 +103,13 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useCategories } from '@/composables/useCategories'
 import { getAllArticles } from '@/api/articles'
+import { useUserStore } from '@/stores/user'
 import WaveContainer from '@/components/WaveContainer.vue'
 import Footer from '@/components/Footer.vue'
 
 const route = useRoute()
 const router = useRouter()
+const userStore = useUserStore()
 
 // 分页相关
 const currentPage = ref(1)
@@ -350,7 +352,7 @@ onMounted(async () => {
   }
   
   .article-image {
-+    position: relative;
+    position: relative;
     width: 100%;
     height: 140px; // 缩小图片高度
     overflow: hidden;
@@ -370,18 +372,19 @@ onMounted(async () => {
         height: 100%;
       }
     }
-+    .top-badge {
-+      position: absolute;
-+      top: 8px;
-+      left: 8px;
-+      padding: 3px 6px;
-+      font-size: 11px;
-+      color: #fff;
-+      background: rgba(245, 158, 11, 0.85);
-+      border-radius: 3px;
-+      font-weight: 500;
-+      z-index: 5;
-+    }
+    
+    .top-badge {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      padding: 3px 6px;
+      font-size: 11px;
+      color: #fff;
+      background: rgba(245, 158, 11, 0.85);
+      border-radius: 3px;
+      font-weight: 500;
+      z-index: 5;
+    }
   }
   
   &:hover .article-image :deep(.el-image img) {

@@ -1,102 +1,186 @@
 <template>
-  <div class="related-articles" v-if="relatedArticles.length > 0">
-    <div class="related-header">
-      <h3>推荐文章</h3>
+  <div class="related-articles-container">
+    <!-- 推荐文章区域 -->
+    <div v-if="relatedArticles.length > 0" class="related-articles">
+      <div class="related-header">
+        <h3>推荐文章</h3>
+      </div>
+      <div class="articles-list">
+        <div 
+          v-for="article in relatedArticles" 
+          :key="article._id"
+          class="article-item"
+          @click.prevent="navigateToArticle(article)"
+        >
+          <div class="article-image">
+            <img 
+              :src="article.image || '/default-article.jpg'" 
+              :alt="article.title"
+            />
+          </div>
+          <div class="article-content">
+            <h4 class="article-title">{{ article.title }}</h4>
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="articles-list">
-      <div 
-        v-for="article in relatedArticles" 
-        :key="article._id"
-        class="article-item"
-        @click="navigateToArticle(article._id)"
-      >
-        <div class="article-image">
-          <img 
-            :src="article.image || '/default-article.jpg'" 
-            :alt="article.title"
-          />
-        </div>
-        <div class="article-content">
-          <h4 class="article-title">{{ article.title }}</h4>
-        </div>
+    
+    <!-- 无推荐文章时的提示 -->
+    <div v-else-if="!loading && category" class="no-recommendations">
+      <div class="related-header">
+        <h3>推荐文章</h3>
+      </div>
+      <div class="empty-state">
+        <p>暂无相关推荐</p>
       </div>
     </div>
   </div>
 </template>
 
-<script setup lang="ts">
+<script setup>
 import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { getArticlesByCategory } from '@/api/articles'
+import { getAllArticles } from '@/api/articles'
 
-interface RelatedArticle {
-  _id: string
-  title: string
-  excerpt?: string
-  image?: string
-  publishDate: string
-  category?: string
-  tags?: string[]
-}
-
-interface Props {
-  currentArticleId: string
-  category?: string
-  limit?: number
-}
-
-const props = withDefaults(defineProps<Props>(), {
-  limit: 2
+const props = defineProps({
+  currentArticleId: {
+    type: String,
+    required: true
+  },
+  category: {
+    type: String,
+    required: true
+  },
+  limit: {
+    type: Number,
+    default: 2
+  }
 })
 
 const router = useRouter()
-const relatedArticles = ref<RelatedArticle[]>([])
-const categoryName = ref<string>('')
+const relatedArticles = ref([])
+const loading = ref(false)
 
-// 获取相关文章
 const fetchRelatedArticles = async () => {
-  if (!props.category) return
+  if (!props.category) {
+    console.log('RelatedArticles: 没有分类信息，跳过获取')
+    return
+  }
 
+  loading.value = true
+  
   try {
-    const articles = await getArticlesByCategory(props.category, {
-      limit: props.limit + 1 // 多获取一篇，用于排除当前文章
+    console.log('RelatedArticles: 开始获取相关文章')
+    console.log('RelatedArticles: 当前分类:', props.category)
+    console.log('RelatedArticles: 当前文章ID:', props.currentArticleId)
+    
+    // 获取所有文章
+    const allArticles = await getAllArticles()
+    console.log('RelatedArticles: API返回的所有文章数量:', allArticles?.length || 0)
+    
+    if (allArticles && allArticles.length > 0) {
+      console.log('RelatedArticles: 第一篇文章的数据结构:', allArticles[0])
+      console.log('RelatedArticles: 第一篇文章的所有字段:', Object.keys(allArticles[0]))
+      
+      // 检查ID字段
+      allArticles.slice(0, 3).forEach((article, index) => {
+        console.log(`RelatedArticles: 文章${index + 1}的ID字段:`, {
+          _id: article._id,
+          id: article.id,
+          title: article.title,
+          category: article.category
+        })
+      })
+    }
+    
+    if (!allArticles || allArticles.length === 0) {
+      console.log('RelatedArticles: 没有获取到文章数据')
+      relatedArticles.value = []
+      return
+    }
+    
+    // 过滤相同分类的文章，排除当前文章
+    const sameCategory = allArticles.filter(article => {
+      const isSameCategory = article.category === props.category
+      const isNotCurrentArticle = article._id !== props.currentArticleId && article.id !== props.currentArticleId
+      
+      console.log('RelatedArticles: 文章过滤检查:', {
+        title: article.title,
+        articleCategory: article.category,
+        targetCategory: props.category,
+        isSameCategory,
+        articleId: article._id || article.id,
+        currentId: props.currentArticleId,
+        isNotCurrentArticle,
+        shouldInclude: isSameCategory && isNotCurrentArticle
+      })
+      
+      return isSameCategory && isNotCurrentArticle
     })
     
-    // 过滤掉当前文章
-    const filtered = articles.filter((article: RelatedArticle) => article._id !== props.currentArticleId)
-    relatedArticles.value = filtered.slice(0, props.limit)
-    categoryName.value = props.category
+    console.log('RelatedArticles: 过滤后的相同分类文章数量:', sameCategory.length)
+    
+    // 限制为2篇
+    const limitedArticles = sameCategory.slice(0, 2)
+    console.log('RelatedArticles: 最终推荐文章:', limitedArticles.map(a => ({ 
+      title: a.title, 
+      id: a._id || a.id,
+      category: a.category 
+    })))
+    
+    relatedArticles.value = limitedArticles
+    
   } catch (error) {
-    console.error('获取相关文章失败:', error)
+    console.error('RelatedArticles: 获取相关文章失败:', error)
     relatedArticles.value = []
+  } finally {
+    loading.value = false
   }
 }
 
-// 跳转到文章详情
-const navigateToArticle = (articleId: string) => {
-  router.push(`/article/${articleId}`)
-}
-
-// 格式化日期
-const formatDate = (dateStr: string) => {
-  if (!dateStr) return ''
-  const date = new Date(dateStr)
-  return date.toLocaleDateString('zh-CN', {
-    month: '2-digit',
-    day: '2-digit'
-  })
-}
-
-// 格式化数字
-const formatNumber = (num: number) => {
-  if (num >= 1000) {
-    return (num / 1000).toFixed(1) + 'k'
+const navigateToArticle = async (article) => {
+  console.log('RelatedArticles: 点击文章跳转')
+  console.log('RelatedArticles: 文章对象:', article)
+  console.log('RelatedArticles: 文章ID字段检查:')
+  console.log('  - article.id:', article.id)
+  console.log('  - article._id:', article._id)
+  
+  // 使用 id 字段而不是 _id 字段进行跳转
+  const articleId = article.id || article._id
+  console.log('RelatedArticles: 最终使用的ID:', articleId)
+  console.log('RelatedArticles: 跳转URL:', `/article/${articleId}`)
+  
+  if (!articleId) {
+    console.error('RelatedArticles: 文章ID为空，无法跳转')
+    return
   }
-  return num.toString()
+  
+  try {
+    console.log('RelatedArticles: 路由跳转开始执行')
+    console.log('RelatedArticles: 当前路由:', router.currentRoute.value.path)
+    
+    // 使用replace而不是push，避免历史记录问题
+    await router.replace(`/article/${articleId}`)
+    console.log('RelatedArticles: 路由跳转已执行')
+    
+    // 强制页面刷新以确保组件重新加载
+    setTimeout(() => {
+      console.log('RelatedArticles: 跳转后路由:', router.currentRoute.value.path)
+    }, 100)
+    
+  } catch (error) {
+    console.error('RelatedArticles: 路由跳转失败:', error)
+    
+    // 如果路由跳转失败，尝试使用window.location
+    console.log('RelatedArticles: 尝试使用window.location跳转')
+    window.location.hash = `#/article/${articleId}`
+  }
 }
 
-// 监听分类变化
-watch(() => props.category, fetchRelatedArticles, { immediate: true })
+// 监听props变化
+watch([() => props.category, () => props.currentArticleId], () => {
+  fetchRelatedArticles()
+}, { immediate: true })
 
 onMounted(() => {
   fetchRelatedArticles()
@@ -104,52 +188,68 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.related-articles-container {
+  margin: 5px 0;
+}
+
 .related-articles {
+  /* background: #fff; */
   border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 20px;
-  box-shadow: 0 4px 16px rgba(170, 169, 169, 0.848);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 15px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+
+.no-recommendations {
+  /* background: #fff; */
+  border-radius: 12px;
+  padding: 15px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
 }
 
 .related-header {
-  margin-bottom: 16px;
+  margin-bottom: 20px;
   padding-bottom: 12px;
-  border-bottom: 1px solid #eaecef;
+  border-bottom: 2px solid #f0f0f0;
 }
 
 .related-header h3 {
   margin: 0;
   font-size: 16px;
   font-weight: 600;
+  /* color: #333; */
 }
 
 .articles-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
 }
 
 .article-item {
   display: flex;
-  gap: 12px;
-  padding: 12px;
+  align-items: center;
+  padding: 16px;
   border-radius: 8px;
+  /* background: #fafafa; */
   cursor: pointer;
-  transition: all 0.2s ease;
-  border: 1px solid transparent;
+  transition: all 0.3s ease;
+  border: 1px solid #e8e8e8;
 }
 
 .article-item:hover {
-  border-color: #e2e8f0;
+  /* background: #f0f8ff; */
+  border-color: #4a90e2;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(74, 144, 226, 0.15);
 }
 
 .article-image {
-  flex-shrink: 0;
   width: 80px;
   height: 60px;
   border-radius: 6px;
   overflow: hidden;
+  margin-right: 16px;
+  flex-shrink: 0;
 }
 
 .article-image img {
@@ -160,14 +260,13 @@ onMounted(() => {
 
 .article-content {
   flex: 1;
-  display: flex;
-  align-items: center;
 }
 
 .article-title {
   margin: 0;
   font-size: 14px;
   font-weight: 500;
+  /* color: #333; */
   line-height: 1.4;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -175,14 +274,46 @@ onMounted(() => {
   overflow: hidden;
 }
 
-.article-item:hover .article-title {
-  color: #667eea;
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: #999;
+}
+
+.empty-state p {
+  margin: 0;
+  font-size: 16px;
 }
 
 /* 响应式设计 */
-@media (max-width: 1200px) {
-  .related-articles {
-    display: none;
+@media (max-width: 768px) {
+  .related-articles-container {
+    margin: 20px 0;
+  }
+  
+  .related-articles,
+  .no-recommendations {
+    padding: 16px;
+    margin: 0 -16px;
+    border-radius: 0;
+  }
+  
+  .article-item {
+    padding: 12px;
+  }
+  
+  .article-image {
+    width: 60px;
+    height: 45px;
+    margin-right: 12px;
+  }
+  
+  .article-title {
+    font-size: 14px;
+  }
+  
+  .related-header h3 {
+    font-size: 18px;
   }
 }
 </style>

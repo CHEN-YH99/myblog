@@ -130,12 +130,14 @@ import { Calendar, View, Star } from '@element-plus/icons-vue'
 import { getAllArticles, getArticle } from '@/api/articles'
 import { useCategories } from '@/composables/useCategories'
 import { useArticlesStore } from '@/stores/getarticles'
+import { useUserStore } from '@/stores/user'
 import { formatNumber } from '@/utils/format'
 import WaveContainer from '@/components/WaveContainer.vue'
 import Footer from '@/components/Footer.vue'
 
 const route = useRoute()
 const router = useRouter()
+const userStore = useUserStore()
 
 // 响应式数据
 const loading = ref(true)

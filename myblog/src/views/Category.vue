@@ -124,51 +124,38 @@ const {
     router.push(`/category/${categorySlug}`)
   }
 
-  // 初始化数据
-  onMounted(async () => {
-    try {
-      // 并行获取分类和文章数据
-      await Promise.all([
-        getCategories(),
-        getArticles()
-      ])
-    } catch (err) {
-      console.error('Category.vue - 初始化数据失败:', err)
+  // 跳转到分类页面（模板中使用的函数名）
+  const goToCategoryPage = (categorySlug: string) => {
+    console.log('跳转到分类页面:', categorySlug)
+    router.push(`/category/${encodeURIComponent(categorySlug)}`)
+  }
+
+  // 稳定配色：根据分类文本 -> HSL 颜色（同一分类始终同色）
+  const colorFor = (str: string) => {
+    let hash = 0
+    for (let i = 0; i < str.length; i++) {
+      hash = (hash * 31 + str.charCodeAt(i)) >>> 0
     }
-  })
-
-// 稳定配色：根据分类文本 -> HSL 颜色（同一分类始终同色）
-const colorFor = (str: string) => {
-  let hash = 0
-  for (let i = 0; i < str.length; i++) {
-    hash = (hash * 31 + str.charCodeAt(i)) >>> 0
+    const hue = hash % 360          // 色相 0-359
+    const sat = 72                  // 饱和度，深色背景下略高更鲜明
+    const light = 68                // 明度，注意和背景对比度
+    return `hsl(${hue}deg, ${sat}%, ${light}%)`
   }
-  const hue = hash % 360          // 色相 0-359
-  const sat = 72                  // 饱和度，深色背景下略高更鲜明
-  const light = 68                // 明度，注意和背景对比度
-  return `hsl(${hue}deg, ${sat}%, ${light}%)`
-}
 
-// 跳转到分类页面
-const goToCategoryPage = (categorySlug: string) => {
-  console.log('跳转到分类页面:', categorySlug)
-  router.push(`/category/${encodeURIComponent(categorySlug)}`)
-}
-
-// 刷新数据
-const handleRefresh = async () => {
-  try {
-    await Promise.all([
-      initCategories(true),
-      initArticles(true)
-    ])
-    ElMessage.success('刷新成功')
-  } catch (err) {
-    ElMessage.error('刷新失败')
+  // 刷新数据
+  const handleRefresh = async () => {
+    try {
+      await Promise.all([
+        initCategories(true),
+        initArticles(true)
+      ])
+      ElMessage.success('刷新成功')
+    } catch (err) {
+      ElMessage.error('刷新失败')
+    }
   }
-}
 
-// 组件挂载后获取分类和文章数据
+  // 组件挂载后获取分类和文章数据
 onMounted(async () => {
   console.log('Category.vue - 组件挂载，开始初始化数据')
   try {

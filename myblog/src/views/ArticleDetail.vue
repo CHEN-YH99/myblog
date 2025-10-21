@@ -357,12 +357,11 @@ onMounted(async () => {
   flex: 0 0 20%;
   width: 20%;
   position: sticky;
-  top: 80px;
+  top: 0px;
   max-height: calc(100vh - 100px);
-  overflow-y: auto;
+  overflow-y: none;
   display: flex;
   flex-direction: column;
-  gap: 20px;
   
   @media (max-width: 1200px) {
     flex: none;
