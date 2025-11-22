@@ -57,11 +57,7 @@ export const useArticlesStore = defineStore('articles', {
         .slice(0, 20)
     },
     
-    // 分页数据生成器
-    getPagedArticles: (state) => (currentPage: number, pageSize: number) => {
-      const start = (currentPage - 1) * pageSize
-      return state.articles.slice(start, start + pageSize)
-    }
+
   },
 
   actions: {

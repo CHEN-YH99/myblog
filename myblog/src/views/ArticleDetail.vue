@@ -5,7 +5,7 @@
   <!-- 头部大图 -->
   <div class="page_header">
     <div class="large-img">
-      <img src="../assets/images/category.jpeg" alt="" />
+      <img src="../assets/images/category.jpeg" alt="文章详情" />
       <div class="inner-header flex">
         <h1 class="animate__animated animate__backInDown">文章详情</h1>
       </div>
@@ -17,6 +17,22 @@
   <!-- 加载状态 -->
   <div v-if="loading" class="loading-container">
     <el-skeleton :rows="8" animated />
+    <el-skeleton :rows="6" animated />
+    <el-skeleton :rows="4" animated />
+  </div>
+
+  <!-- 错误状态 -->
+  <div v-else-if="error" class="error-container">
+    <el-alert
+      title="加载失败"
+      :description="error"
+      type="error"
+      show-icon
+      :closable="false"
+    />
+    <el-button type="primary" @click="retryLoad" class="retry-btn">
+      重新加载
+    </el-button>
   </div>
 
   <!-- 文章内容 -->
@@ -33,7 +49,7 @@
             <el-breadcrumb-item v-if="article.category" :to="{ path: `/category/${article.category}` }">
               {{ article.category }}
             </el-breadcrumb-item>
-            <el-breadcrumb-item>{{ article.title }}</el-breadcrumb-item>
+            <el-breadcrumb-item>{{ truncateText(article.title || '无标题', 30) }}</el-breadcrumb-item>
           </el-breadcrumb>
         </div>
 
@@ -46,7 +62,7 @@
             </el-tag>
           </div>
           
-          <h1 class="article-title">{{ article.title }}</h1>
+          <h1 class="article-title">{{ article.title || '无标题' }}</h1>
           
           <!-- 文章摘要 -->
           <div v-if="article.excerpt" class="article-excerpt">
@@ -58,11 +74,13 @@
               <div class="author-info">
                 <div class="author-avatar">
                   <el-avatar :size="40" :src="article.image || '/default-avatar.png'">
-                    <el-icon><User /></el-icon>
+                    <template #error>
+                      <el-icon><User /></el-icon>
+                    </template>
                   </el-avatar>
                 </div>
                 <div class="author-details">
-                  <div class="author-name">{{ article.author }}</div>
+                  <div class="author-name">{{ article.author || '匿名' }}</div>
                   <div class="publish-date">{{ formatDate(article.publishDate) }}</div>
                 </div>
               </div>
@@ -97,7 +115,25 @@
 
         <!-- 文章封面图 -->
         <div v-if="article.image" class="article-image">
-          <el-image :src="article.image" :alt="article.title" fit="cover" />
+          <el-image 
+            :src="article.image" 
+            :alt="article.title || '文章封面'" 
+            fit="cover"
+            lazy
+            :loading="'lazy'"
+            @error="handleImageErrorEnhanced"
+          >
+            <template #placeholder>
+              <div class="image-placeholder">
+                <el-icon class="is-loading"><Loading /></el-icon>
+              </div>
+            </template>
+            <template #error>
+              <div class="image-error">
+                <el-icon><Picture /></el-icon>
+              </div>
+            </template>
+          </el-image>
         </div>
 
         <!-- 文章正文 -->
@@ -110,9 +146,18 @@
             返回列表
           </el-button>
           <div class="action-buttons">
-            <el-button @click="likeArticle" :disabled="!article?._id || isLiking(article._id)">
-              <el-icon><Star /></el-icon>
-              {{ isLiked(article?._id || '') ? '已点赞' : '点赞' }} ({{ article?.likes || 0 }})
+            <el-button 
+              @click="likeArticle" 
+              :disabled="!article?._id || isLiking(article._id)"
+              :class="{ 'liked': isLiked(article?._id || '') }"
+            >
+              <el-icon v-if="!isLiking(article?._id || '')">
+                <Star />
+              </el-icon>
+              <el-icon v-else class="loading-icon">
+                <Loading />
+              </el-icon>
+              {{ isLiked(article?._id || '') ? '已点赞' : '点赞' }} ({{ formatNumber(article?.likes || 0) }})
             </el-button>
             <el-button @click="shareArticle">
               <el-icon><Share /></el-icon>
@@ -146,7 +191,7 @@
     </div> <!-- 关闭 content-wrapper -->
   </div> <!-- 关闭 article-container -->
 
-  <!-- 错误状态 -->
+  <!-- 空状态 -->
   <div v-else class="error-container">
     <el-empty description="文章不存在或已被删除" :image-size="200">
       <el-button type="primary" @click="goBack">返回列表</el-button>
@@ -158,21 +203,25 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, onBeforeUnmount, nextTick, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
-import { User, Calendar, View, Star, ArrowLeft, Share } from '@element-plus/icons-vue'
-import { getArticle } from '@/api/articles'
-import { formatNumber } from '@/utils/format'
-import { useLikes } from '@/composables/useLikes'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { User, View, Star, Share, ArrowLeft, ArrowRight, ChatDotRound } from '@element-plus/icons-vue'
+import ReadingProgress from '@/components/ReadingProgress.vue'
+import WaveContainer from '@/components/WaveContainer.vue'
+import CommentSection from '@/components/CommentSection.vue'
+import { useArticlesStore } from '@/stores/getarticles'
 import { useUserStore } from '@/stores/user'
+import { useLikes } from '@/composables/useLikes'
+import { formatNumber, timestampToTime } from '@/utils/format'
+import { debounce, throttle, lazyLoadImage, performanceMonitor, timerManager } from '@/utils/performance'
+import { handleError } from '@/utils/error-handler'
+import { getArticle } from '@/api/articles'
 import MarkdownIt from 'markdown-it'
 import hljs from 'highlight.js'
-import 'highlight.js/styles/github.css'
-import WaveContainer from '@/components/WaveContainer.vue'
+import 'highlight.js/styles/atom-one-dark.css'
 import Footer from '@/components/Footer.vue'
 import TableOfContents from '@/components/TableOfContents.vue'
-import ReadingProgress from '@/components/ReadingProgress.vue'
 import RelatedArticles from '@/components/RelatedArticles.vue'
 
 const route = useRoute()
@@ -181,13 +230,14 @@ const router = useRouter()
 // 响应式数据
 const article = ref<Api.Article.ArticleItem | null>(null)
 const loading = ref(true)
+const error = ref<string>('')
 const tocRef = ref<InstanceType<typeof TableOfContents> | null>(null)
 
 // 使用全局点赞状态管理
-const { isLiked, isLiking, handleLike } = useLikes()
+
 
 // 获取文章ID
-const articleId = route.params.id as string
+const articleId = computed(() => route.params.id as string)
 
 // 初始化 markdown-it
 const md = new MarkdownIt({
@@ -198,9 +248,11 @@ const md = new MarkdownIt({
     if (lang && hljs.getLanguage(lang)) {
       try {
         return hljs.highlight(str, { language: lang }).value
-      } catch (__) {}
+      } catch (error) {
+        console.warn('代码高亮失败:', error)
+      }
     }
-    return '' // 使用外部默认转义
+    return '<pre><code class="hljs">' + md.utils.escapeHtml(str) + '</code></pre>' // 使用外部默认转义
   }
 })
 
@@ -213,16 +265,26 @@ const renderedContent = computed(() => {
     return md.render(article.value.content)
   } catch (error) {
     console.error('Markdown 解析失败:', error)
-    return article.value.content // 如果解析失败，返回原始内容
+    return `<div class="markdown-error">
+      <p>内容解析失败，显示原始内容：</p>
+      <pre>${article.value.content}</pre>
+    </div>`
   }
 })
 
+// 文本截断函数
+const truncateText = (text: string, maxLength: number): string => {
+  if (!text) return ''
+  if (text.length <= maxLength) return text
+  return text.substring(0, maxLength) + '...'
+}
+
 // 获取文章详情
 const fetchArticle = async () => {
-  // 重新获取当前路由的ID参数，确保使用最新的ID
-  const currentArticleId = route.params.id as string
+  const currentArticleId = articleId.value
   
   if (!currentArticleId) {
+    error.value = '文章ID不存在'
     ElMessage.error('文章ID不存在')
     router.push('/category')
     return
@@ -230,648 +292,390 @@ const fetchArticle = async () => {
 
   try {
     loading.value = true
+    error.value = ''
     console.log('ArticleDetail: 开始获取文章详情，ID:', currentArticleId)
-    article.value = await getArticle(currentArticleId)
+    
+    const result = await getArticle(currentArticleId)
+    if (!result) {
+      throw new Error('文章不存在')
+    }
+    
+    article.value = result
     console.log('ArticleDetail: 文章获取成功:', article.value?.title)
     
     // 文章加载完成后，等待DOM更新并刷新目录
     await nextTick()
     setTimeout(() => {
-      tocRef.value?.refresh()
+      try {
+        tocRef.value?.refresh()
+      } catch (error) {
+        console.warn('目录刷新失败:', error)
+      }
     }, 300)
-  } catch (error) {
-    console.error('获取文章失败:', error)
-    ElMessage.error('获取文章失败')
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : '获取文章失败'
+    error.value = errorMessage
+    console.error('获取文章失败:', err)
+    ElMessage.error(errorMessage)
   } finally {
     loading.value = false
+  }
+}
+
+// 重新加载数据
+const retryLoad = async () => {
+  try {
+    await fetchArticle()
+    ElMessage.success('文章加载成功')
+  } catch (error) {
+    console.error('重新加载失败:', error)
+    ElMessage.error('重新加载失败，请稍后再试')
+  }
+}
+
+// 处理图片加载错误
+const handleImageErrorEnhanced = (event: Event, fallbackSrc = '/default-article.svg') => {
+  try {
+    const img = event.target as HTMLImageElement
+    if (img.src !== fallbackSrc) {
+      img.src = fallbackSrc
+      img.classList.add('error')
+    }
+  } catch (error) {
+    handleError(error, { showMessage: false })
   }
 }
 
 // 格式化日期
 const formatDate = (dateString: string | Date | undefined): string => {
   if (!dateString) return '暂无日期'
-  const date = new Date(dateString)
-  if (isNaN(date.getTime())) return '无效日期'
   
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
+  try {
+    const date = new Date(dateString)
+    if (isNaN(date.getTime())) return '无效日期'
+    
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+  } catch (error) {
+    console.error('日期格式化错误:', error)
+    return '日期格式错误'
+  }
 }
 
 // 标签颜色生成
 const colorFor = (str: string) => {
-  let hash = 0
-  for (let i = 0; i < str.length; i++) {
-    hash = (hash * 31 + str.charCodeAt(i)) >>> 0
+  try {
+    if (!str) return '#666'
+    
+    let hash = 0
+    for (let i = 0; i < str.length; i++) {
+      hash = (hash * 31 + str.charCodeAt(i)) >>> 0
+    }
+    const hue = hash % 360
+    const sat = 72
+    const light = 68
+    return `hsl(${hue}deg, ${sat}%, ${light}%)`
+  } catch (error) {
+    console.error('生成颜色失败:', error)
+    return '#666'
   }
-  const hue = hash % 360
-  const sat = 72
-  const light = 68
-  return `hsl(${hue}deg, ${sat}%, ${light}%)`
 }
 
 // 跳转到标签页面
 const goToTagPage = (tag: string) => {
-  router.push(`/category/${encodeURIComponent(tag)}`)
+  try {
+    router.push(`/category/${encodeURIComponent(tag)}`)
+  } catch (error) {
+    console.error('跳转标签页面失败:', error)
+    ElMessage.error('跳转失败')
+  }
 }
 
 // 返回上一页
 const goBack = () => {
-  router.go(-1)
-}
-
-// 点赞文章
-const likeArticle = async () => {
-  if (!article.value?._id) return
-  
-  // 检查用户是否已登录
-  const userStore = useUserStore()
-  if (!userStore.isLoggedIn) {
-    ElMessage.warning('请先登录后再点赞')
-    router.push('/login')
-    return
+  try {
+    if (window.history.length > 1) {
+      router.go(-1)
+    } else {
+      router.push('/')
+    }
+  } catch (error) {
+    console.error('返回失败:', error)
+    ElMessage.error('操作失败')
   }
-  
-  await handleLike(article.value._id)
 }
 
 // 分享文章
-const shareArticle = () => {
-  if (navigator.share && article.value) {
-    navigator.share({
-      title: article.value.title,
-      text: article.value.excerpt,
-      url: window.location.href
-    })
+const shareArticle = async () => {
+  if (!article.value) return
+
+  const url = window.location.href
+  const title = article.value.title || '分享文章'
+  const text = article.value.excerpt || ''
+
+  if (navigator.share) {
+    try {
+      await navigator.share({ title, text, url })
+      ElMessage.success('感谢分享！')
+    } catch (error) {
+      console.warn('Web Share API 调用失败:', error)
+      ElMessage.info('已取消分享')
+    }
   } else {
-    // 复制链接到剪贴板
-    navigator.clipboard.writeText(window.location.href)
-    ElMessage.success('链接已复制到剪贴板')
+    try {
+      await navigator.clipboard.writeText(url)
+      ElMessage.success('文章链接已复制到剪贴板')
+    } catch (error) {
+      console.error('复制链接失败:', error)
+      ElMessage.error('复制链接失败')
+    }
   }
 }
 
-// 组件挂载
+// 点赞功能
+const { isLiked, isLiking, handleLike } = useLikes()
+
+const likeArticle = async () => {
+  if (!article.value?._id) return
+  
+  try {
+    await handleLike(article.value._id)
+    
+    // Optimistic update: 立即更新UI
+    const liked = isLiked(article.value._id)
+    if (liked) {
+      article.value.likes = (article.value.likes || 0) + 1
+    } else {
+      article.value.likes = Math.max(0, (article.value.likes || 0) - 1)
+    }
+  } catch (error) {
+    handleError(error)
+  }
+}
+
+// 生命周期钩子
 onMounted(async () => {
   await fetchArticle()
 })
 
-// 监听路由参数变化，当从一个文章页跳转到另一个文章页时重新获取数据
-watch(
-  () => route.params.id,
-  async (newId, oldId) => {
-    if (newId && newId !== oldId) {
-      console.log('ArticleDetail: 路由参数变化，重新获取文章', { newId, oldId })
-      await fetchArticle()
-    }
-  }
-)
 </script>
 
-<style scoped lang="scss">
-.loading-container {
-  width: 80%;
-  margin: 50px auto;
-  padding: 0 20px;
+<style scoped>
+.loading-container,
+.error-container {
+  max-width: 800px;
+  margin: 40px auto;
+  padding: 20px;
+}
+
+.retry-btn {
+  margin-top: 20px;
 }
 
 .article-container {
-  width: 80%;
-  margin: 50px auto;
-  padding: 0 20px;
+  padding: 20px 0;
 }
 
 .content-wrapper {
   display: flex;
+  max-width: 1200px;
+  margin: 0 auto;
   gap: 20px;
-  align-items: flex-start;
-  
-  @media (max-width: 1200px) {
-    flex-direction: column;
-    gap: 20px;
-  }
+  align-items: flex-start; /* Align items to the top for sticky sidebar to work */
 }
 
 .article-main {
-  flex: 0 0 60%;
-  width: 60%;
-  border-radius: 12px;
-  padding: 40px;
-  box-shadow: 0 4px 20px rgba(215, 215, 215, 0.584);
-  
-  @media (max-width: 768px) {
-    padding: 20px;
-  }
-  
-  @media (max-width: 1200px) {
-    flex: none;
-    width: 100%;
-  }
-}
-
-.sidebar {
-  flex: 0 0 20%;
-  width: 20%;
-  position: sticky;
-  top: 0px;
-  max-height: calc(100vh - 100px);
-  overflow-y: none;
-  display: flex;
-  flex-direction: column;
-  
-  @media (max-width: 1200px) {
-    flex: none;
-    width: 100%;
-    position: static;
-    max-height: none;
-  }
-}
-
-.recommendations-section {
-  flex-shrink: 0;
-}
-
-.toc-section {
   flex: 1;
-  min-height: 0;
+  min-width: 0;
 }
 
 .article-content-wrapper {
-  width: 100%;
+  background-color: var(--el-bg-color);
+  padding: 30px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.sidebar {
+  width: 300px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 20px;
+}
+
+.recommendations-section,
+.toc-section {
+  background-color: var(--el-bg-color);
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  margin-bottom: 20px;
 }
 
 .breadcrumb-container {
-  margin-bottom: 30px;
-  
-  .breadcrumb {
-    font-size: 14px;
-    
-    :deep(.el-breadcrumb__item) {
-      .el-breadcrumb__inner {
-        color: #51dbfa;
-        &:hover {
-          color: #409eff;
-        }
-      }
-    }
-  }
+  margin-bottom: 20px;
 }
 
 .article-header {
-  margin-bottom: 40px;
-  padding-bottom: 30px;
-  border-bottom: 1px solid #eaecef;
-  
-  .article-category {
-    margin-bottom: 16px;
-    
-    .category-tag {
-      font-weight: 500;
-      border-radius: 20px;
-      padding: 8px 16px;
-    }
-  }
-  
-  .article-title {
-    font-size: 36px;
-    font-weight: 800;
-    line-height: 1.2;
-    margin-bottom: 20px;
-    letter-spacing: -0.02em;
-    
-    @media (max-width: 768px) {
-      font-size: 28px;
-    }
-  }
-  
-  .article-excerpt {
-    margin-bottom: 24px;
-    
-    p {
-      font-size: 18px;
-      line-height: 1.6;
-      margin: 0;
-      font-weight: 400;
-    }
-  }
-  
-  .article-meta {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 24px;
-    padding: 20px 0;
-    
-    @media (max-width: 768px) {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 16px;
-    }
-    
-    .meta-left {
-      .author-info {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        
-        .author-avatar {
-          flex-shrink: 0;
-        }
-        
-        .author-details {
-          .author-name {
-            font-size: 16px;
-            font-weight: 600;
-            color: #2d3748;
-            margin-bottom: 4px;
-          }
-          
-          .publish-date {
-            font-size: 14px;
-            color: #718096;
-          }
-        }
-      }
-    }
-    
-    .meta-right {
-      display: flex;
-      gap: 20px;
-      
-      .stats-item {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        font-size: 14px;
-        color: #718096;
-        
-        .stats-icon {
-          font-size: 16px;
-        }
-      }
-    }
-  }
-  
-  .article-tags {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px;
-    
-    .tags-label {
-      font-size: 14px;
-      font-weight: 500;
-      margin-right: 4px;
-    }
-    
-    .tag-item {
-      cursor: pointer;
-      border: none;
-      transition: all 0.3s ease;
-      border-radius: 12px;
-      font-size: 12px;
-      padding: 4px 12px;
-      
-      &:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(60, 213, 25, 0.816);
-      }
-    }
-  }
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+.article-category .category-tag {
+  margin-bottom: 15px;
+}
+
+.article-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 20px;
+  color: var(--el-text-color-primary);
+}
+
+.article-excerpt {
+  font-size: 1.1rem;
+  color: var(--el-text-color-secondary);
+  margin-bottom: 25px;
+}
+
+.article-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 0;
+  border-top: 1px solid var(--el-border-color-light);
+  border-bottom: 1px solid var(--el-border-color-light);
+  margin-bottom: 20px;
+}
+
+.meta-left, .meta-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.author-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.author-name {
+  font-weight: 600;
+  color: var(--el-text-color-primary);
+}
+
+.publish-date {
+  font-size: 0.9rem;
+  color: var(--el-text-color-secondary);
+}
+
+.stats-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+  color: var(--el-text-color-secondary);
+}
+
+.stats-icon {
+  font-size: 1.1rem;
+}
+
+.article-tags {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.tags-label {
+  font-weight: 500;
+  color: var(--el-text-color-regular);
+}
+
+.tag-item {
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.tag-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 
 .article-image {
-  margin-bottom: 40px;
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
-  
-  :deep(.el-image) {
-    width: 100%;
-    height: 400px;
-    transition: transform 0.3s ease;
-    
-    &:hover {
-      transform: scale(1.02);
-    }
-  }
-  
-  @media (max-width: 768px) {
-    :deep(.el-image) {
-      height: 250px;
-    }
-  }
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+.article-image .el-image {
+  border-radius: 8px;
+  max-height: 500px;
 }
 
 .article-content {
-  line-height: 1.6;
-  font-size: 14px;
-  margin-bottom: 40px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  
-  :deep(h1), :deep(h2), :deep(h3), :deep(h4), :deep(h5), :deep(h6) {
-    margin: 40px 0 24px 0;
-    font-weight: 700;
-    line-height: 1.3;
-    letter-spacing: -0.02em;
-    
-    &:first-child {
-      margin-top: 0;
-    }
-    
-    &:hover {
-      .header-anchor {
-        opacity: 1;
-      }
-    }
-  }
-  
-  :deep(h1) {
-    font-size: 26px;
-    border-bottom: 2px solid #e5e7eb;
-    padding-bottom: 12px;
-  }
-  
-  :deep(h2) {
-    font-size: 22px;
-    border-bottom: 1px solid #e5e7eb;
-    padding-bottom: 10px;
-  }
-  
-  :deep(h3) {
-    font-size: 19px;
-  }
-  
-  :deep(h4) {
-    font-size: 16px;
-  }
-  
-  :deep(h5) {
-    font-size: 15px;
-  }
-  
-  :deep(h6) {
-    font-size: 14px;
-    color: #6b7280;
-  }
-  
-  :deep(p) {
-    margin: 20px 0;
-    text-align: justify;
-    word-break: break-word;
-  }
-  
-  :deep(ul), :deep(ol) {
-    margin: 20px 0;
-    padding-left: 28px;
-    
-    li {
-      margin: 12px 0;
-      
-      p {
-        margin: 8px 0;
-      }
-    }
-  }
-  
-  :deep(ul) {
-    li {
-      list-style-type: disc;
-      
-      &::marker {
-        color: #6366f1;
-      }
-    }
-  }
-  
-  :deep(li) {
-    margin-bottom: 8px;
-  }
-  
-  :deep(blockquote) {
-    margin: 24px 0;
-    padding: 20px 24px;
-    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-    border-left: 4px solid #6366f1;
-    border-radius: 0 12px 12px 0;
-    position: relative;
-    
-    &::before {
-      content: '"';
-      position: absolute;
-      top: 8px;
-      left: 8px;
-      font-size: 24px;
-      color: #6366f1;
-      opacity: 0.3;
-    }
-    
-    p {
-      margin: 0;
-      color: #4b5563;
-      font-style: italic;
-      font-size: 16px;
-    }
-  }
-  
-  :deep(table) {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 24px 0;
-    border-radius: 8px;
-    overflow: hidden;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-    
-    th, td {
-      border: 1px solid #e5e7eb;
-      padding: 16px;
-      text-align: left;
-    }
-    
-    th {
-      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-      font-weight: 600;
-      color: #374151;
-    }
-    
-    tbody tr {
-      &:nth-child(even) {
-        background: #f9fafb;
-      }
-      
-      &:hover {
-        background: #f3f4f6;
-      }
-    }
-  }
-  
-  :deep(th), :deep(td) {
-    border: 1px solid #dfe2e5;
-    padding: 8px 12px;
-    text-align: left;
-  }
-  
-  :deep(th) {
-    background: #f6f8fa;
-    font-weight: 600;
-  }
-  
-  :deep(img) {
-    max-width: 80%;
-    height: auto;
-    border-radius: 8px;
-    margin: 16px 0;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-    
-    &:hover {
-      transform: scale(1.02);
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-    }
-  }
-  
-  :deep(code) {
-    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-    padding: 3px 8px;
-    border-radius: 6px;
-    font-family: 'JetBrains Mono', 'Fira Code', 'Monaco', 'Consolas', monospace;
-    font-size: 14px;
-    color: #dc2626;
-    font-weight: 500;
-    border: 1px solid #fed7aa;
-  }
-  
-  :deep(pre) {
-    background: #f6f8fa;
-    color: #24292e;
-    padding: 24px;
-    border-radius: 12px;
-    overflow-x: auto;
-    margin: 24px 0;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
-    border: 1px solid #e1e4e8;
-    
-    code {
-      background: none;
-      padding: 0;
-      color: inherit;
-      font-size: 14px;
-      border: none;
-    }
-  }
-  
-  :deep(hr) {
-    border: none;
-    height: 2px;
-    background: linear-gradient(90deg, transparent 0%, #e5e7eb 50%, transparent 100%);
-    margin: 40px 0;
-  }
-  
-  :deep(a) {
-    color: #6366f1;
-    text-decoration: none;
-    font-weight: 500;
-    border-bottom: 1px solid transparent;
-    transition: all 0.3s ease;
-    
-    &:hover {
-      color: #4f46e5;
-      border-bottom-color: #6366f1;
-    }
-  }
-  
-  :deep(strong) {
-    font-weight: 700;
-    color: #1f2937;
-  }
-  
-  :deep(em) {
-    font-style: italic;
-    color: #4b5563;
-  }
+  line-height: 1.8;
+  font-size: 16px;
+  color: var(--el-text-color-regular);
 }
 
 .article-actions {
+  margin-top: 40px;
   display: flex;
-  justify-content: center;
-  gap: 20px;
-  margin: 50px 0;
-  padding: 30px 0;
-  border-top: 2px solid #f1f5f9;
-  border-radius: 16px;
-  
-  @media (max-width: 768px) {
+  justify-content: space-between;
+  align-items: center;
+}
+
+.action-buttons .el-button.liked {
+  background-color: var(--el-color-primary-light-7);
+  color: var(--el-color-primary);
+  border-color: var(--el-color-primary-light-5);
+}
+
+.action-buttons .loading-icon {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* 响应式设计 */
+@media (max-width: 992px) {
+  .content-wrapper {
     flex-direction: column;
-    align-items: center;
-    gap: 16px;
   }
-  
-  .el-button {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 14px 28px;
-    border: 2px solid transparent;
-    border-radius: 12px;
-    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-    color: #4b5563;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    font-weight: 500;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-    position: relative;
-    overflow: hidden;
-    
-    &::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: -100%;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
-      transition: left 0.5s ease;
-    }
-    
-    &:hover {
-      border-color: #6366f1;
-      color: #6366f1;
-      transform: translateY(-3px);
-      box-shadow: 0 8px 32px rgba(99, 102, 241, 0.25);
-      
-      &::before {
-        left: 100%;
-      }
-    }
-    
-    &:active {
-      transform: translateY(-1px);
-    }
-    
-    .el-icon {
-      font-size: 20px;
-    }
-  }
-  
-  .action-buttons {
-    display: flex;
-    gap: 16px;
-    
-    @media (max-width: 768px) {
-      flex-direction: column;
-      width: 100%;
-      align-items: center;
-    }
+  .sidebar {
+    width: 100%;
+    order: -1; /* 在移动端将侧边栏移到顶部 */
   }
 }
 
-.error-container {
-  max-width: 600px;
-  margin: 100px auto;
-  text-align: center;
-  padding: 40px;
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+@media (max-width: 768px) {
+  .article-content-wrapper {
+    padding: 20px;
+  }
+  .article-title {
+    font-size: 2rem;
+  }
+  .article-meta {
+    flex-direction: column;
+    gap: 15px;
+  }
+}
+
+.markdown-body pre {
+  background-color: #f6f8fa;
+  padding: 16px;
+  border-radius: 6px;
+  overflow: auto;
+}
+
+.dark .markdown-body pre {
+  background-color: #2d2d2d;
 }
 </style>

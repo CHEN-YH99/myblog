@@ -6,9 +6,9 @@
         <p class="subtitle">用户数据<span class="text-success">实时更新</span></p>
       </div>
       <el-radio-group v-model="radio2">
-        <el-radio-button value="本月"></el-radio-button>
-        <el-radio-button value="上月"></el-radio-button>
-        <el-radio-button value="今年"></el-radio-button>
+        <el-radio-button label="本月" />
+        <el-radio-button label="上月" />
+        <el-radio-button label="今年" />
       </el-radio-group>
     </div>
     <ArtTable
@@ -53,46 +53,72 @@
 </template>
 
 <script setup lang="ts">
-  import { onMounted, ref } from 'vue'
+  import { onMounted, ref, watch } from 'vue'
   import { fetchGetUserList } from '@/api/system-manage'
   import { UserFilled } from '@element-plus/icons-vue'
   import { ElAvatar, ElTag } from 'element-plus'
 
   const radio2 = ref('本月')
-  const tableData = ref([])
+  const allUsers = ref<any[]>([]) // 存储从API获取的所有用户
+  const tableData = ref<any[]>([]) // 存储过滤后用于表格显示的用户
+
+  // 根据选择的时间范围过滤用户数据
+  const applyFilter = () => {
+    const now = new Date()
+    const year = now.getFullYear()
+    const month = now.getMonth() // 0-11
+
+    let filteredList: any[] = []
+
+    // 关键改动：根据推测，将日期字段从 'createdAt' 修改为 'createTime'
+    switch (radio2.value) {
+      case '本月':
+        filteredList = allUsers.value.filter(user => {
+          const userDate = new Date(user.createTime)
+          return userDate.getFullYear() === year && userDate.getMonth() === month
+        })
+        break
+      case '上月':
+        const prevMonthDate = new Date(year, month - 1, 1)
+        const prevMonthYear = prevMonthDate.getFullYear()
+        const prevMonth = prevMonthDate.getMonth()
+        filteredList = allUsers.value.filter(user => {
+          const userDate = new Date(user.createTime)
+          return userDate.getFullYear() === prevMonthYear && userDate.getMonth() === prevMonth
+        })
+        break
+      case '今年':
+        filteredList = allUsers.value.filter(user => {
+          const userDate = new Date(user.createTime)
+          return userDate.getFullYear() === year
+        })
+        break
+      default:
+        filteredList = allUsers.value
+        break
+    }
+    tableData.value = filteredList.slice(0, 6)
+  }
 
   // 获取用户数据
   const fetchUserData = async () => {
     try {
       const response = await fetchGetUserList({
         current: 1,
-        size: 6 // 只显示前6个用户
+        size: 999 
       })
       
-      if (response && response.records) {
-        tableData.value = response.records
+      if (response && response.records && response.records.length > 0) {
+        allUsers.value = response.records
+        applyFilter() // 初始加载后应用默认过滤器
+      } else {
+        allUsers.value = []
+        tableData.value = []
       }
     } catch (error) {
       console.error('获取用户数据失败:', error)
-      // 使用默认数据
-      tableData.value = [
-        {
-          username: '管理员',
-          roleName: '超级管理员',
-          city: '北京',
-          gender: 'male',
-          enabled: true,
-          avatar: ''
-        },
-        {
-          username: '编辑',
-          roleName: '编辑',
-          city: '上海',
-          gender: 'female',
-          enabled: true,
-          avatar: ''
-        }
-      ]
+      allUsers.value = []
+      tableData.value = []
     }
   }
 
@@ -105,6 +131,9 @@
     }
     return genderMap[gender] || '-'
   }
+
+  // 监听 radio group 的变化，并重新应用过滤
+  watch(radio2, applyFilter)
 
   onMounted(() => {
     fetchUserData()

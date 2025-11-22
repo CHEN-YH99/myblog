@@ -13,8 +13,29 @@
       <!-- 海水波浪 -->
       <WaveContainer  />
     </div>
+    <!-- 加载状态 -->
+    <div v-if="loading" class="loading-container">
+      <el-skeleton :rows="5" animated />
+      <el-skeleton :rows="4" animated />
+      <el-skeleton :rows="3" animated />
+    </div>
+
+    <!-- 错误状态 -->
+    <div v-else-if="error" class="error-container">
+      <el-alert
+        title="加载失败"
+        :description="error"
+        type="error"
+        show-icon
+        :closable="false"
+      />
+      <el-button type="primary" @click="handleRetry" class="retry-btn">
+        重新加载
+      </el-button>
+    </div>
+
     <!-- 内容 -->
-    <div v-if="articleslist.length" class="timeline_content animate__animated animate__fadeInUp">
+    <div v-else-if="articleslist.length" class="timeline_content animate__animated animate__fadeInUp">
       <el-timeline style="max-width: 600px">
        <el-timeline-item 
          v-for="(article, index) in articlesWithYearDisplay"
@@ -36,6 +57,7 @@
                style="width: 100px; height: 100px" 
                fit="cover"
                :src="article.image"
+               :lazy="true"
              />
              <div class="timeline-card-content">
                <h4>{{ article.title }}</h4>
@@ -72,6 +94,7 @@ import { useRouter } from 'vue-router'
 import { useArticles } from '@/composables/useArticles' // 引入获取到文章列表数据文件
 import WaveContainer from '@/components/WaveContainer.vue'
 import Footer from '@/components/Footer.vue'
+import { ElMessage } from 'element-plus'
 
 interface Article {
   _id: string
@@ -92,6 +115,8 @@ const router = useRouter()
 // 请求文章列表数据
 const {
   articles: articleslist,
+  loading,
+  error,
   initArticles,
   pagedArticles,
   currentPage,
@@ -99,8 +124,19 @@ const {
   total,
   goToArticle,
   watchPagination,
-  cleanup
-} = useArticles('TimeLine')
+  cleanup,
+  retryLoad
+} = useArticles()
+
+// 重试加载处理
+const handleRetry = async () => {
+  try {
+    await retryLoad()
+    ElMessage.success('重新加载成功')
+  } catch (err) {
+    ElMessage.error('重新加载失败，请稍后再试')
+  }
+}
 
 // 日期格式化函数 - 只显示年份
 const getYearFromDate = (dateString: string | Date | undefined): string => {
@@ -193,20 +229,52 @@ let stopWatchingPagination: (() => void) | null = null
 
 // 组件挂载后获取文章列表数据
 onMounted(async() => {
-  await initArticles()
-  // 启用分页状态监听
-  stopWatchingPagination = watchPagination()
+  try {
+    await initArticles()
+    // 启用分页状态监听
+    stopWatchingPagination = watchPagination()
+  } catch (err) {
+    console.error('TimeLine组件初始化失败:', err)
+    ElMessage.error('页面加载失败，请刷新重试')
+  }
 })
 
 onBeforeUnmount(() => {
-  cleanup()
-  // 清理分页监听
-  if (stopWatchingPagination) {
-    stopWatchingPagination()
+  try {
+    cleanup()
+    // 清理分页监听
+    if (stopWatchingPagination) {
+      stopWatchingPagination()
+    }
+  } catch (err) {
+    console.error('TimeLine组件清理失败:', err)
   }
 })
 </script>
 <style scoped lang="scss">
+// 加载状态样式
+.loading-container {
+  padding: 40px 20px;
+  max-width: 800px;
+  margin: 50px auto;
+  
+  .el-skeleton {
+    margin-bottom: 20px;
+  }
+}
+
+// 错误状态样式
+.error-container {
+  text-align: center;
+  padding: 60px 20px;
+  max-width: 600px;
+  margin: 50px auto;
+  
+  .retry-btn {
+    margin-top: 20px;
+  }
+}
+
 // 内容
 .timeline_content {
   margin-top: 2rem;

@@ -74,7 +74,7 @@ interface BackendItem {
 // 跳转到详情页
 const goToDetail = (item: BackendItem) => {
   router.push({
-    path: '/backtend/backendDetail',
+    path: '/backend/backendDetail',
     query: { 
       type: item.title,
     }

@@ -290,6 +290,7 @@ const showUserMenu = ref(false)
 
 // 获取活动菜单项的函数
 const getActiveMenuItem = (path) => {
+  if (path.startsWith('/user')) return null // 个人中心页不激活任何菜单项
   if (path === '/') return 'home'
   if (path === '/timeline') return 'timeline'
   if (path.startsWith('/frontend')) return 'frontend'
@@ -307,7 +308,9 @@ const getActiveMenuItem = (path) => {
 
 // 获取移动端活动菜单项的函数
 const getMobileActiveMenuItem = (path) => {
+  if (path.startsWith('/user')) return null // 个人中心页不激活任何菜单项
   if (path === '/') return 'm-home'
+  
   if (path === '/timeline') return 'm-timeline'
   if (path.startsWith('/frontend')) return 'm-frontend'
   if (path.startsWith('/backend')) return 'm-backend'

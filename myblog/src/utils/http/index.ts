@@ -254,14 +254,55 @@ function createHttpError(message: string, code: number) {
 }
 
 /** 是否需要重试 */
-function shouldRetry(statusCode: number) {
-  return [
-    ApiStatus.requestTimeout,
-    ApiStatus.internalServerError,
-    ApiStatus.badGateway,
-    ApiStatus.serviceUnavailable,
-    ApiStatus.gatewayTimeout
-  ].includes(statusCode as any)
+function shouldRetry(error: any): boolean {
+  // 如果是HttpError，检查状态码
+  if (error instanceof HttpError) {
+    const retryableCodes: number[] = [
+      ApiStatus.requestTimeout,
+      ApiStatus.internalServerError,
+      ApiStatus.badGateway,
+      ApiStatus.serviceUnavailable,
+      ApiStatus.gatewayTimeout
+    ]
+    return retryableCodes.includes(error.code)
+  }
+  
+  // 如果是Axios错误，检查错误类型
+  if (error.code) {
+    const retryableNetworkErrors = [
+      'ECONNREFUSED',    // 连接被拒绝
+      'ETIMEDOUT',       // 连接超时
+      'ENOTFOUND',       // 域名解析失败
+      'ECONNRESET',      // 连接重置
+      'ECONNABORTED',    // 连接中断
+      'ENETUNREACH',     // 网络不可达
+      'EHOSTUNREACH',    // 主机不可达
+      'EPIPE',           // 管道错误
+      'EAI_AGAIN'        // DNS临时失败
+    ]
+    return retryableNetworkErrors.includes(error.code)
+  }
+  
+  // 检查HTTP状态码
+  if (error.response?.status) {
+    const retryableStatusCodes: number[] = [408, 500, 502, 503, 504]
+    return retryableStatusCodes.includes(error.response.status)
+  }
+  
+  // 检查错误消息中的关键词
+  if (error.message) {
+    const retryableMessages = [
+      'network error',
+      'timeout',
+      'connection',
+      'failed to fetch',
+      'fetch error'
+    ]
+    const message = error.message.toLowerCase()
+    return retryableMessages.some(keyword => message.includes(keyword))
+  }
+  
+  return false
 }
 
 /** 请求重试逻辑 */
@@ -272,10 +313,15 @@ async function retryRequest<T>(
   try {
     return await request<T>(config)
   } catch (error) {
-    if (retries > 0 && error instanceof HttpError && shouldRetry(error.code)) {
+    console.log(`请求失败，剩余重试次数: ${retries}`, error)
+    
+    if (retries > 0 && shouldRetry(error)) {
+      console.log(`等待 ${RETRY_DELAY}ms 后重试...`)
       await delay(RETRY_DELAY)
       return retryRequest<T>(config, retries - 1)
     }
+    
+    console.log('重试次数已用完或错误不可重试，抛出错误')
     throw error
   }
 }

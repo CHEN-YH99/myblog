@@ -1,3 +1,5 @@
 {
-  "extends": "../shared/config/.prettierrc.json"
+  "singleQuote": true,
+  "semi": false,
+  "endOfLine": "auto"
 }

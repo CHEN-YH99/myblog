@@ -67,25 +67,25 @@
     try {
       loading.value = true
       const stats: DashboardStats = await getDashboardStats()
-      
+
       // 获取实时用户数量
       const userListRes = await fetchGetUserList({ current: 1, size: 1000 })
       const totalUsers = userListRes?.data?.total || userListRes?.total || 0
-      
+
       // 更新数据
       dataList[0].num = stats.totalVisits
       dataList[0].change = stats.visitChange
-      
+
       dataList[1].num = stats.totalArticles
       dataList[1].change = stats.articleChange
-      
+
       dataList[2].num = stats.totalCategories
       dataList[2].change = stats.categoryChange
-      
+
       // 使用实时用户数量
       dataList[3].num = totalUsers
       dataList[3].change = stats.newUserChange
-      
+
     } catch (error) {
       console.error('获取统计数据失败:', error)
       // 使用默认数据

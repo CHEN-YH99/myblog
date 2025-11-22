@@ -1,16 +1,17 @@
 <template>
-  <div class="talk-page">
-    <!-- 页面头部 -->
-    <div class="page_header">
-      <div class="large-img">
-        <img src="../assets/images/chat.jpeg" alt="" />
-        <div class="inner-header flex">
-          <h1 class="animate__animated animate__backInDown">说说</h1>
+  <div class="talk-page-wrapper">
+    <div class="talk-page">
+      <!-- 页面头部 -->
+      <div class="page_header">
+        <div class="large-img">
+          <img src="../assets/images/chat.jpeg" alt="" />
+          <div class="inner-header flex">
+            <h1 class="animate__animated animate__backInDown">说说</h1>
+          </div>
         </div>
+        <!-- 海水波浪 -->
+        <WaveContainer />
       </div>
-      <!-- 海水波浪 -->
-      <WaveContainer />
-    </div>
     
 
     <!-- 说说列表 -->
@@ -390,6 +391,7 @@
   </div>
   <!-- 页脚组件 -->
   <Footer />
+  </div>
 </template>
 
 <script setup lang="ts">

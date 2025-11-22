@@ -1,22 +1,23 @@
 <template>
-  <!-- 页头 -->
-  <div class="page_header">
-    <div class="large-img">
-      <img src="../assets/images/category.jpeg" alt="" />
-      <div class="inner-header flex">
-        <h1 class="animate__animated animate__backInDown">相关文章</h1>
+  <div class="category-tag-wrapper">
+    <!-- 页头 -->
+    <div class="page_header">
+      <div class="large-img">
+        <img src="../assets/images/category.jpeg" alt="" />
+        <div class="inner-header flex">
+          <h1 class="animate__animated animate__backInDown">相关文章</h1>
+        </div>
       </div>
+      <WaveContainer />
     </div>
-    <WaveContainer />
-  </div>
 
-  <!-- 加载状态 -->
-  <div v-if="loading" class="loading-container">
-    <el-skeleton :rows="6" animated />
-  </div>
+    <!-- 加载状态 -->
+    <div v-if="loading" class="loading-container">
+      <el-skeleton :rows="6" animated />
+    </div>
 
-  <!-- 主要内容区域 -->
-  <div v-else-if="filteredArticles.length" class="content-wrapper">
+    <!-- 主要内容区域 -->
+    <div v-else-if="filteredArticles.length" class="content-wrapper">
     <div class="content-container animate__animated animate__fadeInUp">
       <!-- 顶部信息栏 -->
       <div class="content-header">
@@ -87,14 +88,15 @@
   </div>
 
   <!-- 空状态 -->
-  <div v-else class="empty">
-    <el-empty :description="`暂无 ${displayName} 相关文章`" :image-size="200" />
-    <el-button type="primary" @click="$router.push('/category')">
-      返回分类页面
-    </el-button>
-  </div>
+    <div v-else class="empty">
+      <el-empty :description="`暂无 ${displayName} 相关文章`" :image-size="200" />
+      <el-button type="primary" @click="$router.push('/category')">
+        返回分类页面
+      </el-button>
+    </div>
 
-  <Footer />
+    <Footer />
+  </div>
 </template>
 
 <script setup lang="ts">

@@ -2,13 +2,7 @@
 import fs from 'fs'
 import path, { dirname } from 'path'
 import { fileURLToPath } from 'url'
-
-// 从 ESLint 插件中导入推荐配置
-import pluginJs from '@eslint/js'
-import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended'
-import pluginVue from 'eslint-plugin-vue'
-import globals from 'globals'
-import tseslint from 'typescript-eslint'
+import { createRequire } from 'module'
 
 // 使用 import.meta.url 获取当前模块的路径
 const __filename = fileURLToPath(import.meta.url)
@@ -28,6 +22,19 @@ export function createESLintConfig(options = {}) {
     isAdmin = false,
     additionalIgnores = []
   } = options
+
+  const projectRequire = createRequire(path.resolve(projectRoot, 'package.json'))
+  const pluginJsModule = projectRequire('@eslint/js')
+  const pluginJsConfigs = pluginJsModule.configs || pluginJsModule.default?.configs
+  const prettierRecommendedModule = projectRequire('eslint-plugin-prettier/recommended')
+  const prettierRecommended = prettierRecommendedModule.default || prettierRecommendedModule
+  const pluginVueModule = projectRequire('eslint-plugin-vue')
+  const pluginVueConfigs = pluginVueModule.configs || pluginVueModule.default?.configs
+  const globalsModule = projectRequire('globals')
+  const globalsObj = globalsModule.default || globalsModule
+  const tseslintModule = projectRequire('typescript-eslint')
+  const tseslintConfigs = tseslintModule.configs || tseslintModule.default?.configs
+  const tsParser = tseslintModule.parser || tseslintModule.default?.parser
 
   // 尝试读取自动导入配置（仅管理端）
   let autoImportGlobals = {}
@@ -54,15 +61,15 @@ export function createESLintConfig(options = {}) {
     {
       languageOptions: {
         globals: {
-          ...globals.browser,
-          ...globals.node
+          ...globalsObj.browser,
+          ...globalsObj.node
         }
       }
     },
     // 扩展配置
-    pluginJs.configs.recommended,
-    ...tseslint.configs.recommended,
-    ...pluginVue.configs['flat/essential'],
+    pluginJsConfigs.recommended,
+    ...tseslintConfigs.recommended,
+    ...pluginVueConfigs['flat/essential'],
     // 自定义规则
     {
       files: ['**/*.{js,mjs,cjs,ts,vue}'],
@@ -91,7 +98,7 @@ export function createESLintConfig(options = {}) {
     {
       files: ['**/*.vue'],
       languageOptions: {
-        parserOptions: { parser: tseslint.parser }
+        parserOptions: { parser: tsParser }
       }
     },
     // 忽略文件
@@ -108,7 +115,7 @@ export function createESLintConfig(options = {}) {
       ]
     },
     // Prettier 配置
-    eslintPluginPrettierRecommended
+    prettierRecommended
   ]
 }
 

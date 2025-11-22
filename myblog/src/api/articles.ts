@@ -4,29 +4,83 @@ type ArticleView = Api.Article.ArticleItem & {
   cover?: string
 }
 
+// 缓存配置
+const CACHE_DURATION = 5 * 60 * 1000 // 5分钟
+const cache = new Map<string, { data: any; timestamp: number }>()
+
+// 缓存工具函数
+function getCacheKey(url: string, params?: any): string {
+  return `${url}${params ? JSON.stringify(params) : ''}`
+}
+
+function getFromCache<T>(key: string): T | null {
+  const cached = cache.get(key)
+  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+    return cached.data
+  }
+  cache.delete(key)
+  return null
+}
+
+function setCache(key: string, data: any): void {
+  cache.set(key, { data, timestamp: Date.now() })
+}
+
+// 重试配置
+const MAX_RETRIES = 3
+const RETRY_DELAY = 1000
+
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  retries = MAX_RETRIES,
+  delay = RETRY_DELAY
+): Promise<T> {
+  try {
+    return await fn()
+  } catch (error) {
+    if (retries > 0) {
+      await new Promise(resolve => setTimeout(resolve, delay))
+      return withRetry(fn, retries - 1, delay * 2)
+    }
+    throw error
+  }
+}
+
 /**
  * 获取文章列表
  * @param params 查询参数
  * @returns 文章列表
  */
 export function getAllArticles(params?: Api.Article.SearchParams) {
-  return api.get({ url: '/api/articles', params })
-    .then(response => {
-      const data = response
-      
-      if (Array.isArray(data)) {
-        return data
-      } else if (data && typeof data === 'object' && 'articles' in data) {
-        const articles = (data as any).articles
+  const cacheKey = getCacheKey('/api/articles', params)
+  const cached = getFromCache<Api.Article.ArticleItem[]>(cacheKey)
+  
+  if (cached) {
+    return Promise.resolve(cached)
+  }
+
+  return withRetry(() => 
+    api.get({ url: '/api/articles', params })
+      .then(response => {
+        const data = response
+        
+        let articles: Api.Article.ArticleItem[] = []
+        if (Array.isArray(data)) {
+          articles = data
+        } else if (data && typeof data === 'object' && 'articles' in data) {
+          articles = (data as any).articles
+        }
+        
+        // 缓存结果
+        setCache(cacheKey, articles)
         return articles
-      } else {
+      })
+      .catch(error => {
+        console.error('前台获取文章失败:', error)
+        // 返回空数组而不是抛出错误，提供降级体验
         return []
-      }
-    })
-    .catch(error => {
-      console.error('前台获取文章失败:', error)
-      throw error
-    })
+      })
+  )
 }
 
 /**
@@ -35,10 +89,23 @@ export function getAllArticles(params?: Api.Article.SearchParams) {
  * @returns 文章详情
  */
 export function getArticle(idOrSlug: string) {
-  return api.get<Api.Article.ArticleItem>({
-    url: `/api/articles/${idOrSlug}`,
-    showErrorMessage: true
-  })
+  const cacheKey = getCacheKey(`/api/articles/${idOrSlug}`)
+  const cached = getFromCache<Api.Article.ArticleItem>(cacheKey)
+  
+  if (cached) {
+    return Promise.resolve(cached)
+  }
+
+  return withRetry(() =>
+    api.get<Api.Article.ArticleItem>({
+      url: `/api/articles/${idOrSlug}`,
+      showErrorMessage: true
+    }).then(article => {
+      // 缓存文章详情
+      setCache(cacheKey, article)
+      return article
+    })
+  )
 }
 
 /**
@@ -52,6 +119,10 @@ export function createArticle(payload: Api.Article.CreateParams) {
     data: payload,
     showSuccessMessage: true,
     showErrorMessage: true
+  }).then(article => {
+    // 清除相关缓存
+    clearArticleCache()
+    return article
   })
 }
 
@@ -67,6 +138,10 @@ export function updateArticle(id: string, payload: Api.Article.UpdateParams) {
     data: payload,
     showSuccessMessage: true,
     showErrorMessage: true
+  }).then(article => {
+    // 清除相关缓存
+    clearArticleCache()
+    return article
   })
 }
 
@@ -80,7 +155,20 @@ export function deleteArticle(id: string) {
     url: `/api/articles/${id}`,
     showSuccessMessage: true,
     showErrorMessage: true
+  }).then(result => {
+    // 清除相关缓存
+    clearArticleCache()
+    return result
   })
+}
+
+// 清除文章相关缓存
+function clearArticleCache() {
+  for (const key of cache.keys()) {
+    if (key.includes('/api/articles')) {
+      cache.delete(key)
+    }
+  }
 }
 
 /**
@@ -92,17 +180,18 @@ export function uploadImage(file: File) {
   const formData = new FormData()
   formData.append('file', file)
   
-  return api.post<Api.Article.UploadResponse>({
-    url: '/api/uploads',
-    data: formData,
-    headers: {
-      'Content-Type': 'multipart/form-data'
-    },
-    showErrorMessage: true
-  })
+  return withRetry(() =>
+    api.post<Api.Article.UploadResponse>({
+      url: '/api/uploads',
+      data: formData,
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      },
+      showSuccessMessage: true,
+      showErrorMessage: true
+    })
+  )
 }
-
-// ==================== 点赞功能 ====================
 
 /**
  * 点赞文章
@@ -112,19 +201,28 @@ export function uploadImage(file: File) {
 export function likeArticle(articleId: string) {
   return api.post<Api.Article.LikeResponse>({
     url: `/api/articles/${articleId}/like`,
+    data: {},
     showErrorMessage: true
+  }).then(result => {
+    // 清除相关缓存
+    cache.delete(getCacheKey(`/api/articles/${articleId}`))
+    return result
   })
 }
 
 /**
- * 取消点赞
+ * 取消点赞文章
  * @param articleId 文章ID
  * @returns 取消点赞结果
  */
 export function unlikeArticle(articleId: string) {
-  return api.post<Api.Article.LikeResponse>({
-    url: `/api/articles/${articleId}/unlike`,
+  return api.del<Api.Article.LikeResponse>({
+    url: `/api/articles/${articleId}/like`,
     showErrorMessage: true
+  }).then(result => {
+    // 清除相关缓存
+    cache.delete(getCacheKey(`/api/articles/${articleId}`))
+    return result
   })
 }
 
@@ -135,21 +233,19 @@ export function unlikeArticle(articleId: string) {
  */
 export function getLikeStatus(articleId: string) {
   return api.get<Api.Article.LikeStatusResponse>({
-    url: `/api/articles/${articleId}/like-status`,
-    showErrorMessage: false // 静默获取，不显示错误
+    url: `/api/articles/${articleId}/like-status`
   })
 }
 
 /**
  * 批量获取文章点赞状态
  * @param articleIds 文章ID数组
- * @returns 批量点赞状态
+ * @returns 点赞状态列表
  */
 export function getBatchLikeStatus(articleIds: string[]) {
   return api.post<Api.Article.BatchLikeStatusResponse>({
     url: '/api/articles/batch-like-status',
-    data: { articleIds },
-    showErrorMessage: false
+    data: { articleIds }
   })
 }
 
@@ -159,111 +255,235 @@ export function getBatchLikeStatus(articleIds: string[]) {
  * @returns 点赞数
  */
 export function getArticleLikes(articleId: string) {
-  return api.get<Api.Article.LikeCountResponse>({
-    url: `/api/articles/${articleId}/likes`,
-    showErrorMessage: false
+  return api.get<Api.Article.LikeResponse>({
+    url: `/api/articles/${articleId}/likes`
   })
 }
 
 /**
- * 获取用户已点赞的文章列表
- * @returns 用户已点赞的文章列表
+ * 获取用户点赞的文章列表
+ * @returns 用户点赞的文章列表
  */
 export function getUserLikedArticles() {
   return api.get<Api.Article.ArticleItem[]>({
-    url: '/api/user/liked-articles',
-    showErrorMessage: false
+    url: '/api/user/liked-articles'
   })
 }
-
-// ==================== 统计功能 ====================
 
 /**
  * 增加文章浏览量
  * @param articleId 文章ID
- * @returns 浏览量结果
+ * @returns 增加浏览量结果
  */
 export function incrementViews(articleId: string) {
   return api.post<Api.Article.ViewsResponse>({
     url: `/api/articles/${articleId}/views`,
-    showErrorMessage: false // 静默操作
+    showErrorMessage: false // 浏览量统计失败不显示错误
+  }).catch(() => {
+    // 静默处理浏览量统计失败
+    return { views: 0 }
   })
 }
 
 /**
  * 获取热门文章
- * @param limit 数量限制
+ * @param limit 限制数量
  * @returns 热门文章列表
  */
 export function getPopularArticles(limit: number = 10) {
+  const cacheKey = getCacheKey('/api/articles/popular', { limit })
+  const cached = getFromCache<Api.Article.ArticleItem[]>(cacheKey)
+  
+  if (cached) {
+    return Promise.resolve(cached)
+  }
+
   return api.get<Api.Article.ArticleItem[]>({
     url: '/api/articles/popular',
-    params: { limit },
-    showErrorMessage: true
-  })
+    params: { limit }
+  }).then(articles => {
+    setCache(cacheKey, articles)
+    return articles
+  }).catch(() => []) // 降级处理
 }
 
 /**
  * 获取相关文章
- * @param articleId 当前文章ID
- * @param limit 数量限制
+ * @param articleId 文章ID
+ * @param limit 限制数量
  * @returns 相关文章列表
  */
 export function getRelatedArticles(articleId: string, limit: number = 5) {
+  const cacheKey = getCacheKey(`/api/articles/${articleId}/related`, { limit })
+  const cached = getFromCache<Api.Article.ArticleItem[]>(cacheKey)
+  
+  if (cached) {
+    return Promise.resolve(cached)
+  }
+
   return api.get<Api.Article.ArticleItem[]>({
     url: `/api/articles/${articleId}/related`,
-    params: { limit },
-    showErrorMessage: false
-  })
+    params: { limit }
+  }).then(articles => {
+    setCache(cacheKey, articles)
+    return articles
+  }).catch(() => []) // 降级处理
 }
 
-// ==================== 分类和标签 ====================
-
 /**
- * 获取所有分类
+ * 获取分类列表
  * @param params 查询参数
  * @returns 分类列表
  */
 export function getCategories(params?: Api.Article.CategorySearchParams) {
+  const cacheKey = getCacheKey('/api/categories', params)
+  const cached = getFromCache<Api.Article.CategoryItem[]>(cacheKey)
+  
+  if (cached) {
+    return Promise.resolve(cached)
+  }
+
   return api.get({ url: '/api/categories', params })
     .then(response => {
-      const data = response
+      let categories: Api.Article.CategoryItem[] = []
       
-      if (Array.isArray(data)) {
-        return data.filter((cat: any) => cat.status === 'active')
-      } else if (data && typeof data === 'object' && 'categories' in data) {
-        const categories = (data as any).categories
-        return categories.filter((cat) => cat.status === 'active')
-      } else {
-        return []
+      if (Array.isArray(response)) {
+        categories = response
+      } else if (response && typeof response === 'object' && 'categories' in response) {
+        categories = (response as any).categories
       }
+      
+      setCache(cacheKey, categories)
+      return categories
     })
-    .catch(error => {
-      console.error('前台获取分类失败:', error)
-      throw error
-    })
+    .catch(() => []) // 降级处理
 }
 
 /**
- * 根据ID获取分类详情
+ * 获取分类详情
  * @param id 分类ID
  * @returns 分类详情
  */
 export function getCategoryDetail(id: string) {
+  const cacheKey = getCacheKey(`/api/categories/${id}`)
+  const cached = getFromCache<Api.Article.CategoryItem>(cacheKey)
+  
+  if (cached) {
+    return Promise.resolve(cached)
+  }
+
   return api.get<Api.Article.CategoryItem>({
-    url: `/api/categories/${id}`,
-    showErrorMessage: true
+    url: `/api/categories/${id}`
+  }).then(category => {
+    setCache(cacheKey, category)
+    return category
   })
 }
 
 /**
  * 根据分类获取文章
  * @param categoryId 分类ID
- * @param params 其他查询参数
+ * @param params 查询参数
  * @returns 文章列表
  */
 export function getArticlesByCategory(categoryId: string, params?: Api.Article.SearchParams) {
-  return api.get({ url: `/api/articles/category/${categoryId}`, params })
+  const cacheKey = getCacheKey(`/api/categories/${categoryId}/articles`, params)
+  const cached = getFromCache<Api.Article.ArticleItem[]>(cacheKey)
+  
+  if (cached) {
+    return Promise.resolve(cached)
+  }
+
+  return api.get({ url: `/api/categories/${categoryId}/articles`, params })
+    .then(response => {
+      let articles: Api.Article.ArticleItem[] = []
+      
+      if (Array.isArray(response)) {
+        articles = response
+      } else if (response && typeof response === 'object' && 'articles' in response) {
+        articles = (response as any).articles
+      }
+      
+      setCache(cacheKey, articles)
+      return articles
+    })
+    .catch(() => []) // 降级处理
+}
+
+/**
+ * 获取标签列表
+ * @returns 标签列表
+ */
+export function getTags() {
+  const cacheKey = getCacheKey('/api/tags')
+  const cached = getFromCache<string[]>(cacheKey)
+  
+  if (cached) {
+    return Promise.resolve(cached)
+  }
+
+  return api.get<string[]>({
+    url: '/api/tags'
+  }).then(tags => {
+    setCache(cacheKey, tags)
+    return tags
+  }).catch(() => []) // 降级处理
+}
+
+/**
+ * 根据标签获取文章
+ * @param tag 标签名
+ * @param params 查询参数
+ * @returns 文章列表
+ */
+export function getArticlesByTag(tag: string, params?: Api.Article.SearchParams) {
+  const cacheKey = getCacheKey(`/api/tags/${tag}/articles`, params)
+  const cached = getFromCache<Api.Article.ArticleItem[]>(cacheKey)
+  
+  if (cached) {
+    return Promise.resolve(cached)
+  }
+
+  return api.get({ url: `/api/tags/${tag}/articles`, params })
+    .then(articles => {
+      setCache(cacheKey, articles)
+      return articles
+    })
+    .catch(() => []) // 降级处理
+}
+
+/**
+ * 搜索文章
+ * @param keyword 关键词
+ * @param params 查询参数
+ * @returns 搜索结果
+ */
+export function searchArticles(keyword: string, params?: Api.Article.SearchParams) {
+  // 搜索结果不缓存，保证实时性
+  return api.get<Api.Article.ArticleItem[]>({
+    url: '/api/articles/search',
+    params: { keyword, ...params }
+  }).catch(() => []) // 降级处理
+}
+
+/**
+ * 获取搜索建议
+ * @param keyword 关键词
+ * @returns 搜索建议
+ */
+export function getSearchSuggestions(keyword: string) {
+  return api.get<string[]>({
+    url: '/api/articles/search-suggestions',
+    params: { keyword }
+  }).catch(() => []) // 降级处理
+}
+
+export function getAllArticlesWithSignal(signal?: AbortSignal, params?: Api.Article.SearchParams) {
+  return api.get({ 
+    url: '/api/articles', 
+    params,
+    signal // 支持取消请求
+  })
     .then(response => {
       const data = response
       
@@ -277,85 +497,21 @@ export function getArticlesByCategory(categoryId: string, params?: Api.Article.S
       }
     })
     .catch(error => {
-      console.error(`前台获取分类${categoryId}文章失败:`, error)
-      throw error
-    })
-}
-
-/**
- * 获取所有标签
- * @returns 标签列表
- */
-export function getTags() {
-  return api.get<Api.Article.TagItem[]>({
-    url: '/api/tags',
-    showErrorMessage: true
-  })
-}
-
-
-
-/**
- * 根据标签获取文章
- * @param tag 标签名称
- * @param params 其他查询参数
- * @returns 文章列表
- */
-export function getArticlesByTag(tag: string, params?: Api.Article.SearchParams) {
-  return api.get<Api.Article.ArticleItem[]>({
-    url: '/api/articles',
-    params: { ...params, tag },
-    showErrorMessage: true
-  })
-}
-
-// ==================== 搜索功能 ====================
-
-/**
- * 搜索文章
- * @param keyword 搜索关键词
- * @param params 其他查询参数
- * @returns 搜索结果
- */
-export function searchArticles(keyword: string, params?: Api.Article.SearchParams) {
-  return api.get<Api.Article.SearchResponse>({
-    url: '/api/articles/search',
-    params: { ...params, keyword },
-    showErrorMessage: true
-  })
-}
-
-/**
- * 获取搜索建议
- * @param keyword 关键词
- * @returns 搜索建议列表
- */
-export function getSearchSuggestions(keyword: string) {
-  return api.get<Api.Article.SuggestionItem[]>({
-    url: '/api/articles/search/suggestions',
-    params: { keyword },
-    showErrorMessage: false
-  })
-}
-
-export function getAllArticlesWithSignal(signal?: AbortSignal, params?: Api.Article.SearchParams) {
-  return api.get({ url: '/api/articles', params, signal })
-    .then(response => {
-      const data = response
-      
-      if (Array.isArray(data)) {
-        return data
-      } else if (data && typeof data === 'object' && 'articles' in data) {
-        return (data as any).articles
-      } else {
+      if (error.name === 'AbortError') {
+        console.log('请求已取消')
         return []
       }
-    })
-    .catch(error => {
-      if (error.name === 'AbortError') {
-        throw error
-      }
       console.error('前台获取文章失败:', error)
-      throw error
+      return [] // 降级处理
     })
 }
+
+// 清理过期缓存
+setInterval(() => {
+  const now = Date.now()
+  for (const [key, value] of cache.entries()) {
+    if (now - value.timestamp > CACHE_DURATION) {
+      cache.delete(key)
+    }
+  }
+}, CACHE_DURATION)

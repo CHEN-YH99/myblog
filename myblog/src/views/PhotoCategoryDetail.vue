@@ -13,7 +13,7 @@
     </div>
 
     <!-- 分类信息（仅在分类可展示时显示） -->
-    <div v-if="isCategoryActive" class="category-info">
+    <div v-if="isCategoryActive && currentCategory" class="category-info">
       <div class="category-header">
         <h2>{{ currentCategory.title }}</h2>
         <p class="description">{{ currentCategory.description }}</p>

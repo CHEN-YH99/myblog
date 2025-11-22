@@ -1,45 +1,48 @@
 <template>
-  <!-- 头部大图 -->
-  <div class="page_header">
-    <div class="large-img">
-      <img src="../assets/images/kahs.jpeg" alt="" />
-      <div class="inner-header flex">
-        <h1 class="animate__animated animate__backInDown">相册</h1>
+  <div class="photo-album-wrapper">
+    <!-- 头部大图 -->
+    <div class="page_header">
+      <div class="large-img">
+        <img src="../assets/images/kahs.jpeg" alt="" />
+        <div class="inner-header flex">
+          <h1 class="animate__animated animate__backInDown">相册</h1>
+        </div>
+      </div>
+      <!-- 海水波浪 -->
+      <WaveContainer />
+    </div>
+     <!-- 内容 -->
+    <!-- 使用 visiblePhotoCategories：已过滤出可展示分类 -->
+    <div v-if="visiblePhotoCategories.length" class="timeline_content animate__animated animate__fadeInUp">
+      <!-- 标签栏 -->
+      <div class= "tags-info">
+        <section class="tag-cloud">
+          <ul>
+            <li v-for="(item, index) in visiblePhotoCategories" :key="item._id">
+              <router-link :to="'/photo-category/' + item._id" class="photo-link">
+                <div class="image-container">
+                  <img :src="item.coverImage" :alt="item.title" />
+                  <div class="overlay">
+                    <span class="title">{{ item.title }}</span>
+                    <span class="content">{{ item.description }}</span>
+                  </div>
+                </div>
+              </router-link>
+            </li>
+          </ul>
+        </section>
       </div>
     </div>
-    <!-- 海水波浪 -->
-    <WaveContainer />
-  </div>
-   <!-- 内容 -->
-  <!-- 使用 visiblePhotoCategories：已过滤出可展示分类 -->
-  <div v-if="visiblePhotoCategories.length" class="timeline_content animate__animated animate__fadeInUp">
-    <!-- 标签栏 -->
-    <div class= "tags-info">
-      <section class="tag-cloud">
-        <ul>
-          <li v-for="(item, index) in visiblePhotoCategories" :key="item._id">
-            <router-link :to="'/photo-category/' + item._id" class="photo-link">
-              <div class="image-container">
-                <img :src="item.coverImage" :alt="item.title" />
-                <div class="overlay">
-                  <span class="title">{{ item.title }}</span>
-                  <span class="content">{{ item.description }}</span>
-                </div>
-              </div>
-            </router-link>
-          </li>
-        </ul>
-      </section>
+    <div v-else class="empty">
+      <el-empty description="暂无相册分类" :image-size="200" />
     </div>
+    <Footer />
   </div>
-  <div v-else class="empty">
-    <el-empty description="暂无相册分类" :image-size="200" />
-  </div>
-  <Footer />
 </template>
 
 <script setup lang="ts">
 import { onMounted, computed } from 'vue'
+import { ElMessage } from 'element-plus'
 import { useArticles } from '@/composables/useArticles' // 引入获取到文章列表数据文件
 import { usePhotoCategories } from '@/composables/usePhotoCategories' // 引入图片分类数据文件
 import WaveContainer from '@/components/WaveContainer.vue'
@@ -63,8 +66,15 @@ const visiblePhotoCategories = computed(() => photoCategories.value.filter(isPho
 
 // 组件挂载时初始化数据
 onMounted(async () => {
-  await initArticles()
-  await initPhotoCategories()
+  console.log('PhotoAlbum.vue - 组件挂载，开始初始化数据')
+  try {
+    // 不强制刷新，使用缓存策略
+    await initPhotoCategories()
+    console.log('PhotoAlbum.vue - 相册分类初始化完成')
+  } catch (err) {
+    console.error('PhotoAlbum.vue - 初始化数据失败:', err)
+    ElMessage.error('初始化数据失败，请刷新页面重试')
+  }
 })
 
 // 组件卸载时清理

@@ -1,17 +1,38 @@
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useArticlesStore } from '@/stores/getarticles'
 import { useUserStore } from '@/stores/user'
 import { ElMessage } from 'element-plus'
-import { nanoid } from 'nanoid' // 或使用其他 ID 生成器
+import { nanoid } from 'nanoid'
+import { debounce } from '@/utils/performance'
+
+// 类型定义
+interface PaginationState {
+  currentPage: number
+  pageSize: number
+}
+
+interface ArticleItem {
+  _id: string
+  title: string
+}
+
+interface UseArticlesOptions {
+  routeName?: string
+  autoInit?: boolean
+  defaultPageSize?: number
+}
 
 /**
  * 文章相关的组合式函数
  * 用于管理文章列表的加载、分页、状态等逻辑
  */
-export function useArticles(routeName?: string) {
-  const store = useArticlesStore() // 获取文章状态管理实例
-  const componentId = nanoid() // 生成唯一组件 ID
+export function useArticles(options: UseArticlesOptions = {}) {
+  const { routeName, autoInit = true, defaultPageSize = 5 } = options
+  
+  const store = useArticlesStore()
+  const userStore = useUserStore()
+  const componentId = nanoid()
   const router = useRouter()
   const route = useRoute()
   
@@ -19,30 +40,38 @@ export function useArticles(routeName?: string) {
   const routeKey = routeName ?? (route.name != null ? String(route.name) : undefined)
   const storageKey = `pagination_${routeKey || 'default'}`
   
-  // 从localStorage恢复分页状态
-  const getSavedPagination = () => {
-    try {
-      const saved = localStorage.getItem(storageKey)
-      return saved ? JSON.parse(saved) : { currentPage: 1, pageSize: 5 }
-    } catch {
-      return { currentPage: 1, pageSize: 5 }
+  // 分页状态管理
+  const createPaginationManager = () => {
+    const getSavedPagination = (): PaginationState => {
+      try {
+        const saved = localStorage.getItem(storageKey)
+        return saved ? JSON.parse(saved) : { currentPage: 1, pageSize: defaultPageSize }
+      } catch (error) {
+        console.warn('获取分页状态失败:', error)
+        return { currentPage: 1, pageSize: defaultPageSize }
+      }
     }
+    
+    const savePagination = debounce((page: number, size: number) => {
+      try {
+        localStorage.setItem(storageKey, JSON.stringify({ currentPage: page, pageSize: size }))
+      } catch (error) {
+        console.warn('保存分页状态失败:', error)
+      }
+    }, 300)
+    
+    return { getSavedPagination, savePagination }
   }
   
-  // 保存分页状态到localStorage
-  const savePagination = (page: number, size: number) => {
-    try {
-      localStorage.setItem(storageKey, JSON.stringify({ currentPage: page, pageSize: size }))
-    } catch {
-      // 忽略存储错误
-    }
-  }
-  
+  const { getSavedPagination, savePagination } = createPaginationManager()
   const savedPagination = getSavedPagination()
   
-  // 分页状态
+  // 响应式状态
   const currentPage = ref(savedPagination.currentPage)
   const pageSize = ref(savedPagination.pageSize)
+  const isInitialized = ref(false)
+  const retryCount = ref(0)
+  const maxRetries = 3
   
   // 计算属性
   const articles = computed(() => store.articles)
@@ -51,20 +80,41 @@ export function useArticles(routeName?: string) {
   const total = computed(() => store.articlesCount)
   const tagslist = computed(() => store.tagslist)
   
-  const pagedArticles = computed(() => 
-    store.getPagedArticles(currentPage.value, pageSize.value)
+  const pagedArticles = computed(() => {
+    const start = (currentPage.value - 1) * pageSize.value
+    const end = start + pageSize.value
+    return articles.value.slice(start, end)
+  })
+  
+  const hasNextPage = computed(() => 
+    currentPage.value * pageSize.value < total.value
   )
   
-  // 监听分页变化并保存状态
-  const watchPagination = () => {
-    // 监听currentPage变化
+  const hasPrevPage = computed(() => 
+    currentPage.value > 1
+  )
+  
+  const totalPages = computed(() => 
+    Math.ceil(total.value / pageSize.value)
+  )
+  
+  // 分页监听器
+  const setupPaginationWatcher = () => {
     const stopWatchPage = watch(currentPage, (newPage) => {
-      savePagination(newPage, pageSize.value)
+      if (isInitialized.value) {
+        savePagination(newPage, pageSize.value)
+      }
     })
     
-    // 监听pageSize变化
     const stopWatchSize = watch(pageSize, (newSize) => {
-      savePagination(currentPage.value, newSize)
+      if (isInitialized.value) {
+        // 重新计算当前页，确保不超出范围
+        const newTotalPages = Math.ceil(total.value / newSize)
+        if (currentPage.value > newTotalPages) {
+          currentPage.value = Math.max(1, newTotalPages)
+        }
+        savePagination(currentPage.value, newSize)
+      }
     })
     
     return () => {
@@ -73,60 +123,161 @@ export function useArticles(routeName?: string) {
     }
   }
   
-  // 跳转到文章详情页
-  const goToArticle = (article: { _id: string; title: string }) => {
-    // 检查登录状态
-    const userStore = useUserStore()
-    if (!userStore.isLoggedIn) {
-      ElMessage.warning('请先登录后再查看文章详情')
-      router.push({
-        path: '/login',
-        query: { redirect: `/article/${article._id}` }
-      })
-      return
+  // 导航相关
+  const createNavigationHandler = () => {
+    const checkLoginStatus = (): boolean => {
+      if (!userStore.isLoggedIn) {
+        ElMessage.warning('请先登录后再查看文章详情')
+        return false
+      }
+      return true
     }
     
-    // 保存当前分页状态
-    savePagination(currentPage.value, pageSize.value)
-    // 跳转到文章详情页
-    router.push(`/article/${article._id}`)
+    const goToArticle = (article: ArticleItem) => {
+      try {
+        if (!checkLoginStatus()) {
+          router.push({
+            path: '/login',
+            query: { redirect: `/article/${article._id}` }
+          })
+          return
+        }
+        
+        // 保存当前分页状态
+        savePagination(currentPage.value, pageSize.value)
+        // 跳转到文章详情页
+        router.push(`/article/${article._id}`)
+      } catch (error) {
+        console.error('跳转文章详情失败:', error)
+        ElMessage.error('跳转失败，请重试')
+      }
+    }
+    
+    const goToPage = (page: number) => {
+      try {
+        if (page < 1 || page > totalPages.value) {
+          ElMessage.warning('页码超出范围')
+          return
+        }
+        currentPage.value = page
+      } catch (error) {
+        console.error('跳转页面失败:', error)
+        ElMessage.error('跳转失败，请重试')
+      }
+    }
+    
+    const nextPage = () => {
+      if (hasNextPage.value) {
+        goToPage(currentPage.value + 1)
+      }
+    }
+    
+    const prevPage = () => {
+      if (hasPrevPage.value) {
+        goToPage(currentPage.value - 1)
+      }
+    }
+    
+    return { goToArticle, goToPage, nextPage, prevPage }
   }
   
-  // 初始化数据
-  const initArticles = async (forceRefresh = false) => {
+  const { goToArticle, goToPage, nextPage, prevPage } = createNavigationHandler()
+  
+  // 数据加载相关
+  const createDataLoader = () => {
+    const initArticles = async (forceRefresh = false) => {
+      try {
+        store.subscribe(componentId)
+        await store.fetchArticles(forceRefresh)
+        isInitialized.value = true
+        retryCount.value = 0
+      } catch (error) {
+        console.error('初始化文章数据失败:', error)
+        retryCount.value++
+        
+        if (retryCount.value <= maxRetries) {
+          ElMessage.warning(`加载失败，正在重试 (${retryCount.value}/${maxRetries})`)
+          setTimeout(() => initArticles(forceRefresh), 1000 * retryCount.value)
+        } else {
+          ElMessage.error('加载文章数据失败，请刷新页面重试')
+        }
+      }
+    }
+    
+    const refreshArticles = async () => {
+      try {
+        await store.fetchArticles(true)
+        ElMessage.success('刷新成功')
+      } catch (error) {
+        console.error('刷新文章数据失败:', error)
+        ElMessage.error('刷新失败，请重试')
+      }
+    }
+    
+    const retryLoad = () => {
+      retryCount.value = 0
+      initArticles(true)
+    }
+    
+    return { initArticles, refreshArticles, retryLoad }
+  }
+  
+  const { initArticles, refreshArticles, retryLoad } = createDataLoader()
+  
+  // 生命周期管理
+  const cleanup = () => {
     try {
-      store.subscribe(componentId)
-      await store.fetchArticles(forceRefresh)
-      // 不重置分页，保持用户的分页状态
+      store.unsubscribe(componentId)
     } catch (error) {
-      console.error('初始化文章数据失败:', error)
+      console.warn('清理订阅失败:', error)
     }
   }
   
-  // 组件卸载清理
-  const cleanup = () => {
-    store.unsubscribe(componentId)
+  // 自动初始化
+  if (autoInit) {
+    initArticles()
   }
   
+  // 设置分页监听器
+  const stopPaginationWatcher = setupPaginationWatcher()
+  
+  // 组件卸载时清理
+  onUnmounted(() => {
+    cleanup()
+    stopPaginationWatcher()
+  })
+  
   return {
-    // 数据
+    // 数据状态
     articles,
     loading,
     error,
     total,
     tagslist,
     pagedArticles,
+    isInitialized,
     
-    // 分页
+    // 分页状态
     currentPage,
     pageSize,
+    hasNextPage,
+    hasPrevPage,
+    totalPages,
     
-    // 方法
+    // 数据操作方法
     initArticles,
+    refreshArticles,
+    retryLoad,
     cleanup,
-    refreshArticles: () => store.fetchArticles(true),
+    
+    // 导航方法
     goToArticle,
-    watchPagination
+    goToPage,
+    nextPage,
+    prevPage,
+    
+    // 工具方法
+    watchPagination: setupPaginationWatcher
   }
 }
 

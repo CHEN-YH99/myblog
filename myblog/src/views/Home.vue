@@ -14,7 +14,29 @@
       <!-- 回到顶部控件 -->
       <el-backtop class="backtop animate__animated animate__slideInUp" target="body" />
 
-      <el-row class="animate__animated animate__fadeInUp">
+      <!-- 加载状态 -->
+      <div v-if="loading" class="loading-container">
+        <el-skeleton :rows="5" animated />
+        <el-skeleton :rows="5" animated />
+        <el-skeleton :rows="5" animated />
+      </div>
+
+      <!-- 错误状态 -->
+      <div v-else-if="error" class="error-container">
+        <el-alert
+          title="加载失败"
+          :description="error"
+          type="error"
+          show-icon
+          :closable="false"
+        />
+        <el-button type="primary" @click="retryLoadData" class="retry-btn">
+          重新加载
+        </el-button>
+      </div>
+
+      <!-- 正常内容 -->
+      <el-row v-else class="animate__animated animate__fadeInUp">
         <div v-if="articleslist.length" class="content-list flex ">
           <!-- 左侧文章列表 -->
           <el-col :span="18">
@@ -30,11 +52,29 @@
               style="cursor: pointer;"
             >
               <div class="card-image">
-                <el-image style="width: 100%; height: 100%;" :src="article.image || url" :fit="fit" />
+                <el-image 
+                  style="width: 100%; height: 100%;" 
+                  :src="article.image || url" 
+                  :fit="fit"
+                  lazy
+                  :loading="'lazy'"
+                  @error="handleImageError"
+                >
+                  <template #placeholder>
+                    <div class="image-placeholder">
+                      <el-icon class="is-loading"><Loading /></el-icon>
+                    </div>
+                  </template>
+                  <template #error>
+                    <div class="image-error">
+                      <el-icon><Picture /></el-icon>
+                    </div>
+                  </template>
+                </el-image>
               </div>
 
               <div class="card-content">
-                <h3 class="article-title">{{ article.title }}</h3>
+                <h3 class="article-title">{{ article.title || '无标题' }}</h3>
 
                 <div class="article-meta">
                   <span v-if="article.isTop" class="meta-item">📌 置顶</span>
@@ -43,7 +83,7 @@
                 </div>
 
                 <div class="article-tags">
-                  <template v-if="Array.isArray(article.tags) && article.tags.length">
+                  <template v-if="article.tags && Array.isArray(article.tags) && article.tags.length">
                     <span class="tag" v-for="(tag, i) in article.tags" :key="i">{{ tag }}</span>
                   </template>
                   <template v-else>
@@ -53,11 +93,6 @@
                     <span class="tag">宝塔面板</span>
                   </template>
                 </div>
-
-                <!-- <div class="article-stats">
-                  <span>👍 {{ article.likes || 0 }}</span>
-                  <span>👁 {{ article.views || 0 }}</span>
-                </div> -->
 
                 <div class="article-stats">
                   <span 
@@ -74,31 +109,36 @@
                     <el-icon v-else class="loading-icon">
                       <Loading />
                     </el-icon>
-                    {{ article.likes || 0 }}
+                    {{ formatNumber(article.likes || 0) }}
                   </span>
                   <span>👁 {{ formatNumber(article.views || 0) }}</span>
                 </div>
 
-                <p class="article-excerpt">{{ (article.excerpt || '').length > 30 ? (article.excerpt || '').substring(0, 30) + '...' : (article.excerpt || '') }}</p>
+                <p class="article-excerpt">
+                  {{ truncateText(article.excerpt || '', 100) }}
+                </p>
               </div>
             </div>
             <!-- 分页控件：双向绑定当前页与每页条数 -->
             <el-pagination
+              v-if="total > pageSize"
               size="small"
               v-model:current-page="currentPage"
               v-model:page-size="pageSize"
-              hide-on-single-page:true
+              :hide-on-single-page="true"
               background
-              layout="prev, pager, next "
+              layout="prev, pager, next"
               :total="total"
-              class=" mt-4 "
+              class="mt-4"
+              @current-change="handlePageChange"
+              @size-change="handleSizeChange"
             />
           </el-col>
           <!-- 右侧个人信息栏 -->
           <el-col :span="6">
             <!-- 右侧个人信息栏 -->
             <div class="about-me">
-              <el-image :src="url" :fit="fit"/>
+              <el-image :src="url" :fit="fit" lazy />
               <el-avatar class="avatar" shape="circle" size="large" :src="url" />
               <h5>小灰的个人博客</h5>
               <div class="pub about-me-content">
@@ -106,17 +146,17 @@
               </div>
               <div class="pub my-data">
                 <div class="pub-item">
-                  <p>📖 文章{{ articleslist.length }}</p>
+                  <p>📖 文章{{ formatNumber(articleslist.length) }}</p>
                 </div>
                 <div class="pub-item">
-                  <p>👍 点赞量{{ totalLikes }}</p>
+                  <p>👍 点赞量{{ formatNumber(totalLikes) }}</p>
                 </div>
                 <div class="pub-item">
                   <p>🎉 阅读量{{ formatNumber(totalViews) }}</p>
                 </div>
               </div>
               <div class="my-tags">
-                <button class="custom-gitee-btn">
+                <button class="custom-gitee-btn" @click="openGitee">
                   <el-icon class="icon" size="18">
                     <svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
                       <path fill="currentColor" d="M512 1024C229.222 1024 0 794.778 0 512S229.222 0 512 0s512 229.222 512 512-229.222 512-512 512z m259.149-568.883h-290.74a25.293 25.293 0 0 0-25.292 25.293l-0.026 63.206c0 13.952 11.315 25.293 25.267 25.293h177.024c13.978 0 25.293 11.315 25.293 25.267v12.646a75.853 75.853 0 0 1-75.853 75.853h-240.23a25.293 25.293 0 0 1-25.267-25.293V417.203a75.853 75.853 0 0 1 75.827-75.853h353.946a25.293 25.293 0 0 0 25.267-25.292l0.077-63.207a25.293 25.293 0 0 0-25.268-25.293H417.152a189.62 189.62 0 0 0-189.62 189.645V771.15c0 13.977 11.316 25.293 25.294 25.293h372.94a170.65 170.65 0 0 0 170.65-170.65V480.384a25.293 25.293 0 0 0-25.293-25.267z"/>
@@ -126,13 +166,13 @@
                 </button>
               </div>
               <div class="my-links">
-                <img src="../assets/images/csdn.svg"/>
-                <img src="../assets/images/github.svg"/>
-                <img src="../assets/images/哔哩哔哩.svg"/>
+                <img src="../assets/images/csdn.svg" alt="CSDN" @click="openLink('csdn')" />
+                <img src="../assets/images/github.svg" alt="GitHub" @click="openLink('github')" />
+                <img src="../assets/images/哔哩哔哩.svg" alt="哔哩哔哩" @click="openLink('bilibili')" />
               </div>
             </div>
             <!-- 公告栏 -->
-            <div class="about-me article-info ">
+            <div class="about-me article-info">
               <div class="tag-cloud">
                 <div class="tag-header"> 📢公告 </div>
                 <div class="tags-content">
@@ -153,7 +193,7 @@
                     :key="tag"
                     class="tag"
                     :style="{ color: colorFor(tag) }"
-                
+                    @click="searchByTag(tag)"
                   >
                     {{ tag }}
                   </a>
@@ -165,16 +205,19 @@
               <div class="tag-cloud"> 
                 <div class="tag-header"> 📒网站咨询 </div>
                 <div class="tags-content">
-                  <p>文章数目: {{ articleslist.length }}</p>
+                  <p>文章数目: {{ formatNumber(articleslist.length) }}</p>
                   <p>运行时间: {{ formatTime(Date.now() - startTime) }}</p>
-                  <p>用户: 34</p>
+                  <p>用户: {{ formatNumber(userStats.totalUsers) }}</p>
+                  <p>今日访问: {{ formatNumber(todayVisits) }}</p>
                 </div>
               </div>
             </div>
           </el-col>
         </div>	
         <div v-else class="empty">
-           <el-empty description="暂无文章" :image-size="200" />
+           <el-empty description="暂无文章" :image-size="200">
+             <el-button type="primary" @click="retryLoadData">刷新</el-button>
+           </el-empty>
         </div>
       </el-row>
     </div>
@@ -184,18 +227,22 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
-import { ArrowDownBold, Loading } from '@element-plus/icons-vue'
+import { ArrowDownBold, Loading, Picture } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
-import { useArticles } from '@/composables/useArticles' // 引入获取到文章列表数据文件
-import { useLikes } from '@/composables/useLikes'       // 引入获取到点赞数据文件
-import { formatNumber } from '@/utils/format'         // 引入数字格式化函数
-import { useUserStore } from '@/stores/user'          // 引入用户状态管理
-import { useArticlesStore } from '@/stores/getarticles' // 引入文章状态管理
+import { ElMessage } from 'element-plus'
+import { useArticles } from '@/composables/useArticles'
+import { useLikes } from '@/composables/useLikes'
+import { useUserStore } from '@/stores/user'
+import { useArticlesStore } from '@/stores/getarticles'
+import { formatNumber } from '@/utils/format'
+import { debounce, throttle, lazyLoadImage, performanceMonitor, timerManager } from '@/utils/performance'
+import { handleError } from '@/utils/error-handler'
+import { getUserStats } from '@/api/user'
 
 import WaveContainer from '@/components/WaveContainer.vue'
 import Footer from '@/components/Footer.vue'
 import '@/assets/style/index.scss'
-import bgImage from '@/assets/images/shunsea1.jpg'  // 图片地址 - 正确的静态资源引用方式
+import bgImage from '@/assets/images/shunsea1.jpg'
 
 // 路由
 const router = useRouter()
@@ -204,24 +251,58 @@ const router = useRouter()
 const userStore = useUserStore()
 const articlesStore = useArticlesStore()
 
-// 使用 composable
+// 性能优化相关
+const imageObserver = ref<IntersectionObserver | null>(null)
+const loadedImages = ref(new Set<string>())
+
+// 使用优化后的 composable
 const {
   articles: articleslist,
-  // loading,
-  // error,
+  loading,
+  error,
   total,
-  // tagslist,
   pagedArticles,
   currentPage,
   pageSize,
+  hasNextPage,
+  hasPrevPage,
+  totalPages,
   initArticles,
+  refreshArticles,
   cleanup,
   goToArticle,
+  goToPage,
+  nextPage,
+  prevPage,
   watchPagination
-} = useArticles('Home')
+} = useArticles({ 
+  routeName: 'Home',
+  autoInit: true,
+  defaultPageSize: 10
+})
 
 // 点赞功能
-const { isLiked, isLiking, handleLike } = useLikes()
+const { 
+  isLiked, 
+  isLiking, 
+  handleLike,
+  likeStats
+} = useLikes({
+  debounceDelay: 500,
+  cooldownTime: 1000
+})
+
+// 用户统计数据
+const userStats = ref({
+  totalUsers: 0,
+  activeUsers: 0,
+  newUsersToday: 0,
+  newUsersThisMonth: 0
+})
+
+// 今日访问量（模拟数据）
+const todayVisits = ref(0)
+
 // 计算总点赞数
 const totalLikes = computed(() => {
   return articleslist.value.reduce((total, article) => total + (article.likes || 0), 0)
@@ -231,7 +312,6 @@ const totalLikes = computed(() => {
 const totalViews = computed(() => {
   return articleslist.value.reduce((total, article) => total + (article.views || 0), 0)
 })
-
 
 // 获取网站运行时间
 const startTime: number = new Date('2025-06-03').getTime(); 
@@ -248,65 +328,179 @@ const formatTime = (ms: number): string => {
 const formatDate = (dateString: string | Date | undefined): string => {
   if (!dateString) return '暂无日期'
   
-  const date = new Date(dateString)
-  if (isNaN(date.getTime())) return '无效日期'
-  
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  const hours = String(date.getHours()).padStart(2, '0')
-  const minutes = String(date.getMinutes()).padStart(2, '0')
-  const seconds = String(date.getSeconds()).padStart(2, '0')
-  
-  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+  try {
+    const date = new Date(dateString)
+    if (isNaN(date.getTime())) return '无效日期'
+    
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    const hours = String(date.getHours()).padStart(2, '0')
+    const minutes = String(date.getMinutes()).padStart(2, '0')
+    const seconds = String(date.getSeconds()).padStart(2, '0')
+    
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+  } catch (error) {
+    console.error('日期格式化错误:', error)
+    return '日期格式错误'
+  }
+}
+
+// 文本截断函数
+const truncateText = (text: string, maxLength: number): string => {
+  if (!text) return ''
+  if (text.length <= maxLength) return text
+  return text.substring(0, maxLength) + '...'
 }
 
 // 点击按钮下滑
-const scrollDown =() => {
-  document.body.scrollTo({ 
-    top:  document.documentElement.scrollTop + window.innerHeight, 
-    behavior: 'smooth'
+const scrollDown = () => {
+  try {
+    const target = document.body || document.documentElement
+    target.scrollTo({ 
+      top: target.scrollTop + window.innerHeight, 
+      behavior: 'smooth'
+    })
+  } catch (error) {
+    console.error('滚动失败:', error)
+    // 降级处理
+    window.scrollBy(0, window.innerHeight)
+  }
+}
+
+
+
+// 处理图片加载错误
+const handleImageError = (event: Event) => {
+  console.warn('图片加载失败:', event)
+  // 可以在这里设置默认图片
+}
+
+// 分页变化处理
+const handlePageChange = async (page: number) => {
+  try {
+    currentPage.value = page
+    await nextTick()
+    scrollToTop()
+  } catch (error) {
+    console.error('分页切换失败:', error)
+  }
+}
+
+// 每页大小变化处理
+const handleSizeChange = async (size: number) => {
+  try {
+    pageSize.value = size
+    currentPage.value = 1 // 重置到第一页
+    await nextTick()
+    scrollToTop()
+  } catch (error) {
+    console.error('分页大小切换失败:', error)
+  }
+}
+
+// 滚动到顶部
+const scrollToTop = () => {
+  try {
+    const container = document.querySelector('.main-content') as HTMLElement | null
+    if (container) {
+      container.scrollTo({ top: 0, behavior: 'smooth' })
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+  } catch (error) {
+    console.error('滚动到顶部失败:', error)
+  }
+}
+
+// 打开外部链接
+const openGitee = () => {
+  window.open('https://gitee.com/', '_blank')
+}
+
+const openLink = (type: string) => {
+  const links = {
+    csdn: 'https://blog.csdn.net/',
+    github: 'https://github.com/',
+    bilibili: 'https://www.bilibili.com/'
+  }
+  
+  const url = links[type as keyof typeof links]
+  if (url) {
+    window.open(url, '_blank')
+  }
+}
+
+// 根据标签搜索
+const searchByTag = (tag: string) => {
+  router.push({
+    path: '/frontend',
+    query: { tag }
   })
 }
 
-// goToArticle 方法现在由 useArticles 提供
+// 加载用户统计数据
+const loadUserStats = async () => {
+  try {
+    const stats = await getUserStats()
+    userStats.value = stats
+    
+    // 模拟今日访问量
+    todayVisits.value = Math.floor(Math.random() * 1000) + 100
+  } catch (error) {
+    console.error('加载用户统计失败:', error)
+    // 使用默认值，不影响页面显示
+  }
+}
 
 // 彩色板标签云
 const tagslist = computed(() => {
-  // 收集所有标签并去重
-  const allTags = Array.from(
-    new Set(
-      articleslist.value
-        .flatMap(article => article.tags)
-        .filter((tag): tag is string => tag !== undefined)
+  try {
+    // 收集所有标签并去重
+    const allTags = Array.from(
+      new Set(
+        articleslist.value
+          .flatMap(article => article.tags || [])
+          .filter((tag): tag is string => tag !== undefined && tag !== null && tag.trim() !== '')
+      )
     )
-  )
-  
-  // 随机选择20个标签
-  return [...allTags]
-    .sort(() => Math.random() - 0.5)
-    .slice(0, 20)
+    
+    // 随机选择20个标签
+    return [...allTags]
+      .sort(() => Math.random() - 0.5)
+      .slice(0, 20)
+  } catch (error) {
+    console.error('生成标签列表失败:', error)
+    return []
+  }
 })
 
 // 稳定配色：根据标签文本 -> HSL 颜色（同一标签始终同色）
-const colorFor=(str:string)=> {
-  let hash = 0
-  for (let i = 0; i < str.length; i++) {
-    hash = (hash * 31 + str.charCodeAt(i)) >>> 0
+const colorFor = (str: string) => {
+  try {
+    if (!str) return '#666'
+    
+    let hash = 0
+    for (let i = 0; i < str.length; i++) {
+      hash = (hash * 31 + str.charCodeAt(i)) >>> 0
+    }
+    const hue = hash % 360          // 色相 0-359
+    const sat = 72                  // 饱和度，深色背景下略高更鲜明
+    const light = 68                // 明度，注意和背景对比度
+    return `hsl(${hue}deg, ${sat}%, ${light}%)`
+  } catch (error) {
+    console.error('生成颜色失败:', error)
+    return '#666'
   }
-  const hue = hash % 360          // 色相 0-359
-  const sat = 72                  // 饱和度，深色背景下略高更鲜明
-  const light = 68                // 明度，注意和背景对比度
-  return `hsl(${hue}deg, ${sat}%, ${light}%)`
 }
 
+// 监听分页变化
 watch([currentPage, pageSize], async () => {
-  await nextTick()
-  const container = document.querySelector('.main-content') as HTMLElement | null
-  if (container) {
-    container.scrollTo({ top: 0, behavior: 'smooth' })
-  } else {
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+  try {
+    await nextTick()
+    scrollToTop()
+  } catch (error) {
+    console.error('分页监听失败:', error)
   }
 })
 
@@ -314,34 +508,166 @@ watch([currentPage, pageSize], async () => {
 let stopWatchingPagination: (() => void) | null = null
 
 onMounted(async () => {
-  await initArticles()
-  // 启用分页状态监听
-  stopWatchingPagination = watchPagination()
+  try {
+    // 先加载文章数据
+    await initArticles()
+    
+    // 如果用户已登录，在文章数据加载完成后初始化点赞状态
+    if (userStore.isLoggedIn) {
+      await articlesStore.initializeLikeStatus()
+    }
+    
+    // 并行加载用户统计数据
+    await loadUserStats()
+    
+    // 启用分页状态监听
+    stopWatchingPagination = watchPagination()
+  } catch (error) {
+    console.error('组件初始化失败:', error)
+  }
 })
 
 // 监听用户登录状态变化
 watch(() => userStore.isLoggedIn, async (isLoggedIn) => {
-  if (isLoggedIn) {
-    // 用户登录后重新初始化点赞状态
-    await articlesStore.initializeLikeStatus()
-  } else {
-    // 用户登出后重置点赞状态
-    articlesStore.resetLikeStatus()
+  try {
+    if (isLoggedIn) {
+      // 用户登录后重新初始化点赞状态
+      await articlesStore.initializeLikeStatus()
+    } else {
+      // 用户登出后重置点赞状态
+      articlesStore.resetLikeStatus()
+    }
+  } catch (error) {
+    console.error('用户状态变化处理失败:', error)
   }
 })
 
 onBeforeUnmount(() => {
-  cleanup()
-  // 清理分页监听
-  if (stopWatchingPagination) {
-    stopWatchingPagination()
+  try {
+    cleanup()
+    // 清理分页监听
+    if (stopWatchingPagination) {
+      stopWatchingPagination()
+    }
+  } catch (error) {
+    console.error('组件清理失败:', error)
   }
 })
+
+// 重新加载数据 - 重命名避免冲突
+const retryLoadData = async () => {
+  try {
+    await initArticles()
+    await loadUserStats()
+    ElMessage.success('数据加载成功')
+  } catch (error) {
+    console.error('重新加载失败:', error)
+    ElMessage.error('重新加载失败，请稍后再试')
+  }
+}
+
+
 </script>
 
 <style scoped lang="scss">
 /* 样式已移动到 index.css 中 */
- .empty {
-   margin: 0 auto;
- }
+.empty {
+  margin: 0 auto;
+}
+
+.loading-container {
+  padding: 20px;
+  
+  .el-skeleton {
+    margin-bottom: 20px;
+  }
+}
+
+.error-container {
+  text-align: center;
+  padding: 40px 20px;
+  
+  .retry-btn {
+    margin-top: 20px;
+  }
+}
+
+.image-placeholder,
+.image-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  background-color: #f5f7fa;
+  color: #909399;
+}
+
+.my-links img {
+  cursor: pointer;
+  transition: transform 0.2s ease;
+  
+  &:hover {
+    transform: scale(1.1);
+  }
+}
+
+.custom-gitee-btn {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+}
+
+.tag {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    transform: scale(1.05);
+    opacity: 0.8;
+  }
+}
+
+.article-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+  }
+}
+
+.like-btn {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    transform: scale(1.05);
+  }
+  
+  &.loading {
+    pointer-events: none;
+    opacity: 0.6;
+  }
+  
+  &.liked {
+    color: #f56c6c;
+  }
+}
+
+.loading-icon {
+  animation: rotate 1s linear infinite;
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
 </style>

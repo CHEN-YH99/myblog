@@ -1,80 +1,82 @@
 <template>
-  <!-- 头部大图 -->
-  <div class="page_header">
-    <div class="large-img">
-      <img src="../assets/images/category.jpeg" alt="" />
-      <div class="inner-header flex">
-        <h1 class="animate__animated animate__backInDown">{{ $route.meta.title }}</h1>
+  <div class="category-page-wrapper">
+    <!-- 头部大图 -->
+    <div class="page_header">
+      <div class="large-img">
+        <img src="../assets/images/category.jpeg" alt="" />
+        <div class="inner-header flex">
+          <h1 class="animate__animated animate__backInDown">{{ $route.meta.title }}</h1>
+        </div>
+      </div>
+      <!-- 海水波浪 -->
+      <WaveContainer  />
+    </div>
+    
+    <!-- 加载状态 -->
+    <div v-if="loading" class="loading-container animate__animated animate__fadeInUp">
+      <el-skeleton :rows="6" animated>
+        <template #template>
+          <div class="timeline_content">
+            <div class="about-me tags-info">
+              <section class="tag-cloud">
+                <el-skeleton-item variant="h3" style="width: 200px; margin-bottom: 20px;" />
+                <div class="tags-content">
+                  <el-skeleton-item v-for="i in 6" :key="i" variant="button" style="width: 80px; height: 32px; margin: 4px;" />
+                </div>
+              </section>
+            </div>
+          </div>
+        </template>
+      </el-skeleton>
+    </div>
+    
+    <!-- 内容 -->
+    <div v-else-if="categoriesWithCount.length" class="timeline_content animate__animated animate__fadeInUp">
+      <!-- 标签栏 -->
+      <div class="about-me tags-info">
+        <section class="tag-cloud">
+          <h3 class="tag-header">分类 -- {{ categoriesWithCount.length }}</h3>
+          <div class="tags-content">
+            <a
+              v-for="category in categoriesWithCount"
+              :key="category.slug"
+              class="tag"
+              :style="{ 
+                color: category.color || colorFor(category.name),
+                borderColor: category.color || colorFor(category.name)
+              }"
+              @click="goToCategoryPage(category.slug)"
+            >
+              <span class="tag-name">{{ category.name }}</span>
+            </a>
+          </div>
+        </section>
       </div>
     </div>
-    <!-- 海水波浪 -->
-    <WaveContainer  />
-  </div>
-  
-  <!-- 加载状态 -->
-  <div v-if="loading" class="loading-container animate__animated animate__fadeInUp">
-    <el-skeleton :rows="6" animated>
-      <template #template>
-        <div class="timeline_content">
-          <div class="about-me tags-info">
-            <section class="tag-cloud">
-              <el-skeleton-item variant="h3" style="width: 200px; margin-bottom: 20px;" />
-              <div class="tags-content">
-                <el-skeleton-item v-for="i in 6" :key="i" variant="button" style="width: 80px; height: 32px; margin: 4px;" />
-              </div>
-            </section>
-          </div>
-        </div>
-      </template>
-    </el-skeleton>
-  </div>
-  
-  <!-- 内容 -->
-  <div v-else-if="categoriesWithCount.length" class="timeline_content animate__animated animate__fadeInUp">
-    <!-- 标签栏 -->
-    <div class="about-me tags-info">
-      <section class="tag-cloud">
-        <h3 class="tag-header">分类 -- {{ categoriesWithCount.length }}</h3>
-        <div class="tags-content">
-          <a
-            v-for="category in categoriesWithCount"
-            :key="category.slug"
-            class="tag"
-            :style="{ 
-              color: category.color || colorFor(category.name),
-              borderColor: category.color || colorFor(category.name)
-            }"
-            @click="goToCategoryPage(category.slug)"
-          >
-            <span class="tag-name">{{ category.name }}</span>
-          </a>
-        </div>
-      </section>
+    
+    <!-- 错误状态 -->
+    <div v-else-if="error" class="error-container animate__animated animate__fadeInUp">
+      <el-alert
+        title="加载失败"
+        :description="error"
+        type="error"
+        center
+        show-icon
+      >
+        <template #default>
+          <el-button @click="handleRefresh" type="primary">重新加载</el-button>
+        </template>
+      </el-alert>
     </div>
+    
+    <!-- 空状态 -->
+    <div v-else class="empty">
+      <el-empty description="暂无分类" :image-size="200" />
+    </div>
+    
+    <!-- 页脚 -->
+    <Footer />
   </div>
-  
-  <!-- 错误状态 -->
-  <div v-else-if="error" class="error-container animate__animated animate__fadeInUp">
-    <el-alert
-      title="加载失败"
-      :description="error"
-      type="error"
-      center
-      show-icon
-    >
-      <template #default>
-        <el-button @click="handleRefresh" type="primary">重新加载</el-button>
-      </template>
-    </el-alert>
-  </div>
-  
-  <!-- 空状态 -->
-  <div v-else class="empty">
-    <el-empty description="暂无分类" :image-size="200" />
-  </div>
-  
-  <!-- 页脚 -->
-  <Footer />
 </template>
 
 <script setup lang="ts">
@@ -160,9 +162,10 @@ onMounted(async () => {
   console.log('Category.vue - 组件挂载，开始初始化数据')
   try {
     console.log('Category.vue - 并行获取分类和文章数据')
+    // 使用 Promise.all 并行加载，但不强制刷新，让组合式函数自己决定是否需要刷新
     await Promise.all([
-      initCategories(true), // 强制刷新分类数据
-      initArticles(true)    // 强制刷新文章数据
+      initCategories(), // 不强制刷新，使用缓存策略
+      initArticles()    // 不强制刷新，使用缓存策略
     ])
     console.log('Category.vue - 数据初始化完成')
     console.log('Category.vue - 分类数量:', categories.value.length)

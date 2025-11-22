@@ -33,6 +33,7 @@ import {nanoid} from 'nanoid'
 import WaveContainer from '@/components/WaveContainer.vue';
 import Footer from '@/components/Footer.vue';
 import  '@/assets/style/common/morecategories.scss'
+import '@/assets/style/iconfont.scss'
 
 const route = useRoute()
 

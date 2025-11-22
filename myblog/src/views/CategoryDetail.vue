@@ -1,53 +1,54 @@
 <template>
-  <!-- 头部大图 -->
-  <div class="page_header">
-    <div class="large-img">
-      <img src="../assets/images/category.jpeg" alt="" />
-      <div class="inner-header flex">
-        <h1 class="animate__animated animate__backInDown">{{ categoryDisplayName }}</h1>
-      </div>
-    </div>
-    <!-- 海水波浪 -->
-    <WaveContainer />
-  </div>
-
-  <!-- 加载状态 -->
-  <div v-if="loading" class="loading-container">
-    <el-skeleton :rows="8" animated />
-  </div>
-
-  <!-- 分类文章列表 -->
-  <div v-else-if="categoryArticles.length" class="articles-container animate__animated animate__fadeInUp">
-    <div class="content-wrapper">
-      <!-- 面包屑导航 -->
-      <div class="breadcrumb-container">
-        <el-breadcrumb separator=" - " class="breadcrumb">
-          <el-breadcrumb-item :to="{ path: '/category' }">分类</el-breadcrumb-item>
-          <el-breadcrumb-item>{{ categoryDisplayName }}</el-breadcrumb-item>
-        </el-breadcrumb>
-        <div class="article-count">
-          共 {{ categoryArticles.length }} 篇文章
+  <div class="category-detail-wrapper">
+    <!-- 头部大图 -->
+    <div class="page_header">
+      <div class="large-img">
+        <img src="../assets/images/category.jpeg" alt="" />
+        <div class="inner-header flex">
+          <h1 class="animate__animated animate__backInDown">{{ categoryDisplayName }}</h1>
         </div>
       </div>
+      <!-- 海水波浪 -->
+      <WaveContainer />
+    </div>
 
-      <!-- 文章网格 -->
-      <div class="articles-grid">
-        <div 
-          v-for="article in paginatedArticles" 
-          :key="article._id"
-          class="article-card"
-          @click="goToArticleDetail(article._id)"
-        >
-          <div class="article-image-wrapper">
-            <el-image 
-              class="article-image" 
-              :src="article.image || '/default-article.jpg'" 
-              :alt="article.title"
-              fit="cover"
-            />
+    <!-- 加载状态 -->
+    <div v-if="loading" class="loading-container">
+      <el-skeleton :rows="8" animated />
+    </div>
+
+    <!-- 分类文章列表 -->
+    <div v-else-if="categoryArticles.length" class="articles-container animate__animated animate__fadeInUp">
+      <div class="content-wrapper">
+        <!-- 面包屑导航 -->
+        <div class="breadcrumb-container">
+          <el-breadcrumb separator=" - " class="breadcrumb">
+            <el-breadcrumb-item :to="{ path: '/category' }">分类</el-breadcrumb-item>
+            <el-breadcrumb-item>{{ categoryDisplayName }}</el-breadcrumb-item>
+          </el-breadcrumb>
+          <div class="article-count">
+            共 {{ categoryArticles.length }} 篇文章
           </div>
-          <div class="article-content">
-            <h3 class="article-title">{{ article.title }}</h3>
+        </div>
+
+        <!-- 文章网格 -->
+        <div class="articles-grid">
+          <div 
+            v-for="article in paginatedArticles" 
+            :key="article._id"
+            class="article-card"
+            @click="goToArticleDetail(article._id)"
+          >
+            <div class="article-image-wrapper">
+              <el-image 
+                class="article-image" 
+                :src="article.image || '/default-article.jpg'" 
+                :alt="article.title"
+                fit="cover"
+              />
+            </div>
+            <div class="article-content">
+              <h3 class="article-title">{{ article.title }}</h3>
             <div class="article-meta">
               <div class="meta-item">
                 <el-icon><Calendar /></el-icon>
@@ -111,15 +112,16 @@
     </el-alert>
   </div>
 
-  <!-- 空状态 -->
-  <div v-else class="empty-container">
-    <el-empty :description="`暂无 ${categoryDisplayName} 相关文章`" :image-size="200">
-      <el-button type="primary" @click="goBack">返回分类页面</el-button>
-    </el-empty>
-  </div>
+    <!-- 空状态 -->
+    <div v-else class="empty-container">
+      <el-empty :description="`暂无 ${categoryDisplayName} 相关文章`" :image-size="200">
+        <el-button type="primary" @click="goBack">返回分类页面</el-button>
+      </el-empty>
+    </div>
 
-  <!-- 页脚 -->
-  <Footer />
+    <!-- 页脚 -->
+    <Footer />
+  </div>
 </template>
 
 <script setup lang="ts">

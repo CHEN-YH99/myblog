@@ -1,30 +1,32 @@
 <template>
-   <!-- 头部大图 -->
-  <div class="page_header">
-    <div class="large-img">
-      <img src="../assets/images/frontdetail.jpeg" alt="" />
-      <div class="inner-header flex">
-        <h1 class="animate__animated animate__backInDown">{{ $route.meta.title }}</h1>
+  <div class="frontend-detail-wrapper">
+     <!-- 头部大图 -->
+    <div class="page_header">
+      <div class="large-img">
+        <img src="../assets/images/frontdetail.jpeg" alt="" />
+        <div class="inner-header flex">
+          <h1 class="animate__animated animate__backInDown">{{ $route.meta.title }}</h1>
+        </div>
       </div>
+      <!-- 海水波浪 -->
+      <WaveContainer  />
     </div>
-    <!-- 海水波浪 -->
-    <WaveContainer  />
+     <!-- 内容 -->
+    <div class="end_content animate__animated animate__fadeInUp">
+     <ul class="end-item" >
+       <li v-for="item in state" :key="item.id" @click="goToWebsite(item.url)" >
+         <!-- <el-image class="end-image" style="width: 60px; height: 60px" /> -->
+         <i class="iconfont end-image" :class="item.image" style="font-size: 40px;"></i>
+         <div class="end-description">
+           <h4>{{ item.title }}</h4>
+           <p>{{ item.content }}</p>
+         </div>
+       </li>
+     </ul>
+    </div>
+    <!-- 页脚 -->
+    <Footer />
   </div>
-   <!-- 内容 -->
-  <div class="end_content animate__animated animate__fadeInUp">
-   <ul class="end-item" >
-     <li v-for="item in state" :key="item.id" @click="goToWebsite(item.url)" >
-       <!-- <el-image class="end-image" style="width: 60px; height: 60px" /> -->
-       <i class="iconfont end-image" :class="item.image" style="font-size: 40px;"></i>
-       <div class="end-description">
-         <h4>{{ item.title }}</h4>
-         <p>{{ item.content }}</p>
-       </div>
-     </li>
-   </ul>
-  </div>
-  <!-- 页脚 -->
-  <Footer />
 </template>
 
 <script setup lang="ts">
