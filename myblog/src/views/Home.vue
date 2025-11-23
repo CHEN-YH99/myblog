@@ -84,7 +84,14 @@
 
                 <div class="article-tags">
                   <template v-if="article.tags && Array.isArray(article.tags) && article.tags.length">
-                    <span class="tag" v-for="(tag, i) in article.tags" :key="i">{{ tag }}</span>
+                    <span
+                      class="tag"
+                      v-for="(tag, i) in article.tags"
+                      :key="i"
+                      :style="{ backgroundColor: colorFor(tag), color: '#fff' }"
+                    >
+                      {{ tag }}
+                    </span>
                   </template>
                   <template v-else>
                     <span class="tag">博客部署</span>
@@ -192,7 +199,7 @@
                     v-for="tag in tagslist"
                     :key="tag"
                     class="tag"
-                    :style="{ color: colorFor(tag) }"
+                    :style="`background-color: ${colorFor(tag)} !important; color: #fff; padding: 4px 8px; border-radius: 4px;`"
                     @click="searchByTag(tag)"
                   >
                     {{ tag }}
@@ -435,11 +442,13 @@ const openLink = (type: string) => {
   }
 }
 
-// 根据标签搜索
+// 根据标签搜索：跳转到分类标签下的文章列表页
 const searchByTag = (tag: string) => {
+  const t = (tag || '').trim()
+  if (!t) return
   router.push({
-    path: '/frontend',
-    query: { tag }
+    name: 'CategoryTag',
+    params: { tag: t }
   })
 }
 

@@ -641,6 +641,42 @@ onMounted(async () => {
   color: var(--el-text-color-regular);
 }
 
+/* 代码块容器样式 */
+.article-content pre {
+  position: relative;
+  margin: 20px 0;
+}
+
+.article-content pre:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12) !important;
+}
+
+/* 代码块滚动条美化 */
+.article-content pre::-webkit-scrollbar {
+  height: 8px;
+}
+
+.article-content pre::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.article-content pre::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.article-content pre::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.dark .article-content pre::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.dark .article-content pre::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.4);
+}
+
 /* 确保滚动到标题时不会被固定导航遮挡 */
 .article-content h1,
 .article-content h2,
@@ -701,9 +737,33 @@ onMounted(async () => {
   padding: 16px;
   border-radius: 6px;
   overflow: auto;
+  border-left: 4px solid var(--el-color-primary);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.markdown-body code {
+  background-color: #f5f5f5;
+  padding: 2px 6px;
+  border-radius: 3px;
+  color: #d63384;
+  font-size: 0.9em;
+}
+
+.markdown-body pre code {
+  background-color: transparent;
+  color: inherit;
+  padding: 0;
+  border-radius: 0;
 }
 
 .dark .markdown-body pre {
+  background-color: #1e1e1e;
+  border-left-color: var(--el-color-primary);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.dark .markdown-body code {
   background-color: #2d2d2d;
+  color: #ff7b72;
 }
 </style>
