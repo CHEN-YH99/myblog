@@ -68,8 +68,11 @@ export function useExternalLinkConfirm(opts: ExternalLinkOptions = {}) {
     const href = anchor.getAttribute('href') || ''
     if (!href) return
 
-    // 忽略内部锚点与 hash 路由
-    if (href.startsWith('#')) return
+    // 忽略内部锚点与 hash 路由 - 这些链接由 Vue 或其他处理器处理
+    if (href.startsWith('#')) {
+      // 不拦截，让事件继续传播
+      return
+    }
 
     const host = getHostname(href)
     if (!host) return

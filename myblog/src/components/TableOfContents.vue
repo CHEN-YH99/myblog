@@ -14,13 +14,13 @@
             { 'active': activeId === item.id }
           ]"
         >
-          <a 
-            :href="`#${item.id}`" 
-            @click.prevent="scrollToHeading(item.id)"
+          <button 
+            type="button"
+            @click.stop="handleTocClick(item.id)"
             class="toc-link"
           >
             {{ item.text }}
-          </a>
+          </button>
         </li>
       </ul>
       <div v-else class="toc-empty">
@@ -33,6 +33,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, nextTick } from 'vue'
+import { useRouter } from 'vue-router'
 
 interface TocItem {
   id: string
@@ -47,11 +48,25 @@ const props = defineProps<{
 const tocItems = ref<TocItem[]>([])
 const activeId = ref<string>('')
 const observer = ref<IntersectionObserver | null>(null)
+let mutationObserver: MutationObserver | null = null
+let inited = false
+
+// 简易防抖
+const debounce = (fn: (...args: any[]) => void, delay = 200) => {
+  let timer: number | null = null
+  return (...args: any[]) => {
+    if (timer) window.clearTimeout(timer)
+    timer = window.setTimeout(() => fn(...args), delay)
+  }
+}
 
 // 生成目录
 const generateToc = () => {
   const contentElement = document.querySelector(props.contentSelector || '.article-content')
-  if (!contentElement) return
+  if (!contentElement) {
+    console.warn('TableOfContents: 找不到内容元素', props.contentSelector)
+    return
+  }
 
   const headings = contentElement.querySelectorAll('h1, h2, h3, h4, h5, h6')
   const items: TocItem[] = []
@@ -70,36 +85,65 @@ const generateToc = () => {
   })
 
   tocItems.value = items
+  console.log('TableOfContents: 生成目录项数量:', items.length)
 }
 
-// 滚动到指定标题
-const scrollToHeading = (id: string) => {
+// 处理目录点击 - 这是关键函数，必须立即生效
+const handleTocClick = (id: string) => {
+  console.log('🎯 TableOfContents: 点击目录项', id)
+  console.log('🎯 TableOfContents: 当前 activeId:', activeId.value)
+  
   const element = document.getElementById(id)
-  if (element) {
-    const offsetTop = element.offsetTop - 80 // 考虑固定头部的高度
-    window.scrollTo({
-      top: offsetTop,
-      behavior: 'smooth'
-    })
+  if (!element) {
+    console.warn('❌ TableOfContents: 找不到目标元素', id)
+    return
+  }
+
+  // 立即更新 activeId，确保 UI 立即响应
+  activeId.value = id
+  console.log('✅ TableOfContents: 已更新 activeId 为', id)
+  console.log('✅ TableOfContents: 新的 activeId:', activeId.value)
+
+  // 使用 scrollIntoView 配合 CSS scroll-margin-top，避免手动计算偏移
+  element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  console.log('📍 TableOfContents: 使用 scrollIntoView 滚动到', id)
+}
+
+// 设置交叉观察器 - 用于自动更新当前位置
+const teardownIntersectionObserver = () => {
+  if (observer.value) {
+    observer.value.disconnect()
+    observer.value = null
   }
 }
 
-// 设置交叉观察器
 const setupIntersectionObserver = () => {
-  const headingElements = tocItems.value.map(item => document.getElementById(item.id)).filter(Boolean)
+  const headingElements = tocItems.value
+    .map(item => document.getElementById(item.id))
+    .filter((el): el is HTMLElement => el !== null)
   
-  if (headingElements.length === 0) return
+  if (headingElements.length === 0) {
+    console.warn('TableOfContents: 没有找到标题元素')
+    return
+  }
+
+  teardownIntersectionObserver()
 
   observer.value = new IntersectionObserver(
     (entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          activeId.value = entry.target.id
-        }
-      })
+      // 找到第一个进入视口的元素
+      const visibleEntries = entries.filter(entry => entry.isIntersecting)
+      if (visibleEntries.length > 0) {
+        // 选择最上面的可见元素
+        const topEntry = visibleEntries.reduce((top, current) => {
+          return current.boundingClientRect.top < top.boundingClientRect.top ? current : top
+        })
+        activeId.value = topEntry.target.id
+        console.log('TableOfContents: IntersectionObserver 更新 activeId 为', topEntry.target.id)
+      }
     },
     {
-      rootMargin: '-80px 0px -80% 0px', // 调整触发区域
+      rootMargin: '-80px 0px -70% 0px',
       threshold: 0.1
     }
   )
@@ -107,25 +151,111 @@ const setupIntersectionObserver = () => {
   headingElements.forEach((element) => {
     if (element) observer.value?.observe(element)
   })
+  
+  console.log('TableOfContents: IntersectionObserver 已设置，观察元素数:', headingElements.length)
+}
+
+// 观察文章内容变化
+const observeContentChanges = () => {
+  const selector = props.contentSelector || '.article-content'
+  let contentElement = document.querySelector(selector)
+
+  if (!contentElement) {
+    console.warn('TableOfContents: 初次未找到内容元素，开始监听 body，等待内容出现:', selector)
+
+    // 监听 body，等待内容元素出现后再切换到精确监听
+    if (mutationObserver) {
+      mutationObserver.disconnect()
+      mutationObserver = null
+    }
+
+    const debouncedRefresh = debounce(async () => {
+      generateToc()
+      await nextTick()
+      setupIntersectionObserver()
+    }, 300)
+
+    const debouncedInitWhenReady = debounce(async () => {
+      const el = document.querySelector(selector)
+      if (el) {
+        console.log('TableOfContents: 发现内容元素，开始生成目录并切换监听目标')
+        // 先断开对 body 的监听
+        if (mutationObserver) {
+          mutationObserver.disconnect()
+          mutationObserver = null
+        }
+        // 生成目录并设置针对内容的监听
+        generateToc()
+        await nextTick()
+        setupIntersectionObserver()
+        // 切换到对内容元素的观察
+        mutationObserver = new MutationObserver(() => debouncedRefresh())
+        mutationObserver.observe(el, { childList: true, subtree: true })
+        console.log('TableOfContents: 已切换为监听内容元素')
+      }
+    }, 100)
+
+    mutationObserver = new MutationObserver(() => debouncedInitWhenReady())
+    mutationObserver.observe(document.body, { childList: true, subtree: true })
+    return
+  }
+
+  // 找到了内容元素，直接对内容元素进行监听
+  if (mutationObserver) {
+    mutationObserver.disconnect()
+    mutationObserver = null
+  }
+
+  const debouncedRefresh = debounce(async () => {
+    console.log('TableOfContents: 检测到内容变化，重新生成目录')
+    generateToc()
+    await nextTick()
+    setupIntersectionObserver()
+  }, 300)
+
+  mutationObserver = new MutationObserver(() => debouncedRefresh())
+  mutationObserver.observe(contentElement, { childList: true, subtree: true })
+  
+  console.log('TableOfContents: MutationObserver 已设置')
 }
 
 // 初始化
 const init = async () => {
+  console.log('TableOfContents: 开始初始化')
+  
+  // 等待 DOM 更新
   await nextTick()
+  
+  // 生成目录
   generateToc()
-  if (tocItems.value.length > 0) {
-    setupIntersectionObserver()
-  }
+  
+  // 再次等待
+  await nextTick()
+  
+  // 设置观察器
+  setupIntersectionObserver()
+  
+  // 观察内容变化
+  observeContentChanges()
+  
+  console.log('TableOfContents: 初始化完成')
 }
 
 onMounted(() => {
+  console.log('TableOfContents: onMounted 触发')
   // 延迟初始化，确保内容已渲染
-  setTimeout(init, 100)
+  // 使用更长的延迟以确保父组件的内容已经渲染
+  setTimeout(() => {
+    init()
+  }, 150)
 })
 
 onUnmounted(() => {
-  if (observer.value) {
-    observer.value.disconnect()
+  console.log('TableOfContents: onUnmounted 触发')
+  teardownIntersectionObserver()
+  if (mutationObserver) {
+    mutationObserver.disconnect()
+    mutationObserver = null
   }
 })
 
@@ -136,8 +266,9 @@ defineExpose({
 </script>
 
 <style scoped>
+/* Theme variables for easy tuning */
 .toc-container {
-  /* 取消内层阴影与背景，由父级容器负责卡片与投影 */
+  /* keep layout and positioning unchanged */
   background: transparent;
   box-shadow: none;
   border-radius: 8px;
@@ -145,20 +276,53 @@ defineExpose({
   position: sticky;
   top: 100px;
   height: 250px;
+  /* prevent horizontal scrollbar and reserve gutter to avoid layout jitter */
+  overflow-x: hidden;
   overflow-y: auto;
+  scrollbar-gutter: stable both-edges;
+  overscroll-behavior: contain;
+
+  /* design tokens */
+  --toc-accent: var(--el-color-primary, #409eff);
+  --toc-text: var(--el-text-color-primary, #303133);
+  --toc-muted: var(--el-text-color-secondary, #909399);
+  --toc-hover-bg: color-mix(in srgb, var(--toc-accent) 10%, transparent);
+  --toc-active-bg: color-mix(in srgb, var(--toc-accent) 14%, transparent);
+  --toc-border: var(--el-border-color-light, #ebeef5);
 }
 
+/* Fancy header with subtle underline animation */
 .toc-header {
   margin: 0 0 14px 0;
   padding: 0 0 10px 0;
-  border-bottom: 1px solid var(--el-border-color-light, #f0f0f0);
+  border-bottom: 1px dashed var(--toc-border);
 }
 
 .toc-header h3 {
+  position: relative;
   margin: 0;
   font-size: 15px;
-  font-weight: 600;
-  color: var(--el-text-color-primary, #303133);
+  font-weight: 700;
+  letter-spacing: .5px;
+  color: var(--toc-text);
+}
+
+.toc-header h3::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -12px;
+  width: 46px;
+  height: 3px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--toc-accent), color-mix(in srgb, var(--toc-accent) 40%, #7ee787));
+  transform-origin: left;
+  transform: scaleX(0.85);
+  transition: transform .3s ease;
+}
+
+.toc-header:hover h3::after {
+  transform: scaleX(1);
 }
 
 .toc-nav {
@@ -171,84 +335,113 @@ defineExpose({
   padding: 0;
 }
 
+/* list item baseline with separator rhythm */
 .toc-item {
+  position: relative;
   margin: 0;
-  line-height: 1.6;
+  line-height: 1.55;
 }
 
+/* clickable row */
 .toc-link {
+  position: relative;
   display: block;
-  padding: 6px 0;
-  color: #9c9a9a;
+  width: 100%;
+  padding: 7px 10px 7px 12px;
+  color: var(--toc-muted);
+  text-align: left;
+  background: transparent;
+  border: 0;
+  outline: none;
   text-decoration: none;
-  border-left: 3px solid transparent;
-  padding-left: 12px;
-  transition: all 0.2s ease;
+  border-left: 2px solid transparent;
+  transition: color .2s ease, background-color .2s ease, border-left-color .2s ease, transform .2s ease;
   word-break: break-word;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+/* bullet dot */
+.toc-link::before {
+  content: "";
+  position: absolute;
+  left: 6px; /* follows padding-left indentation per level */
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--toc-accent) 86%, #fff);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--toc-accent) 28%, transparent);
+  transform: translateY(-50%) scale(.5);
+  opacity: 0;
+  transition: transform .2s ease, opacity .2s ease;
 }
 
 .toc-link:hover {
-  color: #409eff;
+  color: color-mix(in srgb, var(--toc-accent) 86%, #1e1e1e);
+  background: var(--toc-hover-bg);
+  border-left-color: var(--toc-accent);
+  transform: translateX(2px);
 }
 
+.toc-link:hover::before { opacity: 1; transform: translateY(-50%) scale(1); }
+
+/* active state */
 .toc-item.active .toc-link {
-  color: #409eff;
-  border-left-color: #409eff;
-  font-weight: 500;
+  color: color-mix(in srgb, var(--toc-accent) 96%, #111);
+  background: var(--toc-active-bg);
+  border-left-color: var(--toc-accent);
+  font-weight: 600;
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--toc-accent) 16%, transparent);
 }
 
-/* 不同级别标题的缩进 */
-.toc-level-1 .toc-link {
-  padding-left: 12px;
-  font-weight: 500;
+.toc-item.active .toc-link::before { opacity: 1; transform: translateY(-50%) scale(1); }
+
+/* focus visible for keyboard users */
+.toc-link:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--toc-accent) 55%, #fff);
+  outline-offset: 2px;
 }
 
-.toc-level-2 .toc-link {
-  padding-left: 24px;
+/* Levels indentation (keep structure) */
+.toc-level-1 .toc-link { padding-left: 12px; font-weight: 600; }
+.toc-level-2 .toc-link { padding-left: 24px; }
+.toc-level-3 .toc-link { padding-left: 36px; }
+.toc-level-4 .toc-link { padding-left: 48px; }
+.toc-level-5 .toc-link { padding-left: 60px; }
+.toc-level-6 .toc-link { padding-left: 72px; }
+
+/* Empty state */
+.toc-empty { text-align: center; padding: 20px 0; color: var(--toc-muted); }
+.empty-text { margin: 0 0 8px 0; font-size: 14px; color: var(--toc-text); opacity: .8; }
+.empty-hint { margin: 0; font-size: 12px; color: var(--toc-muted); font-style: italic; }
+
+/* Prevent horizontal overflow and scrollbar flicker */
+.toc-nav, .toc-list, .toc-link { max-width: 100%; box-sizing: border-box; }
+.toc-link { overflow-wrap: anywhere; word-break: break-word; white-space: normal; }
+.toc-container { -webkit-overflow-scrolling: touch; }
+
+/* Subtle entrance animation */
+@keyframes toc-fade-in { from { opacity: 0; transform: translateY(4px);} to { opacity: 1; transform: translateY(0);} }
+.toc-item { animation: toc-fade-in .25s ease both; }
+
+/* Polished thin scrollbar */
+.toc-container::-webkit-scrollbar { width: 6px; }
+.toc-container::-webkit-scrollbar-track { background: transparent; }
+.toc-container::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--toc-accent) 24%, #888);
+  border-radius: 6px;
+}
+.toc-container:hover::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--toc-accent) 44%, #666);
 }
 
-.toc-level-3 .toc-link {
-  padding-left: 36px;
-}
-
-.toc-level-4 .toc-link {
-  padding-left: 48px;
-}
-
-.toc-level-5 .toc-link {
-  padding-left: 60px;
-}
-
-.toc-level-6 .toc-link {
-  padding-left: 72px;
-}
-
-
-
-/* 空目录状态样式 */
-.toc-empty {
-  text-align: center;
-  padding: 20px 0;
-  color: #999;
-}
-
-.empty-text {
-  margin: 0 0 8px 0;
-  font-size: 14px;
-  color: #666;
-}
-
-.empty-hint {
-  margin: 0;
-  font-size: 12px;
-  color: #999;
-  font-style: italic;
-}
-
-/* 响应式设计 */
+/* Responsive: keep hidden on small screens */
 @media (max-width: 1200px) {
-  .toc-container {
-    display: none;
-  }
+  .toc-container { display: none; }
 }
+
+/* Dark scheme tweaks */
+:global(.dark) .toc-link { color: #b5b5b5; }
+:global(.dark) .toc-item.active .toc-link { box-shadow: 0 2px 10px color-mix(in srgb, var(--toc-accent) 28%, #000); }
 </style>

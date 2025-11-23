@@ -100,30 +100,23 @@ const router = createRouter({
   routes,
   // 添加滚动行为优化
   scrollBehavior(to, from, savedPosition) {
-    // 如果有保存的位置（浏览器前进/后退）
+    // 1) 浏览器前进/后退：直接返回保存位置，不延迟，避免覆盖用户主动滚动
     if (savedPosition) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          resolve(savedPosition)
-        }, 300) // 等待过渡动画完成
-      })
+      return savedPosition
     }
 
-    // 如果是锚点链接
+    // 2) 同页锚点：交给路由处理平滑滚动，并考虑固定头部高度
     if (to.hash) {
       return {
         el: to.hash,
         behavior: 'smooth',
-        top: 80, // 考虑导航栏高度
+        top: 80,
       }
     }
 
-    // 默认滚动到顶部
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({ top: 0, behavior: 'smooth' })
-      }, 300)
-    })
+    // 3) 普通路由切换：立即滚动到顶部（不要延迟/不要平滑），
+    //    避免在进入页面后延迟滚动覆盖用户点击目录产生的滚动。
+    return { top: 0 }
   },
 })
 

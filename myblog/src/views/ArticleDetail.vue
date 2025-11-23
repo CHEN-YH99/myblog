@@ -184,6 +184,8 @@
         <!-- 目录区域 -->
         <div class="toc-section">
           <TableOfContents 
+            v-if="!loading && article"
+            :key="articleId"
             ref="tocRef"
             content-selector=".article-content"
           />
@@ -204,7 +206,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick, watch } from 'vue'
+import { ref, computed, onMounted, nextTick, watch, watchPostEffect } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { User, View, Star, Share, ArrowLeft, Loading, Picture } from '@element-plus/icons-vue'
@@ -301,12 +303,22 @@ const fetchArticle = async () => {
     console.log('ArticleDetail: 文章获取成功:', article.value?.title)
 
     // 文章加载完成后，等待DOM更新并刷新目录
+    // 第一次 nextTick：等待 article.value 的响应式更新
     await nextTick()
+    console.log('ArticleDetail: 第一次 nextTick 完成')
+    
+    // 第二次 nextTick：等待 v-html 渲染完成
+    await nextTick()
+    console.log('ArticleDetail: 第二次 nextTick 完成')
+    
+    // 延迟刷新目录，确保 markdown 内容完全渲染
     setTimeout(() => {
       try {
+        console.log('ArticleDetail: 开始刷新目录')
         tocRef.value?.refresh()
+        console.log('ArticleDetail: 目录刷新完成')
       } catch (error) {
-        console.warn('目录刷新失败:', error)
+        console.warn('ArticleDetail: 目录刷新失败:', error)
       }
     }, 300)
   } catch (err) {
@@ -448,16 +460,18 @@ const likeArticle = () => {
   }
 }
 
-// 监听路由参数变化
+// 监听路由参数变化 - 用于处理同一页面内的路由切换
 watch(() => route.params.id, async (newId, oldId) => {
+  // 只在路由参数实际改变时重新加载（不使用 immediate）
   if (newId && newId !== oldId) {
-    console.log('ArticleDetail: 路由参数变化，重新加载文章')
+    console.log('ArticleDetail: 路由参数变化，重新加载文章，从', oldId, '到', newId)
     await fetchArticle()
   }
-}, { immediate: true })
+})
 
-// 生命周期钩子
+// 生命周期钩子 - 初始化加载
 onMounted(async () => {
+  console.log('ArticleDetail: onMounted 触发，开始初始化加载')
   // 初始化时加载文章
   if (!article.value) {
     await fetchArticle()
@@ -625,6 +639,16 @@ onMounted(async () => {
   line-height: 1.8;
   font-size: 16px;
   color: var(--el-text-color-regular);
+}
+
+/* 确保滚动到标题时不会被固定导航遮挡 */
+.article-content h1,
+.article-content h2,
+.article-content h3,
+.article-content h4,
+.article-content h5,
+.article-content h6 {
+  scroll-margin-top: 100px;
 }
 
 .article-actions {
