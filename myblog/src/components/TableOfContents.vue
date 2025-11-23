@@ -137,25 +137,28 @@ defineExpose({
 
 <style scoped>
 .toc-container {
+  /* 取消内层阴影与背景，由父级容器负责卡片与投影 */
+  background: transparent;
+  box-shadow: none;
   border-radius: 8px;
-  padding: 20px;
+  padding: 0;
   position: sticky;
   top: 100px;
   height: 250px;
   overflow-y: auto;
-  box-shadow: 0 2px 8px rgba(193, 192, 192, 0.77);
 }
 
 .toc-header {
-  margin-bottom: 16px;
-  padding-bottom: 12px;
-  border-bottom: 2px solid #f0f0f0;
+  margin: 0 0 14px 0;
+  padding: 0 0 10px 0;
+  border-bottom: 1px solid var(--el-border-color-light, #f0f0f0);
 }
 
 .toc-header h3 {
   margin: 0;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
+  color: var(--el-text-color-primary, #303133);
 }
 
 .toc-nav {

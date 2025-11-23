@@ -1,3 +1,4 @@
+<!-- eslint-disable prettier/prettier -->
 <template>
   <!-- 阅读进度条 -->
   <ReadingProgress v-if="article && !loading" />
@@ -203,18 +204,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, onBeforeUnmount, nextTick, watch } from 'vue'
+import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { User, View, Star, Share, ArrowLeft, ArrowRight, ChatDotRound } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
+import { User, View, Star, Share, ArrowLeft, Loading, Picture } from '@element-plus/icons-vue'
 import ReadingProgress from '@/components/ReadingProgress.vue'
 import WaveContainer from '@/components/WaveContainer.vue'
-import CommentSection from '@/components/CommentSection.vue'
-import { useArticlesStore } from '@/stores/getarticles'
-import { useUserStore } from '@/stores/user'
 import { useLikes } from '@/composables/useLikes'
-import { formatNumber, timestampToTime } from '@/utils/format'
-import { debounce, throttle, lazyLoadImage, performanceMonitor, timerManager } from '@/utils/performance'
+import { formatNumber } from '@/utils/format'
 import { handleError } from '@/utils/error-handler'
 import { getArticle } from '@/api/articles'
 import MarkdownIt from 'markdown-it'
@@ -294,15 +291,15 @@ const fetchArticle = async () => {
     loading.value = true
     error.value = ''
     console.log('ArticleDetail: 开始获取文章详情，ID:', currentArticleId)
-    
+
     const result = await getArticle(currentArticleId)
     if (!result) {
       throw new Error('文章不存在')
     }
-    
+
     article.value = result
     console.log('ArticleDetail: 文章获取成功:', article.value?.title)
-    
+
     // 文章加载完成后，等待DOM更新并刷新目录
     await nextTick()
     setTimeout(() => {
@@ -349,11 +346,11 @@ const handleImageErrorEnhanced = (event: Event, fallbackSrc = '/default-article.
 // 格式化日期
 const formatDate = (dateString: string | Date | undefined): string => {
   if (!dateString) return '暂无日期'
-  
+
   try {
     const date = new Date(dateString)
     if (isNaN(date.getTime())) return '无效日期'
-    
+
     const year = date.getFullYear()
     const month = String(date.getMonth() + 1).padStart(2, '0')
     const day = String(date.getDate()).padStart(2, '0')
@@ -368,7 +365,7 @@ const formatDate = (dateString: string | Date | undefined): string => {
 const colorFor = (str: string) => {
   try {
     if (!str) return '#666'
-    
+
     let hash = 0
     for (let i = 0; i < str.length; i++) {
       hash = (hash * 31 + str.charCodeAt(i)) >>> 0
@@ -437,27 +434,34 @@ const shareArticle = async () => {
 // 点赞功能
 const { isLiked, isLiking, handleLike } = useLikes()
 
-const likeArticle = async () => {
+const likeArticle = () => {
   if (!article.value?._id) return
-  
   try {
-    await handleLike(article.value._id)
-    
-    // Optimistic update: 立即更新UI
-    const liked = isLiked(article.value._id)
-    if (liked) {
-      article.value.likes = (article.value.likes || 0) + 1
-    } else {
-      article.value.likes = Math.max(0, (article.value.likes || 0) - 1)
-    }
+    const id = article.value._id
+    const willLike = !isLiked(id)
+    // Optimistic update: 预先更新 UI
+    article.value.likes = Math.max(0, (article.value.likes || 0) + (willLike ? 1 : -1))
+    // 触发实际的点赞操作（已做防抖与错误回滚）
+    handleLike(id)
   } catch (error) {
     handleError(error)
   }
 }
 
+// 监听路由参数变化
+watch(() => route.params.id, async (newId, oldId) => {
+  if (newId && newId !== oldId) {
+    console.log('ArticleDetail: 路由参数变化，重新加载文章')
+    await fetchArticle()
+  }
+}, { immediate: true })
+
 // 生命周期钩子
 onMounted(async () => {
-  await fetchArticle()
+  // 初始化时加载文章
+  if (!article.value) {
+    await fetchArticle()
+  }
 })
 
 </script>

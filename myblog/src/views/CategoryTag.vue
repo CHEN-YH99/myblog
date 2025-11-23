@@ -100,7 +100,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useCategories } from '@/composables/useCategories'
@@ -178,6 +178,21 @@ const formatDate = (dateString: string | Date | undefined): string => {
 }
 
 // 跳转到文章详情
+const mapPathToMenu = (p: string) => {
+  if (p === '/') return 'home'
+  if (p === '/timeline') return 'timeline'
+  if (p.startsWith('/frontend')) return 'frontend'
+  if (p.startsWith('/backend')) return 'backend'
+  if (p.startsWith('/category')) return 'category'
+  if (p.startsWith('/photoAlbum')) return 'photos'
+  if (p.startsWith('/photo-category/')) return 'photos'
+  if (p.startsWith('/talk')) return 'talk'
+  if (p.startsWith('/links')) return 'links'
+  if (p.startsWith('/board')) return 'board'
+  if (p.startsWith('/login')) return 'login'
+  return 'home'
+}
+
 const goToArticle = (article: Api.Article.ArticleItem) => {
   // 检查登录状态
   if (!userStore.isLoggedIn) {
@@ -189,7 +204,8 @@ const goToArticle = (article: Api.Article.ArticleItem) => {
     return
   }
   
-  router.push(`/article/${article._id}`)
+  const from = mapPathToMenu(route.path)
+  router.push({ path: `/article/${article._id}`, query: { from } })
 }
 
 // 刷新数据
@@ -226,8 +242,20 @@ const loadData = async () => {
   }
 }
 
+// 监听路由参数变化
+watch(() => route.params.tag, async (newTag, oldTag) => {
+  if (newTag && newTag !== oldTag) {
+    console.log('CategoryTag: 路由参数变化，重新加载数据')
+    currentPage.value = 1 // 重置分页
+    await loadData()
+  }
+}, { immediate: true })
+
 onMounted(async () => {
-  await loadData()
+  // 初始化时加载数据
+  if (articles.value.length === 0) {
+    await loadData()
+  }
 })
 </script>
 

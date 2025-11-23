@@ -34,7 +34,7 @@
           <span class="menu-text">时间轴</span>
         </el-menu-item>
         
-        <el-sub-menu index="more">
+        <el-sub-menu index="more" popper-class="navbar-submenu-popper" popper-effect="light">
           <template #title>
             <el-icon><Grid /></el-icon>
             <span class="menu-text">更多</span>
@@ -137,8 +137,8 @@
     >
       <div class="drawer__header">
         <div class="drawer__title">导航</div>
-        
-         <el-switch
+
+        <el-switch
           :model-value="is_Dark"
           @change="animateThemeSwitch"
           @click="rememberPointer"
@@ -187,8 +187,8 @@
           <span>分类</span>
         </el-menu-item>
         <el-menu-item index="m-photos" @click="handleMobileNavigation('/photoAlbum')">
-            <el-icon><Picture /></el-icon>
-            <span>相册</span>
+          <el-icon><Picture /></el-icon>
+          <span>相册</span>
         </el-menu-item>
         <!-- 已移除：移动端 相册分类 菜单项 -->
         <el-menu-item index="m-talk" @click="handleMobileNavigation('/talk')">
@@ -203,11 +203,11 @@
           <el-icon><MessageIcon /></el-icon>
           <span>留言</span>
         </el-menu-item>
-        
+
         <!-- 移动端用户登录状态显示 -->
         <div v-if="userStore.isLoggedIn" class="mobile-user-section">
           <div class="mobile-user-info">
-            <el-avatar 
+            <el-avatar
               :src="displayAvatar" 
               :size="40"
             />
@@ -222,7 +222,7 @@
             <span>退出登录</span>
           </el-menu-item>
         </div>
-        
+
         <!-- 移动端未登录时显示登录按钮 -->
         <el-menu-item v-else index="m-login" @click="handleMobileNavigation('/login')">
           <el-icon><User /></el-icon>
@@ -265,6 +265,7 @@ const route = useRoute()
 const drawer = ref(false)
 const userStore = useUserStore()
 
+
 // 与后台管理列表一致的默认头像生成策略
 const getDefaultAvatar = (name) => {
   const safeName = name || 'User'
@@ -284,21 +285,22 @@ const displayAvatar = computed(() => {
 // 使用 ref 来控制活动菜单项，避免跳闪
 const activeIndex = ref('')
 const mobileActiveIndex = ref('')
+const prevPath = ref('')
 
 // 用户菜单下拉框显示状态
 const showUserMenu = ref(false)
 
-// 获取活动菜单项的函数
-const getActiveMenuItem = (path) => {
+// 将路径映射到菜单索引的通用函数
+const mapPathToMenu = (path) => {
+  if (!path) return 'home'
   if (path.startsWith('/user')) return null // 个人中心页不激活任何菜单项
   if (path === '/') return 'home'
   if (path === '/timeline') return 'timeline'
   if (path.startsWith('/frontend')) return 'frontend'
   if (path.startsWith('/backend')) return 'backend'
   if (path.startsWith('/category')) return 'category'
-  if (path.startsWith('/article/')) return 'category' // 文章详情页面高亮分类菜单
   if (path.startsWith('/photoAlbum')) return 'photos'
-  if (path.startsWith('/photo-category/')) return 'photos' // 相册分类详情页面高亮相册菜单
+  if (path.startsWith('/photo-category/')) return 'photos'
   if (path.startsWith('/talk')) return 'talk'
   if (path.startsWith('/links')) return 'links'
   if (path.startsWith('/board')) return 'board'
@@ -306,36 +308,68 @@ const getActiveMenuItem = (path) => {
   return 'home'
 }
 
-// 获取移动端活动菜单项的函数
-const getMobileActiveMenuItem = (path) => {
-  if (path.startsWith('/user')) return null // 个人中心页不激活任何菜单项
-  if (path === '/') return 'm-home'
-  
-  if (path === '/timeline') return 'm-timeline'
-  if (path.startsWith('/frontend')) return 'm-frontend'
-  if (path.startsWith('/backend')) return 'm-backend'
-  if (path.startsWith('/category')) return 'm-category'
-  if (path.startsWith('/article/')) return 'm-category' // 文章详情页面高亮分类菜单
-  if (path.startsWith('/photoAlbum')) return 'm-photos'
-  if (path.startsWith('/photo-category/')) return 'm-photos' // 相册分类详情页面高亮相册菜单
-  if (path.startsWith('/talk')) return 'm-talk'
-  if (path.startsWith('/links')) return 'm-links'
-  if (path.startsWith('/board')) return 'm-board'
-  if (path.startsWith('/login')) return 'm-login'
-  return 'm-home'
+const mapPathToMobileMenu = (path) => {
+  const m = mapPathToMenu(path)
+  if (!m) return null
+  const map = {
+    home: 'm-home',
+    timeline: 'm-timeline',
+    frontend: 'm-frontend',
+    backend: 'm-backend',
+    category: 'm-category',
+    photos: 'm-photos',
+    talk: 'm-talk',
+    links: 'm-links',
+    board: 'm-board',
+    login: 'm-login'
+  }
+  return map[m] || 'm-home'
 }
 
 // 初始化活动状态
 const initActiveState = () => {
   const currentPath = route.path
-  activeIndex.value = getActiveMenuItem(currentPath)
-  mobileActiveIndex.value = getMobileActiveMenuItem(currentPath)
+  // 优先使用 from 参数
+  const fromParam = route.query.from && typeof route.query.from === 'string' ? route.query.from : ''
+  if (currentPath.startsWith('/article/')) {
+    if (fromParam) {
+      activeIndex.value = fromParam
+      mobileActiveIndex.value = `m-${fromParam}`
+    } else {
+      // 没有来源参数则回退为上一次值或首页
+      activeIndex.value = activeIndex.value || 'home'
+      mobileActiveIndex.value = mobileActiveIndex.value || 'm-home'
+    }
+  } else {
+    activeIndex.value = mapPathToMenu(currentPath)
+    mobileActiveIndex.value = mapPathToMobileMenu(currentPath)
+  }
 }
 
-// 监听路由变化
-watch(() => route.path, (newPath) => {
-  activeIndex.value = getActiveMenuItem(newPath)
-  mobileActiveIndex.value = getMobileActiveMenuItem(newPath)
+// 监听路由变化，使用 oldPath 作为进入文章详情的来源
+watch(() => route.path, (newPath, oldPath) => {
+  // 记录上一个路径
+  prevPath.value = oldPath || prevPath.value
+
+  if (newPath.startsWith('/article/')) {
+    const fromParam = route.query.from && typeof route.query.from === 'string' ? route.query.from : ''
+    if (fromParam) {
+      activeIndex.value = fromParam
+      mobileActiveIndex.value = `m-${fromParam}`
+      return
+    }
+    // 如果是从非文章页进入，则以 oldPath 判定来源
+    if (oldPath && !oldPath.startsWith('/article/')) {
+      activeIndex.value = mapPathToMenu(oldPath)
+      mobileActiveIndex.value = mapPathToMobileMenu(oldPath)
+      return
+    }
+    // 从文章页跳到另一个文章页：保持现有高亮不变
+    return
+  }
+  // 普通页面：直接按当前路径映射
+  activeIndex.value = mapPathToMenu(newPath)
+  mobileActiveIndex.value = mapPathToMobileMenu(newPath)
 }, { immediate: true })
 
 // 处理移动端导航
@@ -689,6 +723,39 @@ import {
   }
 }
 
+/* 修复：浅色主题下“更多”子菜单选中时文字与背景冲突不可见 */
+:deep(.el-menu--popup .el-menu),
+:deep(.navbar-submenu-popper .el-menu) {
+  /* 明确子菜单使用浅色背景与主色变量 */
+  --el-menu-active-color: var(--el-color-primary) !important;
+  --el-menu-hover-text-color: var(--el-color-primary);
+  --el-menu-bg-color: var(--el-bg-color-overlay, #fff);
+  --el-menu-hover-bg-color: var(--el-color-primary-light-9, #ecf5ff);
+}
+:deep(.el-menu--popup .el-menu-item.is-active),
+:deep(.navbar-submenu-popper .el-menu-item.is-active),
+:deep(.el-menu--popup .el-menu-item:active),
+:deep(.navbar-submenu-popper .el-menu-item:active),
+:deep(.el-menu--popup .el-menu-item:focus),
+:deep(.navbar-submenu-popper .el-menu-item:focus) {
+  color: var(--el-color-primary) !important; /* 选中文字颜色 */
+  background-color: var(--el-color-primary-light-9, #ecf5ff) !important; /* 浅色背景 */
+}
+:deep(.el-menu--popup .el-menu-item:hover),
+:deep(.navbar-submenu-popper .el-menu-item:hover) {
+  color: var(--el-color-primary) !important;
+  background-color: var(--el-color-primary-light-9, #ecf5ff) !important;
+}
+/* 子菜单默认文字颜色（避免白底白字） */
+:deep(.navbar-submenu-popper .el-menu) {
+  /* 强制覆盖子菜单的激活/悬浮文本色变量，避免继承顶层 #fff */
+  --el-menu-active-color: var(--el-color-primary);
+  --el-menu-hover-text-color: var(--el-color-primary);
+}
+:deep(.navbar-submenu-popper .el-menu-item) {
+  color: #303133; /* 浅色主题默认深色文字，提高可读性 */
+}
+
 /* 抽屉样式（全局透传） */
 :deep(.navbar-drawer) {
   background: rgba(10, 18, 34, 0.96);
@@ -726,5 +793,50 @@ import {
 .drawer__menu :deep(.el-sub-menu__title:hover) {
   color: #000000;
   background-color: rgba(255, 255, 255, 0.06);
+}
+/* Dark theme submenu contrast */
+.dark .navbar-submenu-popper,
+:root.dark .navbar-submenu-popper {
+  background-color: var(--el-bg-color-overlay, #141414) !important;
+}
+.dark .navbar-submenu-popper .el-menu-item.is-active,
+.dark .navbar-submenu-popper .el-menu-item:active,
+.dark .navbar-submenu-popper .el-menu-item:focus,
+.dark .navbar-submenu-popper .el-menu-item:hover,
+:root.dark .navbar-submenu-popper .el-menu-item.is-active,
+:root.dark .navbar-submenu-popper .el-menu-item:active,
+:root.dark .navbar-submenu-popper .el-menu-item:focus,
+:root.dark .navbar-submenu-popper .el-menu-item:hover {
+  color: #fff !important;
+  background-color: color-mix(in srgb, var(--el-color-primary) 28%, #000) !important;
+}
+.dark .navbar-submenu-popper .el-menu-item,
+:root.dark .navbar-submenu-popper .el-menu-item {
+  color: var(--el-text-color-primary, #e5eaf3) !important;
+}
+</style>
+
+<!-- 全局样式：确保挂载到 body 的弹出层也能生效 -->
+<style>
+/* 子菜单弹层容器（通过 popper-class 绑定） */
+.navbar-submenu-popper {
+  background-color: var(--el-bg-color-overlay, #fff) !important;
+}
+.navbar-submenu-popper .el-menu {
+  --el-menu-active-color: var(--el-color-primary);
+  --el-menu-hover-text-color: var(--el-color-primary);
+  --el-menu-bg-color: var(--el-bg-color-overlay, #fff);
+  --el-menu-hover-bg-color: var(--el-color-primary-light-9, #ecf5ff);
+}
+.navbar-submenu-popper .el-menu-item.is-active,
+.navbar-submenu-popper .el-menu-item:active,
+.navbar-submenu-popper .el-menu-item:focus,
+.navbar-submenu-popper .el-menu-item:hover {
+  color: var(--el-color-primary) !important;
+  background-color: var(--el-color-primary-light-9, #ecf5ff) !important;
+}
+.navbar-submenu-popper .el-menu-item,
+.navbar-submenu-popper .el-sub-menu__title {
+  color: var(--el-text-color-primary, #303133);
 }
 </style>

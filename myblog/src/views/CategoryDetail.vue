@@ -125,7 +125,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Calendar, View, Star } from '@element-plus/icons-vue'
@@ -220,6 +220,21 @@ const colorFor = (str: string) => {
 }
 
 // 跳转到文章详情
+const mapPathToMenu = (p: string) => {
+  if (p === '/') return 'home'
+  if (p === '/timeline') return 'timeline'
+  if (p.startsWith('/frontend')) return 'frontend'
+  if (p.startsWith('/backend')) return 'backend'
+  if (p.startsWith('/category')) return 'category'
+  if (p.startsWith('/photoAlbum')) return 'photos'
+  if (p.startsWith('/photo-category/')) return 'photos'
+  if (p.startsWith('/talk')) return 'talk'
+  if (p.startsWith('/links')) return 'links'
+  if (p.startsWith('/board')) return 'board'
+  if (p.startsWith('/login')) return 'login'
+  return 'home'
+}
+
 const goToArticleDetail = (articleId: string) => {
   // 检查登录状态
   if (!userStore.isLoggedIn) {
@@ -231,7 +246,8 @@ const goToArticleDetail = (articleId: string) => {
     return
   }
   
-  router.push(`/article/${articleId}`)
+  const from = mapPathToMenu(route.path)
+  router.push({ path: `/article/${articleId}`, query: { from } })
 }
 
 // 返回上一页
@@ -272,9 +288,21 @@ const loadData = async () => {
   }
 }
 
+// 监听路由参数变化
+watch(() => route.params.category, async (newCategory, oldCategory) => {
+  if (newCategory && newCategory !== oldCategory) {
+    console.log('CategoryDetail: 路由参数变化，重新加载数据')
+    currentPage.value = 1 // 重置分页
+    await loadData()
+  }
+}, { immediate: true })
+
 // 组件挂载
 onMounted(async () => {
-  await loadData()
+  // 初始化时加载数据
+  if (allArticles.value.length === 0) {
+    await loadData()
+  }
 })
 </script>
 

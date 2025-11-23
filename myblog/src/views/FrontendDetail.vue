@@ -37,6 +37,7 @@ import WaveContainer from '@/components/WaveContainer.vue';
 import Footer from '@/components/Footer.vue';
 import  '@/assets/style/common/morecategories.scss'
 import '@/assets/style/iconfont.scss'
+import { useExternalLinkConfirm } from '@/composables/useExternalLinkConfirm'
 
 const route = useRoute()
 
@@ -93,10 +94,13 @@ const getStateByType = (type: string) => {
   }
 }
 
-// 点击卡片跳转到对应网站
+// 外链确认
+const { confirmAndOpen } = useExternalLinkConfirm()
+
+// 点击卡片跳转到对应网站（带确认）
 const goToWebsite = (url: string) => {
   if (url) {
-    window.open(url, '_blank')
+    confirmAndOpen(url)
   }
 }
 

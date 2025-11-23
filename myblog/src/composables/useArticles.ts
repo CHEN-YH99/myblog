@@ -145,8 +145,24 @@ export function useArticles(options: UseArticlesOptions = {}) {
         
         // 保存当前分页状态
         savePagination(currentPage.value, pageSize.value)
-        // 跳转到文章详情页
-        router.push(`/article/${article._id}`)
+        // 跳转到文章详情页，附带来源菜单用于导航高亮
+        const path = route.path || '/'
+        const mapPathToMenu = (p: string) => {
+          if (p === '/') return 'home'
+          if (p === '/timeline') return 'timeline'
+          if (p.startsWith('/frontend')) return 'frontend'
+          if (p.startsWith('/backend')) return 'backend'
+          if (p.startsWith('/category')) return 'category'
+          if (p.startsWith('/photoAlbum')) return 'photos'
+          if (p.startsWith('/photo-category/')) return 'photos'
+          if (p.startsWith('/talk')) return 'talk'
+          if (p.startsWith('/links')) return 'links'
+          if (p.startsWith('/board')) return 'board'
+          if (p.startsWith('/login')) return 'login'
+          return 'home'
+        }
+        const from = mapPathToMenu(path)
+        router.push({ path: `/article/${article._id}`, query: { from } })
       } catch (error) {
         console.error('跳转文章详情失败:', error)
         ElMessage.error('跳转失败，请重试')

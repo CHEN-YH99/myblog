@@ -181,17 +181,18 @@ onMounted(() => {
 }
 
 .related-articles {
-  /* background: #fff; */
-  border-radius: 12px;
-  padding: 15px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  /* 取消内层阴影与背景，由外层容器负责卡片感 */
+  background: transparent;
+  border-radius: 10px;
+  padding: 0;
+  box-shadow: none;
 }
 
 .no-recommendations {
-  /* background: #fff; */
-  border-radius: 12px;
-  padding: 15px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  background: transparent;
+  border-radius: 10px;
+  padding: 0;
+  box-shadow: none;
 }
 
 .related-header {

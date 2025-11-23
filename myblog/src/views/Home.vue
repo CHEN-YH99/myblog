@@ -243,6 +243,7 @@ import WaveContainer from '@/components/WaveContainer.vue'
 import Footer from '@/components/Footer.vue'
 import '@/assets/style/index.scss'
 import bgImage from '@/assets/images/shunsea1.jpg'
+import { useExternalLinkConfirm } from '@/composables/useExternalLinkConfirm'
 
 // 路由
 const router = useRouter()
@@ -413,9 +414,12 @@ const scrollToTop = () => {
   }
 }
 
-// 打开外部链接
+// 外链确认
+const { confirmAndOpen } = useExternalLinkConfirm()
+
+// 打开外部链接（带确认）
 const openGitee = () => {
-  window.open('https://gitee.com/', '_blank')
+  confirmAndOpen('https://gitee.com/')
 }
 
 const openLink = (type: string) => {
@@ -427,7 +431,7 @@ const openLink = (type: string) => {
   
   const url = links[type as keyof typeof links]
   if (url) {
-    window.open(url, '_blank')
+    confirmAndOpen(url)
   }
 }
 
