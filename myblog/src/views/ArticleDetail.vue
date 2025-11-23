@@ -292,7 +292,7 @@ const fetchArticle = async () => {
   try {
     loading.value = true
     error.value = ''
-    console.log('ArticleDetail: 开始获取文章详情，ID:', currentArticleId)
+    void 0 && console.log('ArticleDetail: 开始获取文章详情，ID:', currentArticleId)
 
     const result = await getArticle(currentArticleId)
     if (!result) {
@@ -300,23 +300,23 @@ const fetchArticle = async () => {
     }
 
     article.value = result
-    console.log('ArticleDetail: 文章获取成功:', article.value?.title)
+    void 0 && console.log('ArticleDetail: 文章获取成功:', article.value?.title)
 
     // 文章加载完成后，等待DOM更新并刷新目录
     // 第一次 nextTick：等待 article.value 的响应式更新
     await nextTick()
-    console.log('ArticleDetail: 第一次 nextTick 完成')
+    void 0 && console.log('ArticleDetail: 第一次 nextTick 完成')
     
     // 第二次 nextTick：等待 v-html 渲染完成
     await nextTick()
-    console.log('ArticleDetail: 第二次 nextTick 完成')
+    void 0 && console.log('ArticleDetail: 第二次 nextTick 完成')
     
     // 延迟刷新目录，确保 markdown 内容完全渲染
     setTimeout(() => {
       try {
-        console.log('ArticleDetail: 开始刷新目录')
+        void 0 && console.log('ArticleDetail: 开始刷新目录')
         tocRef.value?.refresh()
-        console.log('ArticleDetail: 目录刷新完成')
+        void 0 && console.log('ArticleDetail: 目录刷新完成')
       } catch (error) {
         console.warn('ArticleDetail: 目录刷新失败:', error)
       }
@@ -464,14 +464,14 @@ const likeArticle = () => {
 watch(() => route.params.id, async (newId, oldId) => {
   // 只在路由参数实际改变时重新加载（不使用 immediate）
   if (newId && newId !== oldId) {
-    console.log('ArticleDetail: 路由参数变化，重新加载文章，从', oldId, '到', newId)
+    void 0 && console.log('ArticleDetail: 路由参数变化，重新加载文章，从', oldId, '到', newId)
     await fetchArticle()
   }
 })
 
 // 生命周期钩子 - 初始化加载
 onMounted(async () => {
-  console.log('ArticleDetail: onMounted 触发，开始初始化加载')
+  void 0 && console.log('ArticleDetail: onMounted 触发，开始初始化加载')
   // 初始化时加载文章
   if (!article.value) {
     await fetchArticle()

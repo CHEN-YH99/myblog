@@ -245,7 +245,7 @@ const loadData = async () => {
 // 监听路由参数变化
 watch(() => route.params.tag, async (newTag, oldTag) => {
   if (newTag && newTag !== oldTag) {
-    console.log('CategoryTag: 路由参数变化，重新加载数据')
+    void 0 && console.log('CategoryTag: 路由参数变化，重新加载数据')
     currentPage.value = 1 // 重置分页
     await loadData()
   }

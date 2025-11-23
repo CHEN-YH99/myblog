@@ -102,11 +102,11 @@
                 </div>
 
                 <div class="article-stats">
-                  <span 
+                  <span
                     class="like-btn"
-                    :class="{ 
-                      'liked': isLiked(article._id), 
-                      'loading': isLiking(article._id) 
+                    :class="{
+                      'liked': isLiked(article._id),
+                      'loading': isLiking(article._id)
                     }"
                     @click.stop="handleLike(article._id)"
                   >
@@ -242,8 +242,6 @@ import { useLikes } from '@/composables/useLikes'
 import { useUserStore } from '@/stores/user'
 import { useArticlesStore } from '@/stores/getarticles'
 import { formatNumber } from '@/utils/format'
-import { debounce, throttle, lazyLoadImage, performanceMonitor, timerManager } from '@/utils/performance'
-import { handleError } from '@/utils/error-handler'
 import { getUserStats } from '@/api/user'
 
 import WaveContainer from '@/components/WaveContainer.vue'
@@ -260,8 +258,7 @@ const userStore = useUserStore()
 const articlesStore = useArticlesStore()
 
 // 性能优化相关
-const imageObserver = ref<IntersectionObserver | null>(null)
-const loadedImages = ref(new Set<string>())
+
 
 // 使用优化后的 composable
 const {
@@ -272,16 +269,9 @@ const {
   pagedArticles,
   currentPage,
   pageSize,
-  hasNextPage,
-  hasPrevPage,
-  totalPages,
   initArticles,
-  refreshArticles,
   cleanup,
   goToArticle,
-  goToPage,
-  nextPage,
-  prevPage,
   watchPagination
 } = useArticles({ 
   routeName: 'Home',
@@ -293,8 +283,7 @@ const {
 const { 
   isLiked, 
   isLiking, 
-  handleLike,
-  likeStats
+  handleLike
 } = useLikes({
   debounceDelay: 500,
   cooldownTime: 1000
@@ -380,7 +369,7 @@ const scrollDown = () => {
 
 // 处理图片加载错误
 const handleImageError = (event: Event) => {
-  console.warn('图片加载失败:', event)
+  void 0 && console.warn('图片加载失败:', event)
   // 可以在这里设置默认图片
 }
 

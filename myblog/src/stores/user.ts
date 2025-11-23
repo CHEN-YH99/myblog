@@ -48,7 +48,7 @@ export const useUserStore = defineStore('user', () => {
     if (savedToken) {
       // 检查token是否过期
       if (!checkTokenExpire()) {
-        console.log('Token已过期，清理状态')
+        /* log removed */('Token已过期，清理状态')
         return
       }
       
@@ -95,12 +95,20 @@ export const useUserStore = defineStore('user', () => {
   const fetchUserInfo = async () => {
     try {
       const info = await getUserInfoApi()
-      // 如果服务端返回的用户名与token中的不一致，则忽略更新，避免错误回退为管理员
+      // 如果服务端返回的用户名与token中的不一致，进行自愈处理（仅限本地 mock token 格式）
       const expectedUsername = parseUsernameFromToken(token.value)
       const returnedName = (info?.username || info?.nickname || '')
       if (expectedUsername && returnedName && returnedName !== expectedUsername) {
-        console.warn('服务端返回的用户与当前令牌不匹配，已忽略更新')
-        return userInfo.value
+        if (token.value.startsWith('mock-jwt-token-')) {
+          // 自动根据服务端用户刷新本地 token，避免状态不同步
+          const encoded = encodeURIComponent(returnedName)
+          const newToken = `mock-jwt-token-${encoded}-${Date.now()}`
+          setToken(newToken)
+          void 0 && console.warn('检测到令牌与服务端用户不一致，已根据服务端用户刷新本地令牌')
+        } else {
+          void 0 && console.warn('服务端返回的用户与当前令牌不匹配，已忽略更新')
+          return userInfo.value
+        }
       }
       setUserInfo(info)
       return info
@@ -134,7 +142,7 @@ export const useUserStore = defineStore('user', () => {
       const talksStore = useTalksStore()
       talksStore.resetLikeStatus()
       
-      console.log('用户已登出，清理相关状态')
+      /* log removed */('用户已登出，清理相关状态')
     }
   }
 

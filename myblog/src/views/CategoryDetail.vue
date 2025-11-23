@@ -172,8 +172,8 @@ const categoryDisplayName = computed(() => {
 
 // 筛选当前分类的文章
 const categoryArticles = computed(() => {
-  // console.log('CategoryDetail - 筛选分类文章:', categorySlug.value)
-  // console.log('CategoryDetail - 全部文章:', allArticles.value.length)
+  // void 0 && console.log('CategoryDetail - 筛选分类文章:', categorySlug.value)
+  // void 0 && console.log('CategoryDetail - 全部文章:', allArticles.value.length)
   
   if (!categorySlug.value || !allArticles.value.length) {
     return []
@@ -184,7 +184,7 @@ const categoryArticles = computed(() => {
     return matchesCategory
   })
   
-  // console.log('CategoryDetail - 筛选后的文章:', filtered.length)
+  // void 0 && console.log('CategoryDetail - 筛选后的文章:', filtered.length)
   return filtered
 })
 
@@ -263,7 +263,7 @@ const handleRefresh = async () => {
 
 // 加载数据
 const loadData = async () => {
-  // console.log('CategoryDetail - 开始加载数据, 分类:', categorySlug.value)
+  // void 0 && console.log('CategoryDetail - 开始加载数据, 分类:', categorySlug.value)
   
   try {
     loading.value = true
@@ -271,7 +271,7 @@ const loadData = async () => {
     // 获取文章数据
     await articlesStore.fetchArticles()
     allArticles.value = articlesStore.articles
-    // console.log('CategoryDetail - 获取到文章:', allArticles.value.length)
+    // void 0 && console.log('CategoryDetail - 获取到文章:', allArticles.value.length)
     
     // 获取分类数据
     await initCategories()
@@ -279,7 +279,7 @@ const loadData = async () => {
     if (foundCategory) {
       currentCategory.value = foundCategory
     }
-    // console.log('CategoryDetail - 找到分类:', currentCategory.value)
+    // void 0 && console.log('CategoryDetail - 找到分类:', currentCategory.value)
     
   } catch (err: any) {
     error.value = err.message || '加载数据失败'
@@ -291,7 +291,7 @@ const loadData = async () => {
 // 监听路由参数变化
 watch(() => route.params.category, async (newCategory, oldCategory) => {
   if (newCategory && newCategory !== oldCategory) {
-    console.log('CategoryDetail: 路由参数变化，重新加载数据')
+    void 0 && console.log('CategoryDetail: 路由参数变化，重新加载数据')
     currentPage.value = 1 // 重置分页
     await loadData()
   }

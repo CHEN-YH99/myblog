@@ -124,7 +124,7 @@ export const useArticlesStore = defineStore('articles', {
         }
         
         this.likeStatusInitialized = true
-        console.log('文章点赞状态初始化完成，已同步服务器状态')
+        /* init like status synced (debug log removed) */
       } catch (error) {
         console.error('初始化点赞状态失败:', error)
         // 如果服务器请求失败，使用本地状态

@@ -23,7 +23,11 @@ interface ExtendedAxiosRequestConfig extends AxiosRequestConfig {
 
 const { VITE_API_URL = '/api' } = import.meta.env
 
-console.log('前台HTTP配置 - VITE_API_URL:', VITE_API_URL)
+// silent debug logger (no output in build)
+const log = (..._args: any[]) => {}
+const warn = (..._args: any[]) => {}
+
+log('前台HTTP配置 - VITE_API_URL:', VITE_API_URL)
 
 /** Axios实例 */
 const axiosInstance = axios.create({
@@ -52,7 +56,7 @@ axiosInstance.interceptors.request.use(
     // 客户端博客系统：检查token是否过期（仅检查，不执行登出操作）
     const expireTime = localStorage.getItem('tokenExpire')
     if (expireTime && Date.now() > parseInt(expireTime)) {
-      console.log('HTTP拦截器检测到Token已过期')
+      log('HTTP拦截器检测到Token已过期')
       // 如果不是登录相关的请求，直接拒绝请求
       if (!request.url?.includes('/auth/login') && !request.url?.includes('/auth/register')) {
         return Promise.reject(new Error('Token已过期，请重新登录'))
@@ -76,18 +80,18 @@ axiosInstance.interceptors.request.use(
             const newToken = `mock-jwt-token-${encodedUsername}-${Date.now()}`
             localStorage.setItem('token', newToken)
             request.headers.set('Authorization', newToken)
-            console.log('检测到旧格式token，已自动升级为新格式')
+            log('检测到旧格式token，已自动升级为新格式')
           } catch (e) {
-            console.warn('旧格式token升级失败，需重新登录')
+            warn('旧格式token升级失败，需重新登录')
           }
         } else {
-          console.warn('检测到旧格式token且缺少userInfo，跳过Authorization并提示重新登录')
+          warn('检测到旧格式token且缺少userInfo，跳过Authorization并提示重新登录')
           // 不设置 Authorization，后端将返回401，前端将提示重新登录
         }
       } else if (isNewFormat) {
         request.headers.set('Authorization', token)
       } else {
-        console.warn('非法token格式，跳过Authorization')
+        warn('非法token格式，跳过Authorization')
       }
     }
     
@@ -97,7 +101,7 @@ axiosInstance.interceptors.request.use(
       request.data = JSON.stringify(request.data)
     }
     
-    console.log('客户端博客系统发送HTTP请求:', {
+    log('客户端博客系统发送HTTP请求:', {
       url: request.url,
       method: request.method,
       params: request.params,
@@ -110,16 +114,16 @@ axiosInstance.interceptors.request.use(
     
     // 特别记录密码修改请求的详细信息
     if (request.url?.includes('change-password')) {
-      console.log('=== 密码修改请求详细信息 ===')
+      log('=== 密码修改请求详细信息 ===')
       const token = localStorage.getItem('token')
       const userInfo = localStorage.getItem('userInfo')
-      console.log('Token from localStorage:', token)
-      console.log('UserInfo from localStorage:', userInfo)
+      log('Token from localStorage:', token)
+      log('UserInfo from localStorage:', userInfo)
       
       // 检查token格式
        if (token) {
          const tokenParts = token.split('-')
-         console.log('Token parts:', tokenParts)
+         log('Token parts:', tokenParts)
          
          // 正确的格式判断：mock-jwt-token-{username}-{timestamp}
          // 旧格式：mock-jwt-token-{timestamp} (4个部分，最后一个是纯数字时间戳)
@@ -127,7 +131,7 @@ axiosInstance.interceptors.request.use(
          const isOldFormat = tokenParts.length === 4 && /^\d+$/.test(tokenParts[3])
          const isNewFormat = tokenParts.length >= 5
          
-         console.log('Token format analysis:', {
+         log('Token format analysis:', {
            isOldFormat,
            isNewFormat,
            expectedFormat: 'mock-jwt-token-{username}-{timestamp}',
@@ -142,19 +146,19 @@ axiosInstance.interceptors.request.use(
             // 对用户名进行编码以避免非ISO-8859-1字符问题
             const encodedUsername = encodeURIComponent(user.username)
             const newToken = `mock-jwt-token-${encodedUsername}-${Date.now()}`
-            console.log('检测到旧格式token，生成新token:', newToken)
+            log('检测到旧格式token，生成新token:', newToken)
             localStorage.setItem('token', newToken)
             request.headers.set('Authorization', newToken)
-            console.log('已更新token格式')
+            log('已更新token格式')
           } catch (error) {
             console.error('修复token格式失败:', error)
           }
         }
       }
       
-      console.log('Request Authorization header:', request.headers.Authorization)
-      console.log('Request data:', request.data)
-      console.log('Request URL:', request.url)
+      log('Request Authorization header:', request.headers.Authorization)
+      log('Request data:', request.data)
+      log('Request URL:', request.url)
     }
 
     return request
@@ -168,13 +172,13 @@ axiosInstance.interceptors.request.use(
 /** 响应拦截器 */
 axiosInstance.interceptors.response.use(
   (response: AxiosResponse) => {
-    console.log('客户端博客系统HTTP响应拦截器 - 原始响应:', response.data)
+    log('客户端博客系统HTTP响应拦截器 - 原始响应:', response.data)
     
     // 检查是否是后端的标准响应格式 {code, msg, data}
     if (response.data && typeof response.data === 'object' && 'code' in response.data) {
       const { code, msg } = response.data
       if (code === ApiStatus.success || code === 200) {
-        console.log('客户端博客系统HTTP响应拦截器 - 请求成功')
+        log('客户端博客系统HTTP响应拦截器 - 请求成功')
         // 返回响应数据，让request函数处理data字段提取
         return response
       }
@@ -190,7 +194,7 @@ axiosInstance.interceptors.response.use(
     }
     
     // 其他格式的响应直接返回
-    console.log('客户端博客系统HTTP响应拦截器 - 非标准格式响应，直接返回')
+    log('客户端博客系统HTTP响应拦截器 - 非标准格式响应，直接返回')
     return response
   },
   (error) => {
@@ -313,15 +317,15 @@ async function retryRequest<T>(
   try {
     return await request<T>(config)
   } catch (error) {
-    console.log(`请求失败，剩余重试次数: ${retries}`, error)
+    log(`请求失败，剩余重试次数: ${retries}`, error)
     
     if (retries > 0 && shouldRetry(error)) {
-      console.log(`等待 ${RETRY_DELAY}ms 后重试...`)
+      log(`等待 ${RETRY_DELAY}ms 后重试...`)
       await delay(RETRY_DELAY)
       return retryRequest<T>(config, retries - 1)
     }
     
-    console.log('重试次数已用完或错误不可重试，抛出错误')
+    log('重试次数已用完或错误不可重试，抛出错误')
     throw error
   }
 }
@@ -344,9 +348,9 @@ async function request<T = any>(config: ExtendedAxiosRequestConfig): Promise<T> 
   }
 
   try {
-    console.log('发起HTTP请求:', config)
+    log('发起HTTP请求:', config)
     const res = await axiosInstance.request(config)
-    console.log('收到HTTP响应:', res)
+    log('收到HTTP响应:', res)
 
     // 显示成功消息
     if (config.showSuccessMessage && res.data?.msg) {
@@ -356,11 +360,11 @@ async function request<T = any>(config: ExtendedAxiosRequestConfig): Promise<T> 
     // 检查响应数据结构
     if (res.data && typeof res.data === 'object' && 'data' in res.data) {
       // 标准格式：{code, msg, data}
-      console.log('返回标准格式数据:', res.data.data)
+      log('返回标准格式数据:', res.data.data)
       return res.data.data as T
     } else {
       // 直接返回数据
-      console.log('返回原始数据:', res.data)
+      log('返回原始数据:', res.data)
       return res.data as T
     }
   } catch (error) {

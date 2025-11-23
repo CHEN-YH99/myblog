@@ -1,5 +1,5 @@
 <template>
-   <!-- 头部大图 -->
+  <!-- 头部大图 -->
   <div class="page_header">
     <div class="large-img">
       <img src="../assets/images/frontdetail.jpeg" alt="" />
@@ -8,9 +8,9 @@
       </div>
     </div>
     <!-- 海水波浪 -->
-    <WaveContainer  />
+    <WaveContainer />
   </div>
-   <!-- 内容 -->
+  <!-- 内容 -->
   <div class="end_content animate__animated animate__fadeInUp">
    <ul class="end-item" >
      <li v-for="item in state" :key="item.id" @click="goToWebsite(item.url)" >
@@ -29,10 +29,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import {nanoid} from 'nanoid'
-import WaveContainer from '@/components/WaveContainer.vue';
-import Footer from '@/components/Footer.vue';
-import  '@/assets/style/common/morecategories.scss'
+import { nanoid } from 'nanoid'
+import WaveContainer from '@/components/WaveContainer.vue'
+import Footer from '@/components/Footer.vue'
+import '@/assets/style/common/morecategories.scss'
 import '@/assets/style/iconfont.scss'
 import { useExternalLinkConfirm } from '@/composables/useExternalLinkConfirm'
 
@@ -40,7 +40,7 @@ const route = useRoute()
 
 // 根据不同的卡片类型定义不同的数据
 const getStateByType = (type: string) => {
-  switch(type) {
+  switch (type) {
     case '后端语言':
       return [
         { id: nanoid(), title: 'Java', image: 'icon-java', content: 'Java 是企业级应用开发的主流语言', url: 'https://www.oracle.com/java/' },

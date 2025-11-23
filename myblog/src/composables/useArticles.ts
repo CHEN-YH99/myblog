@@ -47,7 +47,7 @@ export function useArticles(options: UseArticlesOptions = {}) {
         const saved = localStorage.getItem(storageKey)
         return saved ? JSON.parse(saved) : { currentPage: 1, pageSize: defaultPageSize }
       } catch (error) {
-        console.warn('获取分页状态失败:', error)
+        void 0 && console.warn('获取分页状态失败:', error)
         return { currentPage: 1, pageSize: defaultPageSize }
       }
     }
@@ -56,7 +56,7 @@ export function useArticles(options: UseArticlesOptions = {}) {
       try {
         localStorage.setItem(storageKey, JSON.stringify({ currentPage: page, pageSize: size }))
       } catch (error) {
-        console.warn('保存分页状态失败:', error)
+        void 0 && console.warn('保存分页状态失败:', error)
       }
     }, 300)
     
@@ -245,7 +245,7 @@ export function useArticles(options: UseArticlesOptions = {}) {
     try {
       store.unsubscribe(componentId)
     } catch (error) {
-      console.warn('清理订阅失败:', error)
+      void 0 && console.warn('清理订阅失败:', error)
     }
   }
   

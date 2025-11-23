@@ -99,7 +99,7 @@ const router = createRouter({
   history: createWebHashHistory(),
   routes,
   // 添加滚动行为优化
-  scrollBehavior(to, from, savedPosition) {
+  scrollBehavior(to, _from, savedPosition) {
     // 1) 浏览器前进/后退：直接返回保存位置，不延迟，避免覆盖用户主动滚动
     if (savedPosition) {
       return savedPosition

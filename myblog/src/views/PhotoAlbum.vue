@@ -66,11 +66,11 @@ const visiblePhotoCategories = computed(() => photoCategories.value.filter(isPho
 
 // 组件挂载时初始化数据
 onMounted(async () => {
-  console.log('PhotoAlbum.vue - 组件挂载，开始初始化数据')
+  void 0 && console.log('PhotoAlbum.vue - 组件挂载，开始初始化数据')
   try {
     // 不强制刷新，使用缓存策略
     await initPhotoCategories()
-    console.log('PhotoAlbum.vue - 相册分类初始化完成')
+    void 0 && console.log('PhotoAlbum.vue - 相册分类初始化完成')
   } catch (err) {
     console.error('PhotoAlbum.vue - 初始化数据失败:', err)
     ElMessage.error('初始化数据失败，请刷新页面重试')

@@ -81,7 +81,7 @@ export const useTalksStore = defineStore('talks', {
         // 只有在本地存储中明确记录的说说才会被标记为已点赞
         
         this.likeStatusInitialized = true
-        console.log('说说点赞状态初始化完成，已点赞说说数量:', this.likedTalks.size)
+        /* talk like status initialized (debug log removed) */
       } catch (error) {
         console.error('初始化说说点赞状态失败:', error)
         // 即使出错，也要确保新用户从干净的状态开始
