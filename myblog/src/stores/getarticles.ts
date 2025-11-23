@@ -1,12 +1,17 @@
 import { defineStore } from 'pinia'
-import { getAllArticlesWithSignal, likeArticle, unlikeArticle, getBatchLikeStatus } from '@/api/articles'
+import {
+  getAllArticlesWithSignal,
+  likeArticle,
+  unlikeArticle,
+  getBatchLikeStatus,
+} from '@/api/articles'
 import { useUserStore } from '@/stores/user'
-import { 
-  getLikedArticles, 
-  saveLikedArticles, 
-  addLikedArticle, 
+import {
+  getLikedArticles,
+  saveLikedArticles,
+  addLikedArticle,
   removeLikedArticle,
-  clearUserLikeData 
+  clearUserLikeData,
 } from '@/utils/storage'
 // Api 类型是全局声明的，不需要导入
 
@@ -22,10 +27,10 @@ export const useArticlesStore = defineStore('articles', {
     error: null as string | null,
     lastFetchTime: 0,
     cacheTimeout: 5 * 60 * 1000, // 5分钟缓存
-    
+
     // 请求控制
     abortController: null as AbortController | null,
-    
+
     // 组件订阅管理
     subscribers: new Set<string>(),
 
@@ -34,7 +39,7 @@ export const useArticlesStore = defineStore('articles', {
 
     // 正在处理点赞的文章ID集合
     likingArticles: new Set<string>(),
-    
+
     // 点赞状态初始化标记
     likeStatusInitialized: false,
   }),
@@ -42,36 +47,32 @@ export const useArticlesStore = defineStore('articles', {
   getters: {
     articlesCount: (state) => state.articles.length,
     isDataFresh: (state) => Date.now() - state.lastFetchTime < state.cacheTimeout,
-    
+
     // 标签云数据
     tagslist: (state) => {
       const allTags = Array.from(
         new Set(
           state.articles
-            .flatMap(article => article.tags)
-            .filter((tag): tag is string => tag !== undefined)
-        )
+            .flatMap((article) => article.tags)
+            .filter((tag): tag is string => tag !== undefined),
+        ),
       )
-      return [...allTags]
-        .sort(() => Math.random() - 0.5)
-        .slice(0, 20)
+      return [...allTags].sort(() => Math.random() - 0.5).slice(0, 20)
     },
-    
-
   },
 
   actions: {
     // 初始化用户点赞状态
     async initializeLikeStatus() {
       const userStore = useUserStore()
-      
+
       // 如果用户未登录，清空状态并返回
       if (!userStore.isLoggedIn) {
         this.likedArticles.clear()
         this.likeStatusInitialized = true
         return
       }
-      
+
       try {
         // 等待用户信息完全加载
         let userInfo = userStore.userInfo
@@ -86,7 +87,7 @@ export const useArticlesStore = defineStore('articles', {
             return
           }
         }
-        
+
         // 从localStorage恢复点赞状态（用户键：优先使用id，兜底使用username）
         const userKey = userInfo?.id || userInfo?.username
         if (!userKey) {
@@ -95,34 +96,34 @@ export const useArticlesStore = defineStore('articles', {
           this.likeStatusInitialized = true
           return
         }
-        
+
         const savedLikedArticles = getLikedArticles(userKey)
-        
+
         // 清空当前状态
         this.likedArticles.clear()
-        
+
         // 如果有文章数据，同步服务器状态
         if (this.articles.length > 0) {
-          const articleIds = this.articles.map(article => article._id)
+          const articleIds = this.articles.map((article) => article._id)
           const response = await getBatchLikeStatus(articleIds)
-          
+
           // 以服务器状态为准，清空本地状态后重新设置
           Object.entries(response).forEach(([articleId, isLiked]) => {
             if (isLiked) {
               this.likedArticles.add(articleId)
             }
           })
-          
+
           // 保存服务器状态到localStorage
           const finalLikedArticles = Array.from(this.likedArticles)
           saveLikedArticles(finalLikedArticles, userKey)
         } else {
           // 如果没有文章数据，使用本地保存的状态
-          savedLikedArticles.forEach(articleId => {
+          savedLikedArticles.forEach((articleId) => {
             this.likedArticles.add(articleId)
           })
         }
-        
+
         this.likeStatusInitialized = true
         /* init like status synced (debug log removed) */
       } catch (error) {
@@ -130,23 +131,23 @@ export const useArticlesStore = defineStore('articles', {
         // 如果服务器请求失败，使用本地状态
         const userKey = userStore.userInfo?.id || userStore.userInfo?.username
         const savedLikedArticles = getLikedArticles(userKey)
-        savedLikedArticles.forEach(articleId => {
+        savedLikedArticles.forEach((articleId) => {
           this.likedArticles.add(articleId)
         })
         this.likeStatusInitialized = true
       }
     },
-    
+
     // 重置点赞状态（用户登出时调用）
     resetLikeStatus() {
       const userStore = useUserStore()
       const id = userStore.userInfo?.id
       const username = userStore.userInfo?.username
-      
+
       // 清除localStorage中的数据（同时尝试按id与username清理，避免残留）
       clearUserLikeData(id)
       clearUserLikeData(username)
-      
+
       // 清除内存中的状态
       this.likedArticles.clear()
       this.likeStatusInitialized = false
@@ -158,7 +159,7 @@ export const useArticlesStore = defineStore('articles', {
       if (!userStore.isLoggedIn) {
         throw new Error('请先登录')
       }
-      
+
       if (this.likingArticles.has(articleId)) return // 防止重复点击
 
       this.likingArticles.add(articleId)
@@ -168,13 +169,13 @@ export const useArticlesStore = defineStore('articles', {
 
         // 更新本地状态
         this.likedArticles.add(articleId)
-        
+
         // 保存到localStorage（按用户键隔离）
         const userKey = userStore.userInfo?.id || userStore.userInfo?.username
         addLikedArticle(articleId, userKey)
 
         // 更新文章点赞数
-        const article = this.articles.find(a => a._id === articleId)
+        const article = this.articles.find((a) => a._id === articleId)
         if (article) {
           article.likes = result.likes
         }
@@ -187,32 +188,32 @@ export const useArticlesStore = defineStore('articles', {
         this.likingArticles.delete(articleId)
       }
     },
-  
-  // 取消点赞
+
+    // 取消点赞
     async unlikeArticle(articleId: string) {
       const userStore = useUserStore()
       if (!userStore.isLoggedIn) {
         throw new Error('请先登录')
       }
-      
+
       if (this.likingArticles.has(articleId)) return
-      
+
       this.likingArticles.add(articleId)
-      
+
       try {
         const result = await unlikeArticle(articleId)
-        
+
         this.likedArticles.delete(articleId)
-        
+
         // 保存到localStorage（按用户键隔离）
         const userKey = userStore.userInfo?.id || userStore.userInfo?.username
         removeLikedArticle(articleId, userKey)
-        
-        const article = this.articles.find(a => a._id === articleId)
+
+        const article = this.articles.find((a) => a._id === articleId)
         if (article) {
           article.likes = result.likes
         }
-        
+
         return result
       } catch (error) {
         console.error('取消点赞失败:', error)
@@ -221,7 +222,7 @@ export const useArticlesStore = defineStore('articles', {
         this.likingArticles.delete(articleId)
       }
     },
-    
+
     // 切换点赞状态
     async toggleLike(articleId: string) {
       const isLiked = this.likedArticles.has(articleId)
@@ -233,11 +234,11 @@ export const useArticlesStore = defineStore('articles', {
       this.subscribers.add(componentId)
       // console.log(`组件 ${componentId} 订阅了文章数据`)
     },
-    
+
     unsubscribe(componentId: string) {
       this.subscribers.delete(componentId)
       // console.log(`组件 ${componentId} 取消订阅文章数据`)
-      
+
       // 如果没有组件订阅了，清理缓存
       if (this.subscribers.size === 0) {
         // console.log('所有组件已卸载，清理缓存')
@@ -269,30 +270,30 @@ export const useArticlesStore = defineStore('articles', {
 
       // 取消之前的请求
       this.cancelRequest()
-      
+
       // 创建新的 AbortController
       this.abortController = new AbortController()
-      
+
       try {
         this.loading = true
         this.error = null
-        
+
         // console.log('发起新的文章数据请求')
-        
-        const articles = await getAllArticlesWithSignal(
-          this.abortController?.signal
-        )
-        
+
+        const articles = await getAllArticlesWithSignal(this.abortController?.signal)
+
         if (this.abortController?.signal.aborted) {
           // console.log('请求已被取消')
           return this.articles
         }
-        
+
         // 为每篇文章添加封面图片
-        const articlesWithCover = Array.isArray(articles) ? articles.map((article: any) => ({
-          ...article,
-          cover: article.cover || '/default-article.jpg'
-        })) : []
+        const articlesWithCover = Array.isArray(articles)
+          ? articles.map((article: any) => ({
+              ...article,
+              cover: article.cover || '/default-article.jpg',
+            }))
+          : []
 
         // 过滤不可见文章；默认可见
         const visibleArticles = articlesWithCover.filter((a: any) => a.visible !== false)
@@ -307,23 +308,23 @@ export const useArticlesStore = defineStore('articles', {
           if (ap !== bp) return bp - ap
           return parseDate(b) - parseDate(a)
         })
-        
+
         this.articles = sortedArticles
         this.lastFetchTime = Date.now()
         this.error = null
-        
+
         // 如果用户已登录，初始化点赞状态
         await this.initializeLikeStatus()
-        
+
         // console.log(`获取到 ${articles.length} 篇文章`)
-        
+
         return this.articles
       } catch (error: any) {
         if (error.name === 'AbortError') {
           // console.log('请求被取消')
           return this.articles
         }
-        
+
         this.error = error.message || '获取文章失败'
         console.error('获取文章失败:', error)
         throw error
@@ -332,7 +333,7 @@ export const useArticlesStore = defineStore('articles', {
         this.abortController = null
       }
     },
-    
+
     cancelRequest() {
       if (this.abortController) {
         this.abortController.abort()
@@ -345,8 +346,6 @@ export const useArticlesStore = defineStore('articles', {
       this.articles = []
       this.lastFetchTime = 0
       this.error = null
-    }
-  }
+    },
+  },
 })
-
-

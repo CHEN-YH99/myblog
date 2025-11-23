@@ -37,7 +37,13 @@
           <!-- 标题切换 -->
           <div class="form-header">
             <h2 class="form-title">{{ isLogin ? '用户登录' : '用户注册' }}</h2>
-            <p class="form-subtitle">{{ isLogin ? '欢迎回来，请登录您的账户' : '创建新账户，开始您的博客之旅' }}</p>
+            <p class="form-subtitle">
+              {{
+                isLogin
+                  ? '欢迎回来，请登录您的账户'
+                  : '创建新账户，开始您的博客之旅'
+              }}
+            </p>
           </div>
 
           <!-- 登录表单 -->
@@ -91,7 +97,9 @@
                 <el-checkbox v-model="loginForm.rememberMe">
                   七天免登录
                 </el-checkbox>
-                <el-link type="primary" @click="showForgotPassword">忘记密码？</el-link>
+                <el-link type="primary" @click="showForgotPassword">
+                  忘记密码？
+                </el-link>
               </div>
             </el-form-item>
 
@@ -179,9 +187,13 @@
             <el-form-item prop="agreement">
               <el-checkbox v-model="registerForm.agreement">
                 我已阅读并同意
-                <el-link type="primary" @click="showTerms">《用户协议》</el-link>
+                <el-link type="primary" @click="showTerms">
+                  《用户协议》
+                </el-link>
                 和
-                <el-link type="primary" @click="showPrivacy">《隐私政策》</el-link>
+                <el-link type="primary" @click="showPrivacy">
+                  《隐私政策》
+                </el-link>
               </el-checkbox>
             </el-form-item>
 
@@ -229,7 +241,11 @@
       </el-form>
       <template #footer>
         <el-button @click="closeForgotPassword">取消</el-button>
-        <el-button type="primary" :loading="forgotLoading" @click="handleForgotPassword">
+        <el-button
+          type="primary"
+          :loading="forgotLoading"
+          @click="handleForgotPassword"
+        >
           发送重置邮件
         </el-button>
       </template>
@@ -240,14 +256,19 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
+import {
+  ElMessage,
+  ElMessageBox,
+  type FormInstance,
+  type FormRules,
+} from 'element-plus'
 import {
   User,
   Lock,
   Message,
   Document,
   Picture,
-  ChatDotRound
+  ChatDotRound,
 } from '@element-plus/icons-vue'
 import { loginApi, registerApi } from '@/api/auth'
 import { useUserStore } from '@/stores/user'
@@ -282,7 +303,7 @@ const loginForm = reactive({
   username: '',
   password: '',
   captcha: '',
-  rememberMe: false
+  rememberMe: false,
 })
 
 // 注册表单
@@ -292,44 +313,57 @@ const registerForm = reactive({
   password: '',
   confirmPassword: '',
   captcha: '',
-  agreement: false
+  agreement: false,
 })
 
 // 忘记密码表单
 const forgotForm = reactive({
-  email: ''
+  email: '',
 })
 
 // 表单验证规则
 const loginRules: FormRules = {
   username: [
     { required: true, message: '请输入用户名或邮箱', trigger: 'blur' },
-    { min: 3, max: 50, message: '长度在 3 到 50 个字符', trigger: 'blur' }
+    { min: 3, max: 50, message: '长度在 3 到 50 个字符', trigger: 'blur' },
   ],
   password: [
     { required: true, message: '请输入密码', trigger: 'blur' },
-    { min: 6, max: 20, message: '密码长度在 6 到 20 个字符', trigger: 'blur' }
+    { min: 6, max: 20, message: '密码长度在 6 到 20 个字符', trigger: 'blur' },
   ],
   captcha: [
     { required: true, message: '请输入验证码', trigger: 'blur' },
-    { len: 4, message: '验证码为4位', trigger: 'blur' }
-  ]
+    { len: 4, message: '验证码为4位', trigger: 'blur' },
+  ],
 }
 
 const registerRules: FormRules = {
   username: [
     { required: true, message: '请输入用户名', trigger: 'blur' },
-    { min: 3, max: 20, message: '用户名长度在 3 到 20 个字符', trigger: 'blur' },
-    { pattern: /^[a-zA-Z0-9_\u4e00-\u9fa5]+$/, message: '用户名只能包含字母、数字、下划线和中文', trigger: 'blur' }
+    {
+      min: 3,
+      max: 20,
+      message: '用户名长度在 3 到 20 个字符',
+      trigger: 'blur',
+    },
+    {
+      pattern: /^[a-zA-Z0-9_\u4e00-\u9fa5]+$/,
+      message: '用户名只能包含字母、数字、下划线和中文',
+      trigger: 'blur',
+    },
   ],
   email: [
     { required: true, message: '请输入邮箱地址', trigger: 'blur' },
-    { type: 'email', message: '请输入正确的邮箱地址', trigger: 'blur' }
+    { type: 'email', message: '请输入正确的邮箱地址', trigger: 'blur' },
   ],
   password: [
     { required: true, message: '请输入密码', trigger: 'blur' },
     { min: 6, max: 20, message: '密码长度在 6 到 20 个字符', trigger: 'blur' },
-    { pattern: /^(?=.*[a-zA-Z])(?=.*\d)/, message: '密码必须包含字母和数字', trigger: 'blur' }
+    {
+      pattern: /^(?=.*[a-zA-Z])(?=.*\d)/,
+      message: '密码必须包含字母和数字',
+      trigger: 'blur',
+    },
   ],
   confirmPassword: [
     { required: true, message: '请确认密码', trigger: 'blur' },
@@ -341,12 +375,12 @@ const registerRules: FormRules = {
           callback()
         }
       },
-      trigger: 'blur'
-    }
+      trigger: 'blur',
+    },
   ],
   captcha: [
     { required: true, message: '请输入验证码', trigger: 'blur' },
-    { len: 4, message: '验证码为4位', trigger: 'blur' }
+    { len: 4, message: '验证码为4位', trigger: 'blur' },
   ],
   agreement: [
     {
@@ -357,16 +391,16 @@ const registerRules: FormRules = {
           callback()
         }
       },
-      trigger: 'change'
-    }
-  ]
+      trigger: 'change',
+    },
+  ],
 }
 
 const forgotRules: FormRules = {
   email: [
     { required: true, message: '请输入邮箱地址', trigger: 'blur' },
-    { type: 'email', message: '请输入正确的邮箱地址', trigger: 'blur' }
-  ]
+    { type: 'email', message: '请输入正确的邮箱地址', trigger: 'blur' },
+  ],
 }
 
 // 生成验证码
@@ -383,18 +417,18 @@ const generateCaptcha = () => {
 // 绘制验证码
 const drawCaptcha = () => {
   if (!captchaCanvas.value) return
-  
+
   const canvas = captchaCanvas.value
   const ctx = canvas.getContext('2d')!
   const captcha = generateCaptcha()
-  
+
   // 清空画布
   ctx.clearRect(0, 0, canvas.width, canvas.height)
-  
+
   // 设置背景
   ctx.fillStyle = '#f0f2f5'
   ctx.fillRect(0, 0, canvas.width, canvas.height)
-  
+
   // 绘制干扰线
   for (let i = 0; i < 3; i++) {
     ctx.strokeStyle = `hsl(${Math.random() * 360}, 50%, 70%)`
@@ -403,11 +437,11 @@ const drawCaptcha = () => {
     ctx.lineTo(Math.random() * canvas.width, Math.random() * canvas.height)
     ctx.stroke()
   }
-  
+
   // 绘制验证码文字
   ctx.font = '20px Arial'
   ctx.textBaseline = 'middle'
-  
+
   for (let i = 0; i < captcha.length; i++) {
     ctx.fillStyle = `hsl(${Math.random() * 360}, 70%, 40%)`
     ctx.save()
@@ -416,12 +450,18 @@ const drawCaptcha = () => {
     ctx.fillText(captcha[i], 0, 0)
     ctx.restore()
   }
-  
+
   // 绘制干扰点
   for (let i = 0; i < 20; i++) {
     ctx.fillStyle = `hsl(${Math.random() * 360}, 50%, 60%)`
     ctx.beginPath()
-    ctx.arc(Math.random() * canvas.width, Math.random() * canvas.height, 1, 0, 2 * Math.PI)
+    ctx.arc(
+      Math.random() * canvas.width,
+      Math.random() * canvas.height,
+      1,
+      0,
+      2 * Math.PI,
+    )
     ctx.fill()
   }
 }
@@ -445,7 +485,7 @@ const toggleMode = () => {
       username: '',
       password: '',
       captcha: '',
-      rememberMe: false
+      rememberMe: false,
     })
   } else {
     Object.assign(registerForm, {
@@ -454,7 +494,7 @@ const toggleMode = () => {
       password: '',
       confirmPassword: '',
       captcha: '',
-      agreement: false
+      agreement: false,
     })
   }
   refreshCaptcha()
@@ -463,39 +503,39 @@ const toggleMode = () => {
 // 处理登录
 const handleLogin = async () => {
   if (!loginFormRef.value) return
-  
+
   try {
     await loginFormRef.value.validate()
-    
+
     // 验证验证码
     if (!validateCaptcha(loginForm.captcha)) {
       ElMessage.error('验证码错误')
       refreshCaptcha()
       return
     }
-    
+
     loginLoading.value = true
-    
+
     const response = await loginApi({
       username: loginForm.username,
       password: loginForm.password,
-      rememberMe: loginForm.rememberMe
+      rememberMe: loginForm.rememberMe,
     })
-    
+
     // 保存用户信息和token
     userStore.setToken(response.token)
     userStore.setUserInfo(response.userInfo)
-    
+
     // 初始化用户相关数据
     const articlesStore = useArticlesStore()
     const talksStore = useTalksStore()
-    
+
     // 并行初始化点赞状态
     await Promise.all([
       articlesStore.initializeLikeStatus(),
-      talksStore.initializeLikeStatus()
+      talksStore.initializeLikeStatus(),
     ])
-    
+
     // 设置token过期时间
     if (loginForm.rememberMe) {
       const expireTime = Date.now() + 7 * 24 * 60 * 60 * 1000 // 7天
@@ -504,10 +544,9 @@ const handleLogin = async () => {
       const expireTime = Date.now() + 24 * 60 * 60 * 1000 // 24小时
       localStorage.setItem('tokenExpire', expireTime.toString())
     }
-    
+
     ElMessage.success('登录成功')
     router.push('/')
-    
   } catch (error: any) {
     ElMessage.error(error.message || '登录失败')
     refreshCaptcha()
@@ -519,27 +558,27 @@ const handleLogin = async () => {
 // 处理注册
 const handleRegister = async () => {
   if (!registerFormRef.value) return
-  
+
   try {
     await registerFormRef.value.validate()
-    
+
     // 验证验证码
     if (!validateCaptcha(registerForm.captcha)) {
       ElMessage.error('验证码错误')
       refreshCaptcha()
       return
     }
-    
+
     registerLoading.value = true
-    
+
     // 调用注册API
     await registerApi({
       username: registerForm.username,
       email: registerForm.email,
       password: registerForm.password,
-      confirmPassword: registerForm.confirmPassword
+      confirmPassword: registerForm.confirmPassword,
     })
-    
+
     // 注册成功后，同步用户数据到后台管理系统
     try {
       const { syncUserToAdmin } = await import('@/api/user')
@@ -549,22 +588,22 @@ const handleRegister = async () => {
         role: '普通用户',
         status: 'active',
         createTime: new Date().toISOString(),
-        registerSource: 'frontend'
+        registerSource: 'frontend',
       })
     } catch (syncError) {
       console.warn('用户数据同步失败，但注册成功:', syncError)
       // 同步失败不影响注册流程
     }
-    
+
     ElMessage.success('注册成功！请登录')
-    
+
     // 切换到登录模式
     isLogin.value = true
-    
+
     // 预填登录表单
     loginForm.username = registerForm.username
     loginForm.password = ''
-    
+
     // 清空注册表单
     registerForm.username = ''
     registerForm.email = ''
@@ -572,10 +611,10 @@ const handleRegister = async () => {
     registerForm.confirmPassword = ''
     registerForm.captcha = ''
     registerForm.agreement = false
-    
+
     // 生成新的验证码
     refreshCaptcha()
-    
+
     console.log('注册成功，请手动登录')
   } catch (error: any) {
     ElMessage.error(error.message || '注册失败')
@@ -599,17 +638,16 @@ const closeForgotPassword = () => {
 // 处理忘记密码
 const handleForgotPassword = async () => {
   if (!forgotFormRef.value) return
-  
+
   try {
     await forgotFormRef.value.validate()
     forgotLoading.value = true
-    
+
     // 这里应该调用忘记密码API
     // await forgotPasswordApi(forgotForm.email)
-    
+
     ElMessage.success('重置密码邮件已发送，请查收')
     closeForgotPassword()
-    
   } catch (error: any) {
     ElMessage.error(error.message || '发送失败')
   } finally {
@@ -620,14 +658,14 @@ const handleForgotPassword = async () => {
 // 显示用户协议
 const showTerms = () => {
   ElMessageBox.alert('这里是用户协议内容...', '用户协议', {
-    confirmButtonText: '确定'
+    confirmButtonText: '确定',
   })
 }
 
 // 显示隐私政策
 const showPrivacy = () => {
   ElMessageBox.alert('这里是隐私政策内容...', '隐私政策', {
-    confirmButtonText: '确定'
+    confirmButtonText: '确定',
   })
 }
 
@@ -654,13 +692,13 @@ onMounted(() => {
   width: 100%;
   height: 100%;
   pointer-events: none;
-  
+
   .bg-circle {
     position: absolute;
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.1);
     animation: float 6s ease-in-out infinite;
-    
+
     &.bg-circle-1 {
       width: 200px;
       height: 200px;
@@ -668,7 +706,7 @@ onMounted(() => {
       left: 10%;
       animation-delay: 0s;
     }
-    
+
     &.bg-circle-2 {
       width: 150px;
       height: 150px;
@@ -676,7 +714,7 @@ onMounted(() => {
       right: 15%;
       animation-delay: 2s;
     }
-    
+
     &.bg-circle-3 {
       width: 100px;
       height: 100px;
@@ -688,8 +726,13 @@ onMounted(() => {
 }
 
 @keyframes float {
-  0%, 100% { transform: translateY(0px) rotate(0deg); }
-  50% { transform: translateY(-20px) rotate(180deg); }
+  0%,
+  100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-20px) rotate(180deg);
+  }
 }
 
 .login-content {
@@ -706,10 +749,10 @@ onMounted(() => {
   justify-content: center;
   padding: 2rem;
   color: white;
-  
+
   .brand-info {
     max-width: 500px;
-    
+
     .brand-title {
       font-size: 3rem;
       font-weight: 700;
@@ -719,21 +762,21 @@ onMounted(() => {
       -webkit-text-fill-color: transparent;
       background-clip: text;
     }
-    
+
     .brand-subtitle {
       font-size: 1.2rem;
       margin-bottom: 2rem;
       opacity: 0.9;
       line-height: 1.6;
     }
-    
+
     .feature-list {
       .feature-item {
         display: flex;
         align-items: center;
         margin-bottom: 1rem;
         font-size: 1.1rem;
-        
+
         .el-icon {
           margin-right: 0.8rem;
           font-size: 1.5rem;
@@ -766,14 +809,14 @@ onMounted(() => {
 .form-header {
   text-align: center;
   margin-bottom: 2rem;
-  
+
   .form-title {
     font-size: 1.8rem;
     font-weight: 600;
     color: #1f2937;
     margin-bottom: 0.5rem;
   }
-  
+
   .form-subtitle {
     color: #6b7280;
     font-size: 0.9rem;
@@ -784,17 +827,17 @@ onMounted(() => {
   .el-form-item {
     margin-bottom: 1.5rem;
   }
-  
+
   :deep(.el-input__wrapper) {
     border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
     border: 1px solid #e5e7eb;
     transition: all 0.3s ease;
-    
+
     &:hover {
       border-color: #667eea;
     }
-    
+
     &.is-focus {
       border-color: #667eea;
       box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
@@ -805,23 +848,23 @@ onMounted(() => {
 .captcha-container {
   display: flex;
   gap: 0.5rem;
-  
+
   .el-input {
     flex: 1;
   }
-  
+
   .captcha-image {
     cursor: pointer;
     border-radius: 8px;
     overflow: hidden;
     border: 1px solid #e5e7eb;
     transition: all 0.3s ease;
-    
+
     &:hover {
       border-color: #667eea;
       transform: scale(1.02);
     }
-    
+
     canvas {
       display: block;
     }
@@ -833,14 +876,14 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   width: 100%;
-  
+
   .el-checkbox {
     :deep(.el-checkbox__label) {
       color: #6b7280;
       font-size: 0.9rem;
     }
   }
-  
+
   .el-link {
     font-size: 0.9rem;
   }
@@ -855,12 +898,12 @@ onMounted(() => {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border: none;
   transition: all 0.3s ease;
-  
+
   &:hover {
     transform: translateY(-2px);
     box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
   }
-  
+
   &:active {
     transform: translateY(0);
   }
@@ -871,13 +914,13 @@ onMounted(() => {
   margin-top: 1.5rem;
   padding-top: 1.5rem;
   border-top: 1px solid #e5e7eb;
-  
+
   .switch-text {
     color: #6b7280;
     font-size: 0.9rem;
     margin-right: 0.5rem;
   }
-  
+
   .el-link {
     font-size: 0.9rem;
     font-weight: 500;
@@ -889,24 +932,24 @@ onMounted(() => {
   .login-content {
     flex-direction: column;
   }
-  
+
   .info-section {
     flex: none;
     padding: 1rem;
-    
+
     .brand-info {
       text-align: center;
-      
+
       .brand-title {
         font-size: 2rem;
       }
-      
+
       .brand-subtitle {
         font-size: 1rem;
       }
     }
   }
-  
+
   .form-section {
     flex: none;
     padding: 1rem;
@@ -918,13 +961,13 @@ onMounted(() => {
     padding: 1.5rem;
     margin: 1rem;
   }
-  
+
   .info-section {
     .brand-info {
       .brand-title {
         font-size: 1.8rem;
       }
-      
+
       .feature-list {
         display: none;
       }
@@ -935,20 +978,20 @@ onMounted(() => {
 // Element Plus 样式覆盖
 :deep(.el-dialog) {
   border-radius: 16px;
-  
+
   .el-dialog__header {
     padding: 1.5rem 1.5rem 1rem;
-    
+
     .el-dialog__title {
       font-weight: 600;
       color: #1f2937;
     }
   }
-  
+
   .el-dialog__body {
     padding: 0 1.5rem 1rem;
   }
-  
+
   .el-dialog__footer {
     padding: 1rem 1.5rem 1.5rem;
   }

@@ -6,7 +6,7 @@
 const STORAGE_KEYS = {
   LIKED_ARTICLES: 'liked_articles',
   LIKED_TALKS: 'liked_talks',
-  USER_PREFIX: 'user_'
+  USER_PREFIX: 'user_',
 } as const
 
 /**
@@ -28,7 +28,7 @@ function getUserStorageKey(key: string, userId?: string): string {
  */
 function safeJsonParse<T>(data: string | null, defaultValue: T): T {
   if (!data) return defaultValue
-  
+
   try {
     return JSON.parse(data)
   } catch (error) {
@@ -153,7 +153,7 @@ export function removeLikedTalk(talkId: string, userId?: string): void {
 export function clearUserLikeData(userId?: string): void {
   const articlesKey = getUserStorageKey(STORAGE_KEYS.LIKED_ARTICLES, userId)
   const talksKey = getUserStorageKey(STORAGE_KEYS.LIKED_TALKS, userId)
-  
+
   localStorage.removeItem(articlesKey)
   localStorage.removeItem(talksKey)
 }

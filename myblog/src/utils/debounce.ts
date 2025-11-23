@@ -10,15 +10,15 @@
  */
 export function debounce<T extends (...args: any[]) => any>(
   fn: T,
-  delay: number = 300
+  delay: number = 300,
 ): (...args: Parameters<T>) => void {
   let timeoutId: ReturnType<typeof setTimeout> | null = null
-  
+
   return function (this: any, ...args: Parameters<T>) {
     if (timeoutId) {
       clearTimeout(timeoutId)
     }
-    
+
     timeoutId = setTimeout(() => {
       fn.apply(this, args)
     }, delay)
@@ -33,7 +33,7 @@ export function debounce<T extends (...args: any[]) => any>(
  */
 export function debounceAsync<T extends (...args: any[]) => Promise<any>>(
   fn: T,
-  delay: number
+  delay: number,
 ): T & { cancel: () => void } {
   let timeoutId: ReturnType<typeof setTimeout> | null = null
   let lastResolve: ((value: any) => void) | null = null
@@ -47,10 +47,10 @@ export function debounceAsync<T extends (...args: any[]) => Promise<any>>(
           lastReject(new Error('Debounced function was cancelled'))
         }
       }
-      
+
       lastResolve = resolve
       lastReject = reject
-      
+
       timeoutId = setTimeout(async () => {
         try {
           const result = await fn(...args)
@@ -89,14 +89,14 @@ export function debounceAsync<T extends (...args: any[]) => Promise<any>>(
  */
 export function throttle<T extends (...args: any[]) => any>(
   fn: T,
-  delay: number
+  delay: number,
 ): (...args: Parameters<T>) => void {
   let timeoutId: ReturnType<typeof setTimeout> | null = null
   let lastExecTime = 0
-  
+
   return function (this: any, ...args: Parameters<T>) {
     const currentTime = Date.now()
-    
+
     if (currentTime - lastExecTime > delay) {
       fn.apply(this, args)
       lastExecTime = currentTime
@@ -104,10 +104,13 @@ export function throttle<T extends (...args: any[]) => any>(
       if (timeoutId) {
         clearTimeout(timeoutId)
       }
-      timeoutId = setTimeout(() => {
-        fn.apply(this, args)
-        lastExecTime = Date.now()
-      }, delay - (currentTime - lastExecTime))
+      timeoutId = setTimeout(
+        () => {
+          fn.apply(this, args)
+          lastExecTime = Date.now()
+        },
+        delay - (currentTime - lastExecTime),
+      )
     }
   }
 }

@@ -46,8 +46,8 @@ const axiosInstance = axios.create({
         }
       }
       return data
-    }
-  ]
+    },
+  ],
 })
 
 /** 请求拦截器 */
@@ -62,14 +62,24 @@ axiosInstance.interceptors.request.use(
         return Promise.reject(new Error('Token已过期，请重新登录'))
       }
     }
-    
+
     // 客户端博客系统：添加token到请求头（兼容旧格式token）
     const token = localStorage.getItem('token')
     const userInfo = localStorage.getItem('userInfo')
     if (token) {
       const tokenParts = token.split('-')
-      const isOldFormat = tokenParts.length === 4 && tokenParts[0] === 'mock' && tokenParts[1] === 'jwt' && tokenParts[2] === 'token' && /^\d+$/.test(tokenParts[3])
-      const isNewFormat = tokenParts.length >= 5 && tokenParts[0] === 'mock' && tokenParts[1] === 'jwt' && tokenParts[2] === 'token' && /^\d+$/.test(tokenParts[tokenParts.length - 1])
+      const isOldFormat =
+        tokenParts.length === 4 &&
+        tokenParts[0] === 'mock' &&
+        tokenParts[1] === 'jwt' &&
+        tokenParts[2] === 'token' &&
+        /^\d+$/.test(tokenParts[3])
+      const isNewFormat =
+        tokenParts.length >= 5 &&
+        tokenParts[0] === 'mock' &&
+        tokenParts[1] === 'jwt' &&
+        tokenParts[2] === 'token' &&
+        /^\d+$/.test(tokenParts[tokenParts.length - 1])
 
       if (isOldFormat) {
         if (userInfo) {
@@ -94,13 +104,13 @@ axiosInstance.interceptors.request.use(
         warn('非法token格式，跳过Authorization')
       }
     }
-    
+
     // 设置默认Content-Type
     if (request.data && !(request.data instanceof FormData) && !request.headers['Content-Type']) {
       request.headers.set('Content-Type', 'application/json')
       request.data = JSON.stringify(request.data)
     }
-    
+
     log('客户端博客系统发送HTTP请求:', {
       url: request.url,
       method: request.method,
@@ -108,10 +118,10 @@ axiosInstance.interceptors.request.use(
       data: request.data,
       headers: {
         Authorization: request.headers.Authorization,
-        'Content-Type': request.headers['Content-Type']
-      }
+        'Content-Type': request.headers['Content-Type'],
+      },
     })
-    
+
     // 特别记录密码修改请求的详细信息
     if (request.url?.includes('change-password')) {
       log('=== 密码修改请求详细信息 ===')
@@ -119,28 +129,28 @@ axiosInstance.interceptors.request.use(
       const userInfo = localStorage.getItem('userInfo')
       log('Token from localStorage:', token)
       log('UserInfo from localStorage:', userInfo)
-      
+
       // 检查token格式
-       if (token) {
-         const tokenParts = token.split('-')
-         log('Token parts:', tokenParts)
-         
-         // 正确的格式判断：mock-jwt-token-{username}-{timestamp}
-         // 旧格式：mock-jwt-token-{timestamp} (4个部分，最后一个是纯数字时间戳)
-         // 新格式：mock-jwt-token-{username}-{timestamp} (5个或更多部分)
-         const isOldFormat = tokenParts.length === 4 && /^\d+$/.test(tokenParts[3])
-         const isNewFormat = tokenParts.length >= 5
-         
-         log('Token format analysis:', {
-           isOldFormat,
-           isNewFormat,
-           expectedFormat: 'mock-jwt-token-{username}-{timestamp}',
-           actualParts: tokenParts.length,
-           lastPartIsTimestamp: /^\d+$/.test(tokenParts[tokenParts.length - 1])
-         })
-         
-         // 如果是旧格式token，尝试修复
-         if (isOldFormat && userInfo) {
+      if (token) {
+        const tokenParts = token.split('-')
+        log('Token parts:', tokenParts)
+
+        // 正确的格式判断：mock-jwt-token-{username}-{timestamp}
+        // 旧格式：mock-jwt-token-{timestamp} (4个部分，最后一个是纯数字时间戳)
+        // 新格式：mock-jwt-token-{username}-{timestamp} (5个或更多部分)
+        const isOldFormat = tokenParts.length === 4 && /^\d+$/.test(tokenParts[3])
+        const isNewFormat = tokenParts.length >= 5
+
+        log('Token format analysis:', {
+          isOldFormat,
+          isNewFormat,
+          expectedFormat: 'mock-jwt-token-{username}-{timestamp}',
+          actualParts: tokenParts.length,
+          lastPartIsTimestamp: /^\d+$/.test(tokenParts[tokenParts.length - 1]),
+        })
+
+        // 如果是旧格式token，尝试修复
+        if (isOldFormat && userInfo) {
           try {
             const user = JSON.parse(userInfo)
             // 对用户名进行编码以避免非ISO-8859-1字符问题
@@ -155,7 +165,7 @@ axiosInstance.interceptors.request.use(
           }
         }
       }
-      
+
       log('Request Authorization header:', request.headers.Authorization)
       log('Request data:', request.data)
       log('Request URL:', request.url)
@@ -166,14 +176,14 @@ axiosInstance.interceptors.request.use(
   (error) => {
     showError(createHttpError('请求配置错误', ApiStatus.error))
     return Promise.reject(error)
-  }
+  },
 )
 
 /** 响应拦截器 */
 axiosInstance.interceptors.response.use(
   (response: AxiosResponse) => {
     log('客户端博客系统HTTP响应拦截器 - 原始响应:', response.data)
-    
+
     // 检查是否是后端的标准响应格式 {code, msg, data}
     if (response.data && typeof response.data === 'object' && 'code' in response.data) {
       const { code, msg } = response.data
@@ -182,32 +192,32 @@ axiosInstance.interceptors.response.use(
         // 返回响应数据，让request函数处理data字段提取
         return response
       }
-      
+
       // 处理401未授权错误（客户端博客系统简化处理）
       if (code === ApiStatus.unauthorized) {
         handleUnauthorizedError(msg)
         return Promise.reject(createHttpError(msg || '登录已过期，请重新登录', code))
       }
-      
+
       console.error('客户端博客系统HTTP响应拦截器 - 请求失败:', msg)
       throw createHttpError(msg || '请求失败', code)
     }
-    
+
     // 其他格式的响应直接返回
     log('客户端博客系统HTTP响应拦截器 - 非标准格式响应，直接返回')
     return response
   },
   (error) => {
     console.error('客户端博客系统HTTP响应拦截器 - 网络错误:', error)
-    
+
     // 处理HTTP状态码401错误
     if (error.response?.status === ApiStatus.unauthorized) {
       handleUnauthorizedError(error.response?.data?.message)
       return Promise.reject(handleError(error))
     }
-    
+
     return Promise.reject(handleError(error))
-  }
+  },
 )
 
 /** 处理401错误（带防抖） */
@@ -252,7 +262,7 @@ function createHttpError(message: string, code: number) {
     message,
     timestamp: new Date().toISOString(),
     url: '',
-    method: 'UNKNOWN'
+    method: 'UNKNOWN',
   }
   return new HttpError(errorResponse)
 }
@@ -266,33 +276,33 @@ function shouldRetry(error: any): boolean {
       ApiStatus.internalServerError,
       ApiStatus.badGateway,
       ApiStatus.serviceUnavailable,
-      ApiStatus.gatewayTimeout
+      ApiStatus.gatewayTimeout,
     ]
     return retryableCodes.includes(error.code)
   }
-  
+
   // 如果是Axios错误，检查错误类型
   if (error.code) {
     const retryableNetworkErrors = [
-      'ECONNREFUSED',    // 连接被拒绝
-      'ETIMEDOUT',       // 连接超时
-      'ENOTFOUND',       // 域名解析失败
-      'ECONNRESET',      // 连接重置
-      'ECONNABORTED',    // 连接中断
-      'ENETUNREACH',     // 网络不可达
-      'EHOSTUNREACH',    // 主机不可达
-      'EPIPE',           // 管道错误
-      'EAI_AGAIN'        // DNS临时失败
+      'ECONNREFUSED', // 连接被拒绝
+      'ETIMEDOUT', // 连接超时
+      'ENOTFOUND', // 域名解析失败
+      'ECONNRESET', // 连接重置
+      'ECONNABORTED', // 连接中断
+      'ENETUNREACH', // 网络不可达
+      'EHOSTUNREACH', // 主机不可达
+      'EPIPE', // 管道错误
+      'EAI_AGAIN', // DNS临时失败
     ]
     return retryableNetworkErrors.includes(error.code)
   }
-  
+
   // 检查HTTP状态码
   if (error.response?.status) {
     const retryableStatusCodes: number[] = [408, 500, 502, 503, 504]
     return retryableStatusCodes.includes(error.response.status)
   }
-  
+
   // 检查错误消息中的关键词
   if (error.message) {
     const retryableMessages = [
@@ -300,31 +310,31 @@ function shouldRetry(error: any): boolean {
       'timeout',
       'connection',
       'failed to fetch',
-      'fetch error'
+      'fetch error',
     ]
     const message = error.message.toLowerCase()
-    return retryableMessages.some(keyword => message.includes(keyword))
+    return retryableMessages.some((keyword) => message.includes(keyword))
   }
-  
+
   return false
 }
 
 /** 请求重试逻辑 */
 async function retryRequest<T>(
   config: ExtendedAxiosRequestConfig,
-  retries: number = MAX_RETRIES
+  retries: number = MAX_RETRIES,
 ): Promise<T> {
   try {
     return await request<T>(config)
   } catch (error) {
     log(`请求失败，剩余重试次数: ${retries}`, error)
-    
+
     if (retries > 0 && shouldRetry(error)) {
       log(`等待 ${RETRY_DELAY}ms 后重试...`)
       await delay(RETRY_DELAY)
       return retryRequest<T>(config, retries - 1)
     }
-    
+
     log('重试次数已用完或错误不可重试，抛出错误')
     throw error
   }
@@ -393,7 +403,7 @@ const api = {
   },
   request<T>(config: ExtendedAxiosRequestConfig) {
     return retryRequest<T>(config)
-  }
+  },
 }
 
 export default api

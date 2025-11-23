@@ -16,7 +16,7 @@ export const ApiStatus = {
   badGateway: 502, // 网关错误
   serviceUnavailable: 503, // 服务不可用
   gatewayTimeout: 504, // 网关超时
-  httpVersionNotSupported: 505 // HTTP版本不支持
+  httpVersionNotSupported: 505, // HTTP版本不支持
 } as const
 
 /**
@@ -29,15 +29,15 @@ export const BusinessStatus = {
   DATA_NOT_FOUND: 1002, // 数据不存在
   DATA_EXISTS: 1003, // 数据已存在
   PERMISSION_DENIED: 1004, // 权限不足
-  OPERATION_FAILED: 1005 // 操作失败
+  OPERATION_FAILED: 1005, // 操作失败
 } as const
 
 /**
  * HTTP 状态码类型
  */
-export type ApiStatusType = typeof ApiStatus[keyof typeof ApiStatus]
+export type ApiStatusType = (typeof ApiStatus)[keyof typeof ApiStatus]
 
 /**
  * 业务状态码类型
  */
-export type BusinessStatusType = typeof BusinessStatus[keyof typeof BusinessStatus]
+export type BusinessStatusType = (typeof BusinessStatus)[keyof typeof BusinessStatus]

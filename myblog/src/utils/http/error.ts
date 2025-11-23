@@ -47,7 +47,7 @@ export class HttpError extends Error {
       method: this.method,
       timestamp: this.timestamp,
       userAgent: navigator?.userAgent,
-      stack: this.stack
+      stack: this.stack,
     }
   }
 }
@@ -64,7 +64,7 @@ export function isHttpError(error: any): error is HttpError {
  */
 export function handleError(error: AxiosError<ErrorResponse>): never {
   let httpError: HttpError
-  
+
   // 处理取消的请求
   if (error.code === 'ERR_CANCELED') {
     console.warn('Request cancelled:', error.message)
@@ -73,16 +73,16 @@ export function handleError(error: AxiosError<ErrorResponse>): never {
       message: '请求已取消',
       timestamp: new Date().toISOString(),
       url: error.config?.url || '',
-      method: error.config?.method?.toUpperCase() || 'UNKNOWN'
+      method: error.config?.method?.toUpperCase() || 'UNKNOWN',
     }
     httpError = new HttpError(errorResponse)
     throw httpError
   }
-  
+
   // 处理网络连接错误
   if (!error.response) {
     let message = '网络连接失败，请检查网络设置'
-    
+
     // 根据错误代码提供更具体的错误信息
     if (error.code === 'ECONNREFUSED') {
       message = '服务器连接被拒绝，请检查服务器是否正常运行'
@@ -93,13 +93,13 @@ export function handleError(error: AxiosError<ErrorResponse>): never {
     } else if (error.message.includes('Network Error')) {
       message = '网络错误，请检查网络连接'
     }
-    
+
     const errorResponse: ErrorResponse = {
       code: 0,
       message,
       timestamp: new Date().toISOString(),
       url: error.config?.url || '',
-      method: error.config?.method?.toUpperCase() || 'UNKNOWN'
+      method: error.config?.method?.toUpperCase() || 'UNKNOWN',
     }
     httpError = new HttpError(errorResponse)
   } else if (error.response?.data) {
@@ -109,7 +109,7 @@ export function handleError(error: AxiosError<ErrorResponse>): never {
     // 其他HTTP状态码错误
     let message = error.message || '请求失败'
     const status = error.response?.status
-    
+
     // 根据HTTP状态码提供更友好的错误信息
     switch (status) {
       case 400:
@@ -136,17 +136,17 @@ export function handleError(error: AxiosError<ErrorResponse>): never {
       default:
         message = `请求失败 (${status})`
     }
-    
+
     const errorResponse: ErrorResponse = {
       code: status || 500,
       message,
       timestamp: new Date().toISOString(),
       url: error.config?.url || '',
-      method: error.config?.method?.toUpperCase() || 'UNKNOWN'
+      method: error.config?.method?.toUpperCase() || 'UNKNOWN',
     }
     httpError = new HttpError(errorResponse)
   }
-  
+
   // 前台版本记录详细错误信息
   console.error('[HTTP Error]', httpError.toLogData())
   throw httpError

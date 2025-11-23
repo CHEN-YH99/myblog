@@ -1,12 +1,10 @@
 <template>
-  <header class="navbar" :class="{ 'scroll-down': scrollDown, 'navbar': scrollUp,'is-hidden': isHidden }">
+  <header
+    class="navbar"
+    :class="{ 'scroll-down': scrollDown, navbar: scrollUp, 'is-hidden': isHidden }"
+  >
     <div class="navbar__inner">
-      <el-avatar
-        class="navbar__avatar"
-        :size="32"
-        :src="avatarUrl"
-        alt="avatar"
-      />
+      <el-avatar class="navbar__avatar" :size="32" :src="avatarUrl" alt="avatar" />
 
       <!-- 桌面端菜单 -->
       <el-menu
@@ -18,7 +16,7 @@
         text-color="#00BFFF"
         active-text-color="#ffffff"
         :ellipsis="false"
-        @select="(index) => activeIndex = index"
+        @select="(index) => (activeIndex = index)"
       >
         <el-menu-item index="search" class="navbar__search" title="搜索">
           <el-icon><Search /></el-icon>
@@ -33,7 +31,7 @@
           <el-icon><Clock /></el-icon>
           <span class="menu-text">时间轴</span>
         </el-menu-item>
-        
+
         <el-sub-menu index="more" popper-class="navbar-submenu-popper" popper-effect="light">
           <template #title>
             <el-icon><Grid /></el-icon>
@@ -46,7 +44,6 @@
             <span>后端推荐</span>
           </el-menu-item>
         </el-sub-menu>
-
 
         <el-menu-item index="category" @click="$router.push('/category')">
           <el-icon><Collection /></el-icon>
@@ -77,13 +74,11 @@
 
         <!-- 用户登录状态显示 -->
         <div v-if="userStore.isLoggedIn" class="navbar__user" @click="handleUserMenuToggle">
-          <el-avatar 
-            :src="displayAvatar" 
-            :size="32"
-            class="user-avatar"
-          />
-          <span class="user-name">{{ userStore.userInfo?.nickname || userStore.userInfo?.username }}</span>
-          
+          <el-avatar :src="displayAvatar" :size="32" class="user-avatar" />
+          <span class="user-name">{{
+            userStore.userInfo?.nickname || userStore.userInfo?.username
+          }}</span>
+
           <!-- 用户下拉菜单 -->
           <div v-show="showUserMenu" class="user-menu" @click.stop>
             <div class="user-menu-item" @click="handleUserCenter">
@@ -104,7 +99,7 @@
         </el-menu-item>
 
         <div class="navbar__switch" title="主题切换">
-           <el-switch
+          <el-switch
             :model-value="is_Dark"
             @change="animateThemeSwitch"
             @click="rememberPointer"
@@ -156,7 +151,7 @@
         background-color="transparent"
         text-color="#cfe8ff"
         active-text-color="#ffffff"
-        @select="(index) => mobileActiveIndex = index"
+        @select="(index) => (mobileActiveIndex = index)"
       >
         <el-menu-item index="m-search">
           <el-icon><Search /></el-icon>
@@ -170,7 +165,7 @@
           <el-icon><Clock /></el-icon>
           <span>时间轴</span>
         </el-menu-item>
-        <el-sub-menu index="m-more" >
+        <el-sub-menu index="m-more">
           <template #title>
             <el-icon><Grid /></el-icon>
             <span>更多</span>
@@ -180,7 +175,7 @@
           </el-menu-item>
           <el-menu-item index="m-backend" @click="handleMobileNavigation('/backend')">
             <span>后端推荐</span>
-          </el-menu-item> 
+          </el-menu-item>
         </el-sub-menu>
         <el-menu-item index="m-category" @click="handleMobileNavigation('/category')">
           <el-icon><Collection /></el-icon>
@@ -207,11 +202,10 @@
         <!-- 移动端用户登录状态显示 -->
         <div v-if="userStore.isLoggedIn" class="mobile-user-section">
           <div class="mobile-user-info">
-            <el-avatar
-              :src="displayAvatar" 
-              :size="40"
-            />
-            <span class="mobile-user-name">{{ userStore.userInfo?.nickname || userStore.userInfo?.username }}</span>
+            <el-avatar :src="displayAvatar" :size="40" />
+            <span class="mobile-user-name">{{
+              userStore.userInfo?.nickname || userStore.userInfo?.username
+            }}</span>
           </div>
           <el-menu-item index="m-user-center" @click="handleMobileNavigation('/user/center')">
             <el-icon><UserFilled /></el-icon>
@@ -236,7 +230,7 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount, computed, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { is_Dark, toggleDark, animateThemeSwitch,rememberPointer} from '@/assets/ts/theme'
+import { is_Dark, toggleDark, animateThemeSwitch, rememberPointer } from '@/assets/ts/theme'
 import { useUserStore } from '@/stores/user'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
@@ -255,7 +249,7 @@ import {
   Menu as MenuIcon,
   UserFilled,
   Setting,
-  SwitchButton
+  SwitchButton,
 } from '@element-plus/icons-vue'
 
 import avatarUrl from '@/assets/images/hui.svg'
@@ -264,7 +258,6 @@ const router = useRouter()
 const route = useRoute()
 const drawer = ref(false)
 const userStore = useUserStore()
-
 
 // 与后台管理列表一致的默认头像生成策略
 const getDefaultAvatar = (name) => {
@@ -321,7 +314,7 @@ const mapPathToMobileMenu = (path) => {
     talk: 'm-talk',
     links: 'm-links',
     board: 'm-board',
-    login: 'm-login'
+    login: 'm-login',
   }
   return map[m] || 'm-home'
 }
@@ -347,30 +340,35 @@ const initActiveState = () => {
 }
 
 // 监听路由变化，使用 oldPath 作为进入文章详情的来源
-watch(() => route.path, (newPath, oldPath) => {
-  // 记录上一个路径
-  prevPath.value = oldPath || prevPath.value
+watch(
+  () => route.path,
+  (newPath, oldPath) => {
+    // 记录上一个路径
+    prevPath.value = oldPath || prevPath.value
 
-  if (newPath.startsWith('/article/')) {
-    const fromParam = route.query.from && typeof route.query.from === 'string' ? route.query.from : ''
-    if (fromParam) {
-      activeIndex.value = fromParam
-      mobileActiveIndex.value = `m-${fromParam}`
+    if (newPath.startsWith('/article/')) {
+      const fromParam =
+        route.query.from && typeof route.query.from === 'string' ? route.query.from : ''
+      if (fromParam) {
+        activeIndex.value = fromParam
+        mobileActiveIndex.value = `m-${fromParam}`
+        return
+      }
+      // 如果是从非文章页进入，则以 oldPath 判定来源
+      if (oldPath && !oldPath.startsWith('/article/')) {
+        activeIndex.value = mapPathToMenu(oldPath)
+        mobileActiveIndex.value = mapPathToMobileMenu(oldPath)
+        return
+      }
+      // 从文章页跳到另一个文章页：保持现有高亮不变
       return
     }
-    // 如果是从非文章页进入，则以 oldPath 判定来源
-    if (oldPath && !oldPath.startsWith('/article/')) {
-      activeIndex.value = mapPathToMenu(oldPath)
-      mobileActiveIndex.value = mapPathToMobileMenu(oldPath)
-      return
-    }
-    // 从文章页跳到另一个文章页：保持现有高亮不变
-    return
-  }
-  // 普通页面：直接按当前路径映射
-  activeIndex.value = mapPathToMenu(newPath)
-  mobileActiveIndex.value = mapPathToMobileMenu(newPath)
-}, { immediate: true })
+    // 普通页面：直接按当前路径映射
+    activeIndex.value = mapPathToMenu(newPath)
+    mobileActiveIndex.value = mapPathToMobileMenu(newPath)
+  },
+  { immediate: true },
+)
 
 // 处理移动端导航
 const handleMobileNavigation = (path) => {
@@ -393,22 +391,20 @@ const handleUserCenter = () => {
 }
 
 const handleLogout = () => {
-  ElMessageBox.confirm(
-    '确定要退出登录吗？',
-    '退出确认',
-    {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning',
-    }
-  ).then(() => {
-    showUserMenu.value = false
-    userStore.logout()
-    router.push('/')
-    ElMessage.success('已退出登录')
-  }).catch(() => {
-    // 用户取消退出
+  ElMessageBox.confirm('确定要退出登录吗？', '退出确认', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning',
   })
+    .then(() => {
+      showUserMenu.value = false
+      userStore.logout()
+      router.push('/')
+      ElMessage.success('已退出登录')
+    })
+    .catch(() => {
+      // 用户取消退出
+    })
 }
 
 // 点击外部关闭用户菜单
@@ -419,31 +415,31 @@ const handleClickOutside = (event) => {
 }
 
 // 监听滚动事件
-import { 
-  isHidden, 
-  scrollDirection, 
-  scrollDown, 
+import {
+  isHidden,
+  scrollDirection,
+  scrollDown,
   scrollUp,
-  initScrollListener, 
-  removeScrollListener 
+  initScrollListener,
+  removeScrollListener,
 } from '@/assets/ts/navbar'
 
-	// 组件挂载时，监听滚动事件和初始化活动状态
-	onMounted(() => {
-    initScrollListener()
-    initActiveState()
-    // 添加点击外部关闭菜单的监听器
-    document.addEventListener('click', handleClickOutside)
-    // 刷新用户信息，确保头像与后台同步（登录状态下）
-    if (userStore.isLoggedIn) {
-      userStore.fetchUserInfo().catch(() => {})
-    }
-  })
+// 组件挂载时，监听滚动事件和初始化活动状态
+onMounted(() => {
+  initScrollListener()
+  initActiveState()
+  // 添加点击外部关闭菜单的监听器
+  document.addEventListener('click', handleClickOutside)
+  // 刷新用户信息，确保头像与后台同步（登录状态下）
+  if (userStore.isLoggedIn) {
+    userStore.fetchUserInfo().catch(() => {})
+  }
+})
 // 记得在组件卸载时移除监听器
-  onBeforeUnmount(() => {
-    removeScrollListener()
-    document.removeEventListener('click', handleClickOutside)
-  })
+onBeforeUnmount(() => {
+  removeScrollListener()
+  document.removeEventListener('click', handleClickOutside)
+})
 </script>
 
 <style scoped lang="scss">
@@ -457,7 +453,7 @@ import {
   background: linear-gradient(180deg, rgba(8, 20, 40, 0.1), rgba(8, 20, 40, 0.2));
   backdrop-filter: blur(6px);
   border-bottom: 1px solid rgba(200, 230, 255, 0.12);
-  transition: all .8s ease-in-out;
+  transition: all 0.8s ease-in-out;
   transform: translateY(0);
 }
 // 滚动条下滑触发
@@ -471,7 +467,7 @@ import {
   background: linear-gradient(180deg, rgba(8, 20, 40, 0.7), rgba(8, 20, 40, 0.55));
   backdrop-filter: blur(6px);
   border-bottom: 1px solid rgba(200, 230, 255, 0.12);
-  transition: all .8s ease-in-out;
+  transition: all 0.8s ease-in-out;
 }
 // 导航栏显示隐藏
 .navbar.is-hidden {
@@ -535,12 +531,15 @@ import {
   border: 1px solid rgba(255, 255, 255, 0.22);
   color: #e0f2ff;
   cursor: pointer;
-  transition: background-color .2s ease, color .2s ease, border-color .2s ease;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease;
 }
 .icon-btn:hover {
-  background: rgba(255,255,255,.08);
+  background: rgba(255, 255, 255, 0.08);
   color: #fff;
-  border-color: rgba(255,255,255,.35);
+  border-color: rgba(255, 255, 255, 0.35);
 }
 
 /* Element Plus 菜单样式微调（桌面端） */
@@ -551,7 +550,9 @@ import {
   padding: 0 7px;
   font-size: 13px;
   color: #3293eea6;
-  transition: color 0.2s ease, background-color 0.2s ease;
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease;
   /* 防止布局抖动 */
   will-change: color, background-color;
   transform: translateZ(0);
@@ -563,15 +564,15 @@ import {
   .el-sub-menu__icon-arrow {
     display: none !important;
   }
-  
+
   // 重置右边距，去除箭头预留空间
   padding-right: 7px !important;
-  
+
   // 去除可能的伪元素箭头
   &::after {
     display: none !important;
   }
-  
+
   // 确保没有额外的右边距
   .el-icon {
     margin-right: 0 !important;
@@ -773,7 +774,7 @@ import {
 .drawer__title {
   font-size: 14px;
   color: #78b4f5;
-  letter-spacing: .5px;
+  letter-spacing: 0.5px;
 }
 .drawer__menu {
   padding: 6px 0;

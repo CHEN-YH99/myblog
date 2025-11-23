@@ -19,7 +19,10 @@ import { ref } from 'vue'
     }
     // 获取滚动方向
     function getScrollDirection() { 
-       const scrollPosition = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop;
+       const scrollPosition =
+         window.pageYOffset ||
+         document.documentElement.scrollTop ||
+         document.body.scrollTop;
 		
 	
 		

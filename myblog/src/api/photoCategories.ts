@@ -6,12 +6,12 @@ import http from '@/utils/http'
  * @returns 图片分类列表响应
  */
 export const getPhotoCategories = (
-  params?: Api.PhotoCategory.SearchParams
+  params?: Api.PhotoCategory.SearchParams,
 ): Promise<Api.PhotoCategory.ListResponse> => {
   return http.request<Api.PhotoCategory.ListResponse>({
     url: '/api/photo-categories',
     method: 'GET',
-    params
+    params,
   })
 }
 
@@ -21,11 +21,11 @@ export const getPhotoCategories = (
  * @returns 图片分类详情
  */
 export const getPhotoCategoryDetail = (
-  id: string
+  id: string,
 ): Promise<Api.PhotoCategory.DetailResponse> => {
   return http.request<Api.PhotoCategory.DetailResponse>({
     url: `/api/photo-categories/${id}`,
-    method: 'GET'
+    method: 'GET',
   })
 }
 
@@ -37,11 +37,11 @@ export const getPhotoCategoryDetail = (
  */
 export const updatePhotoCategory = (
   id: string,
-  data: Partial<Api.PhotoCategory.PhotoCategoryItem>
+  data: Partial<Api.PhotoCategory.PhotoCategoryItem>,
 ): Promise<Api.PhotoCategory.DetailResponse> => {
   return http.request<Api.PhotoCategory.DetailResponse>({
     url: `/api/photo-categories/${id}`,
     method: 'PUT',
-    data
+    data,
   })
 }

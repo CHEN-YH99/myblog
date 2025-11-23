@@ -209,7 +209,15 @@
 import { ref, computed, onMounted, nextTick, watch, watchPostEffect } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { User, View, Star, Share, ArrowLeft, Loading, Picture } from '@element-plus/icons-vue'
+import {
+  User,
+  View,
+  Star,
+  Share,
+  ArrowLeft,
+  Loading,
+  Picture,
+} from '@element-plus/icons-vue'
 import ReadingProgress from '@/components/ReadingProgress.vue'
 import WaveContainer from '@/components/WaveContainer.vue'
 import { useLikes } from '@/composables/useLikes'
@@ -234,7 +242,6 @@ const tocRef = ref<InstanceType<typeof TableOfContents> | null>(null)
 
 // 使用全局点赞状态管理
 
-
 // 获取文章ID
 const articleId = computed(() => route.params.id as string)
 
@@ -251,8 +258,10 @@ const md = new MarkdownIt({
         console.warn('代码高亮失败:', error)
       }
     }
-    return '<pre><code class="hljs">' + md.utils.escapeHtml(str) + '</code></pre>' // 使用外部默认转义
-  }
+    return (
+      '<pre><code class="hljs">' + md.utils.escapeHtml(str) + '</code></pre>'
+    ) // 使用外部默认转义
+  },
 })
 
 // 计算渲染后的文章内容
@@ -281,7 +290,7 @@ const truncateText = (text: string, maxLength: number): string => {
 // 获取文章详情
 const fetchArticle = async () => {
   const currentArticleId = articleId.value
-  
+
   if (!currentArticleId) {
     error.value = '文章ID不存在'
     ElMessage.error('文章ID不存在')
@@ -292,7 +301,8 @@ const fetchArticle = async () => {
   try {
     loading.value = true
     error.value = ''
-    void 0 && console.log('ArticleDetail: 开始获取文章详情，ID:', currentArticleId)
+    if (import.meta.env.DEV)
+      console.log('ArticleDetail: 开始获取文章详情，ID:', currentArticleId)
 
     const result = await getArticle(currentArticleId)
     if (!result) {
@@ -300,23 +310,24 @@ const fetchArticle = async () => {
     }
 
     article.value = result
-    void 0 && console.log('ArticleDetail: 文章获取成功:', article.value?.title)
+    if (import.meta.env.DEV)
+      console.log('ArticleDetail: 文章获取成功:', article.value?.title)
 
     // 文章加载完成后，等待DOM更新并刷新目录
     // 第一次 nextTick：等待 article.value 的响应式更新
     await nextTick()
-    void 0 && console.log('ArticleDetail: 第一次 nextTick 完成')
-    
+    if (import.meta.env.DEV) console.log('ArticleDetail: 第一次 nextTick 完成')
+
     // 第二次 nextTick：等待 v-html 渲染完成
     await nextTick()
-    void 0 && console.log('ArticleDetail: 第二次 nextTick 完成')
-    
+    if (import.meta.env.DEV) console.log('ArticleDetail: 第二次 nextTick 完成')
+
     // 延迟刷新目录，确保 markdown 内容完全渲染
     setTimeout(() => {
       try {
-        void 0 && console.log('ArticleDetail: 开始刷新目录')
+        if (import.meta.env.DEV) console.log('ArticleDetail: 开始刷新目录')
         tocRef.value?.refresh()
-        void 0 && console.log('ArticleDetail: 目录刷新完成')
+        if (import.meta.env.DEV) console.log('ArticleDetail: 目录刷新完成')
       } catch (error) {
         console.warn('ArticleDetail: 目录刷新失败:', error)
       }
@@ -343,7 +354,10 @@ const retryLoad = async () => {
 }
 
 // 处理图片加载错误
-const handleImageErrorEnhanced = (event: Event, fallbackSrc = '/default-article.svg') => {
+const handleImageErrorEnhanced = (
+  event: Event,
+  fallbackSrc = '/default-article.svg',
+) => {
   try {
     const img = event.target as HTMLImageElement
     if (img.src !== fallbackSrc) {
@@ -452,7 +466,10 @@ const likeArticle = () => {
     const id = article.value._id
     const willLike = !isLiked(id)
     // Optimistic update: 预先更新 UI
-    article.value.likes = Math.max(0, (article.value.likes || 0) + (willLike ? 1 : -1))
+    article.value.likes = Math.max(
+      0,
+      (article.value.likes || 0) + (willLike ? 1 : -1),
+    )
     // 触发实际的点赞操作（已做防抖与错误回滚）
     handleLike(id)
   } catch (error) {
@@ -461,23 +478,32 @@ const likeArticle = () => {
 }
 
 // 监听路由参数变化 - 用于处理同一页面内的路由切换
-watch(() => route.params.id, async (newId, oldId) => {
-  // 只在路由参数实际改变时重新加载（不使用 immediate）
-  if (newId && newId !== oldId) {
-    void 0 && console.log('ArticleDetail: 路由参数变化，重新加载文章，从', oldId, '到', newId)
-    await fetchArticle()
-  }
-})
+watch(
+  () => route.params.id,
+  async (newId, oldId) => {
+    // 只在路由参数实际改变时重新加载（不使用 immediate）
+    if (newId && newId !== oldId) {
+      if (import.meta.env.DEV)
+        console.log(
+          'ArticleDetail: 路由参数变化，重新加载文章，从',
+          oldId,
+          '到',
+          newId,
+        )
+      await fetchArticle()
+    }
+  },
+)
 
 // 生命周期钩子 - 初始化加载
 onMounted(async () => {
-  void 0 && console.log('ArticleDetail: onMounted 触发，开始初始化加载')
+  if (import.meta.env.DEV)
+    console.log('ArticleDetail: onMounted 触发，开始初始化加载')
   // 初始化时加载文章
   if (!article.value) {
     await fetchArticle()
   }
 })
-
 </script>
 
 <style scoped>
@@ -513,7 +539,7 @@ onMounted(async () => {
   background-color: var(--el-bg-color);
   padding: 30px;
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 .sidebar {
@@ -528,7 +554,7 @@ onMounted(async () => {
   background-color: var(--el-bg-color);
   padding: 20px;
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   margin-bottom: 20px;
 }
 
@@ -568,7 +594,8 @@ onMounted(async () => {
   margin-bottom: 20px;
 }
 
-.meta-left, .meta-right {
+.meta-left,
+.meta-right {
   display: flex;
   align-items: center;
   gap: 20px;
@@ -617,12 +644,14 @@ onMounted(async () => {
 
 .tag-item {
   cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
 }
 
 .tag-item:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .article-image {
@@ -705,7 +734,9 @@ onMounted(async () => {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* 响应式设计 */

@@ -8,11 +8,11 @@ export interface ExternalLinkOptions {
   isExternal?: (url: string) => boolean
 }
 
-const defaultWhitelist = new Set<string>([
-  'localhost',
-  '127.0.0.1',
-  typeof window !== 'undefined' ? window.location.hostname : ''
-].filter(Boolean))
+const defaultWhitelist = new Set<string>(
+  ['localhost', '127.0.0.1', typeof window !== 'undefined' ? window.location.hostname : ''].filter(
+    Boolean,
+  ),
+)
 
 function getHostname(href: string): string | null {
   try {
@@ -26,7 +26,9 @@ function getHostname(href: string): string | null {
 function defaultIsExternal(url: string): boolean {
   try {
     const u = new URL(url, window.location.href)
-    return (u.protocol === 'http:' || u.protocol === 'https:') && u.hostname !== window.location.hostname
+    return (
+      (u.protocol === 'http:' || u.protocol === 'https:') && u.hostname !== window.location.hostname
+    )
   } catch {
     return false
   }
@@ -48,7 +50,7 @@ export function useExternalLinkConfirm(opts: ExternalLinkOptions = {}) {
           cancelButtonText: '取消',
           dangerouslyUseHTMLString: true,
           center: true,
-        }
+        },
       )
       window.open(href, '_blank', 'noopener,noreferrer')
       ElMessage.success('已在新标签页打开')
@@ -100,4 +102,3 @@ export function useExternalLinkConfirm(opts: ExternalLinkOptions = {}) {
 
   return { enable, disable, confirmAndOpen, isExternal }
 }
-

@@ -9,13 +9,16 @@ export function useTokenCheck() {
 
   const startTokenCheck = () => {
     // 每5分钟检查一次token是否过期
-    intervalId = setInterval(() => {
-      if (!userStore.checkTokenExpire()) {
-        console.log('定时检查：Token已过期，执行登出')
-        // 跳转到登录页
-        router.push('/login')
-      }
-    }, 5 * 60 * 1000) // 5分钟
+    intervalId = setInterval(
+      () => {
+        if (!userStore.checkTokenExpire()) {
+          console.log('定时检查：Token已过期，执行登出')
+          // 跳转到登录页
+          router.push('/login')
+        }
+      },
+      5 * 60 * 1000,
+    ) // 5分钟
   }
 
   const stopTokenCheck = () => {
@@ -31,6 +34,6 @@ export function useTokenCheck() {
 
   return {
     startTokenCheck,
-    stopTokenCheck
+    stopTokenCheck,
   }
 }

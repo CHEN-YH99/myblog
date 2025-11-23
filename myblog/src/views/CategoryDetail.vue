@@ -5,7 +5,9 @@
       <div class="large-img">
         <img src="../assets/images/category.jpeg" alt="" />
         <div class="inner-header flex">
-          <h1 class="animate__animated animate__backInDown">{{ categoryDisplayName }}</h1>
+          <h1 class="animate__animated animate__backInDown">
+            {{ categoryDisplayName }}
+          </h1>
         </div>
       </div>
       <!-- 海水波浪 -->
@@ -18,12 +20,17 @@
     </div>
 
     <!-- 分类文章列表 -->
-    <div v-else-if="categoryArticles.length" class="articles-container animate__animated animate__fadeInUp">
+    <div
+      v-else-if="categoryArticles.length"
+      class="articles-container animate__animated animate__fadeInUp"
+    >
       <div class="content-wrapper">
         <!-- 面包屑导航 -->
         <div class="breadcrumb-container">
           <el-breadcrumb separator=" - " class="breadcrumb">
-            <el-breadcrumb-item :to="{ path: '/category' }">分类</el-breadcrumb-item>
+            <el-breadcrumb-item :to="{ path: '/category' }">
+              分类
+            </el-breadcrumb-item>
             <el-breadcrumb-item>{{ categoryDisplayName }}</el-breadcrumb-item>
           </el-breadcrumb>
           <div class="article-count">
@@ -33,88 +40,98 @@
 
         <!-- 文章网格 -->
         <div class="articles-grid">
-          <div 
-            v-for="article in paginatedArticles" 
+          <div
+            v-for="article in paginatedArticles"
             :key="article._id"
             class="article-card"
             @click="goToArticleDetail(article._id)"
           >
             <div class="article-image-wrapper">
-              <el-image 
-                class="article-image" 
-                :src="article.image || '/default-article.jpg'" 
+              <el-image
+                class="article-image"
+                :src="article.image || '/default-article.jpg'"
                 :alt="article.title"
                 fit="cover"
               />
             </div>
             <div class="article-content">
               <h3 class="article-title">{{ article.title }}</h3>
-            <div class="article-meta">
-              <div class="meta-item">
-                <el-icon><Calendar /></el-icon>
-                <span>{{ formatDate(article.publishDate) }}</span>
+              <div class="article-meta">
+                <div class="meta-item">
+                  <el-icon><Calendar /></el-icon>
+                  <span>{{ formatDate(article.publishDate) }}</span>
+                </div>
+                <div class="meta-item">
+                  <el-icon><View /></el-icon>
+                  <span>{{ formatNumber(article.views || 0) }} 次阅读</span>
+                </div>
+                <div class="meta-item">
+                  <el-icon><Star /></el-icon>
+                  <span>{{ formatNumber(article.likes || 0) }} 点赞</span>
+                </div>
               </div>
-              <div class="meta-item">
-                <el-icon><View /></el-icon>
-                <span>{{ formatNumber(article.views || 0) }} 次阅读</span>
-              </div>
-              <div class="meta-item">
-                <el-icon><Star /></el-icon>
-                <span>{{ formatNumber(article.likes || 0) }} 点赞</span>
-              </div>
-            </div>
-            
-            <!-- 文章摘要 -->
-            <p v-if="article.excerpt" class="article-excerpt">{{ article.excerpt }}</p>
-            
-            <!-- 标签 -->
-            <div v-if="article.tags && article.tags.length > 0" class="article-tags">
-              <el-tag
-                v-for="tag in article.tags.slice(0, 3)"
-                :key="tag"
-                :style="{ backgroundColor: colorFor(tag), color: '#fff' }"
-                class="tag-item"
-                size="small"
+
+              <!-- 文章摘要 -->
+              <p v-if="article.excerpt" class="article-excerpt">
+                {{ article.excerpt }}
+              </p>
+
+              <!-- 标签 -->
+              <div
+                v-if="article.tags && article.tags.length > 0"
+                class="article-tags"
               >
-                {{ tag }}
-              </el-tag>
-              <span v-if="article.tags.length > 3" class="more-tags">+{{ article.tags.length - 3 }}</span>
+                <el-tag
+                  v-for="tag in article.tags.slice(0, 3)"
+                  :key="tag"
+                  :style="{ backgroundColor: colorFor(tag), color: '#fff' }"
+                  class="tag-item"
+                  size="small"
+                >
+                  {{ tag }}
+                </el-tag>
+                <span v-if="article.tags.length > 3" class="more-tags"
+                  >+{{ article.tags.length - 3 }}</span
+                >
+              </div>
             </div>
           </div>
         </div>
+
+        <!-- 分页 -->
+        <el-pagination
+          v-if="categoryArticles.length > pageSize"
+          v-model:current-page="currentPage"
+          v-model:page-size="pageSize"
+          :total="categoryArticles.length"
+          layout="prev, pager, next, jumper"
+          class="pagination"
+          hide-on-single-page
+        />
       </div>
-
-      <!-- 分页 -->
-      <el-pagination
-        v-if="categoryArticles.length > pageSize"
-        v-model:current-page="currentPage"
-        v-model:page-size="pageSize"
-        :total="categoryArticles.length"
-        layout="prev, pager, next, jumper"
-        class="pagination"
-        hide-on-single-page
-      />
     </div>
-  </div>
 
-  <!-- 错误状态 -->
-  <div v-else-if="error" class="error-container">
-    <el-alert
-      title="加载失败"
-      :description="error"
-      type="error"
-      center
-      show-icon
-    >
-      <template #default>
-        <el-button @click="handleRefresh" type="primary">重新加载</el-button>
-      </template>
-    </el-alert>
-  </div>
+    <!-- 错误状态 -->
+    <div v-else-if="error" class="error-container">
+      <el-alert
+        title="加载失败"
+        :description="error"
+        type="error"
+        center
+        show-icon
+      >
+        <template #default>
+          <el-button @click="handleRefresh" type="primary">重新加载</el-button>
+        </template>
+      </el-alert>
+    </div>
 
     <!-- 空状态 -->
     <div v-else class="empty-container">
-      <el-empty :description="`暂无 ${categoryDisplayName} 相关文章`" :image-size="200">
+      <el-empty
+        :description="`暂无 ${categoryDisplayName} 相关文章`"
+        :image-size="200"
+      >
         <el-button type="primary" @click="goBack">返回分类页面</el-button>
       </el-empty>
     </div>
@@ -174,16 +191,16 @@ const categoryDisplayName = computed(() => {
 const categoryArticles = computed(() => {
   // void 0 && console.log('CategoryDetail - 筛选分类文章:', categorySlug.value)
   // void 0 && console.log('CategoryDetail - 全部文章:', allArticles.value.length)
-  
+
   if (!categorySlug.value || !allArticles.value.length) {
     return []
   }
-  
-  const filtered = allArticles.value.filter(article => {
+
+  const filtered = allArticles.value.filter((article) => {
     const matchesCategory = article.category === categorySlug.value
     return matchesCategory
   })
-  
+
   // void 0 && console.log('CategoryDetail - 筛选后的文章:', filtered.length)
   return filtered
 })
@@ -200,7 +217,7 @@ const formatDate = (dateString: string | Date | undefined): string => {
   if (!dateString) return '暂无日期'
   const date = new Date(dateString)
   if (isNaN(date.getTime())) return '无效日期'
-  
+
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
   const day = String(date.getDate()).padStart(2, '0')
@@ -241,11 +258,11 @@ const goToArticleDetail = (articleId: string) => {
     ElMessage.warning('请先登录后再查看文章详情')
     router.push({
       path: '/login',
-      query: { redirect: `/article/${articleId}` }
+      query: { redirect: `/article/${articleId}` },
     })
     return
   }
-  
+
   const from = mapPathToMenu(route.path)
   router.push({ path: `/article/${articleId}`, query: { from } })
 }
@@ -264,15 +281,15 @@ const handleRefresh = async () => {
 // 加载数据
 const loadData = async () => {
   // void 0 && console.log('CategoryDetail - 开始加载数据, 分类:', categorySlug.value)
-  
+
   try {
     loading.value = true
-    
+
     // 获取文章数据
     await articlesStore.fetchArticles()
     allArticles.value = articlesStore.articles
     // void 0 && console.log('CategoryDetail - 获取到文章:', allArticles.value.length)
-    
+
     // 获取分类数据
     await initCategories()
     const foundCategory = findCategory(categorySlug.value)
@@ -280,7 +297,6 @@ const loadData = async () => {
       currentCategory.value = foundCategory
     }
     // void 0 && console.log('CategoryDetail - 找到分类:', currentCategory.value)
-    
   } catch (err: any) {
     error.value = err.message || '加载数据失败'
   } finally {
@@ -289,13 +305,17 @@ const loadData = async () => {
 }
 
 // 监听路由参数变化
-watch(() => route.params.category, async (newCategory, oldCategory) => {
-  if (newCategory && newCategory !== oldCategory) {
-    void 0 && console.log('CategoryDetail: 路由参数变化，重新加载数据')
-    currentPage.value = 1 // 重置分页
-    await loadData()
-  }
-}, { immediate: true })
+watch(
+  () => route.params.category,
+  async (newCategory, oldCategory) => {
+    if (newCategory && newCategory !== oldCategory) {
+      void 0 && console.log('CategoryDetail: 路由参数变化，重新加载数据')
+      currentPage.value = 1 // 重置分页
+      await loadData()
+    }
+  },
+  { immediate: true },
+)
 
 // 组件挂载
 onMounted(async () => {
@@ -305,8 +325,6 @@ onMounted(async () => {
   }
 })
 </script>
-
-
 
 <style scoped lang="scss">
 .loading-container {
@@ -335,29 +353,29 @@ onMounted(async () => {
   padding: 24px 30px;
   background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
   border-bottom: 1px solid #dee2e6;
-  
+
   .breadcrumb {
     font-size: 16px;
     font-weight: 500;
-    
+
     :deep(.el-breadcrumb__item) {
       .el-breadcrumb__inner {
         color: #51dbfa;
         text-decoration: none;
         transition: color 0.3s ease;
-        
+
         &:hover {
           color: #409eff;
         }
       }
-      
+
       &:last-child .el-breadcrumb__inner {
         font-weight: 600;
         color: #495057;
       }
     }
   }
-  
+
   .article-count {
     font-size: 14px;
     font-weight: 500;
@@ -373,7 +391,7 @@ onMounted(async () => {
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 24px;
   padding: 30px;
-  
+
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
     gap: 16px;
@@ -388,32 +406,32 @@ onMounted(async () => {
   cursor: pointer;
   border: 1px solid #f0f0f0;
   background: #fff;
-  
+
   &:hover {
     transform: translateY(-4px);
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
     border-color: #409eff;
   }
-  
+
   .article-image-wrapper {
     width: 100%;
     height: 200px;
     overflow: hidden;
-    
+
     .article-image {
       width: 100%;
       height: 100%;
       transition: transform 0.3s ease;
     }
   }
-  
+
   &:hover .article-image {
     transform: scale(1.05);
   }
-  
+
   .article-content {
     padding: 20px;
-    
+
     .article-title {
       font-size: 18px;
       font-weight: 600;
@@ -427,7 +445,7 @@ onMounted(async () => {
       min-height: 50px;
       transition: color 0.3s ease;
     }
-    
+
     .article-meta {
       display: flex;
       justify-content: space-between;
@@ -435,20 +453,20 @@ onMounted(async () => {
       margin-bottom: 12px;
       flex-wrap: wrap;
       gap: 8px;
-      
+
       .meta-item {
         display: flex;
         align-items: center;
         gap: 4px;
         font-size: 12px;
         color: #6c757d;
-        
+
         .el-icon {
           font-size: 14px;
         }
       }
     }
-    
+
     .article-excerpt {
       font-size: 14px;
       color: #6c757d;
@@ -459,30 +477,30 @@ onMounted(async () => {
       -webkit-box-orient: vertical;
       overflow: hidden;
     }
-    
+
     .article-tags {
       display: flex;
       flex-wrap: wrap;
       gap: 6px;
       align-items: center;
-      
+
       .tag-item {
         border: none;
         font-size: 11px;
         padding: 2px 8px;
         border-radius: 12px;
       }
-      
+
       .more-tags {
         font-size: 11px;
         color: #999;
-        
+
         padding: 2px 6px;
         border-radius: 8px;
       }
     }
   }
-  
+
   &:hover .article-title {
     color: #409eff;
   }
@@ -493,28 +511,29 @@ onMounted(async () => {
   justify-content: center;
   padding: 30px;
   border-top: 1px solid #f0f0f0;
-  
+
   :deep(.el-pagination) {
     .el-pager li {
       background: #fff;
       border: 1px solid #ddd;
       margin: 0 2px;
-      
+
       &.is-active {
         background: #409eff;
         border-color: #409eff;
         color: #fff;
       }
-      
+
       &:hover:not(.is-active) {
         background: #f5f7fa;
       }
     }
-    
-    .btn-prev, .btn-next {
+
+    .btn-prev,
+    .btn-next {
       background: #fff;
       border: 1px solid #ddd;
-      
+
       &:hover {
         background: #f5f7fa;
       }
@@ -538,17 +557,17 @@ onMounted(async () => {
   .articles-container {
     margin: 20px auto;
   }
-  
+
   .content-wrapper {
     border-radius: 8px;
   }
-  
+
   .breadcrumb-container {
     flex-direction: column;
     gap: 12px;
     align-items: flex-start;
     padding: 20px;
-    
+
     .article-count {
       align-self: flex-end;
     }

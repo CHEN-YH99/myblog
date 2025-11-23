@@ -1,9 +1,6 @@
 <template>
   <div class="reading-progress-container">
-    <div 
-      class="reading-progress-bar" 
-      :style="{ width: `${progress}%` }"
-    ></div>
+    <div class="reading-progress-bar" :style="{ width: `${progress}%` }"></div>
   </div>
 </template>
 
@@ -16,12 +13,12 @@ const progress = ref(0)
 const calculateProgress = () => {
   const scrollTop = window.pageYOffset || document.documentElement.scrollTop
   const scrollHeight = document.documentElement.scrollHeight - window.innerHeight
-  
+
   if (scrollHeight <= 0) {
     progress.value = 0
     return
   }
-  
+
   const scrollPercent = (scrollTop / scrollHeight) * 100
   progress.value = Math.min(100, Math.max(0, scrollPercent))
 }
@@ -30,10 +27,10 @@ const calculateProgress = () => {
 const throttle = (func: Function, delay: number) => {
   let timeoutId: ReturnType<typeof setTimeout> | null = null
   let lastExecTime = 0
-  
+
   return function (...args: unknown[]) {
     const currentTime = Date.now()
-    
+
     if (currentTime - lastExecTime > delay) {
       func.apply(null, args)
       lastExecTime = currentTime
@@ -41,10 +38,13 @@ const throttle = (func: Function, delay: number) => {
       if (timeoutId) {
         clearTimeout(timeoutId)
       }
-      timeoutId = setTimeout(() => {
-        func.apply(null, args)
-        lastExecTime = Date.now()
-      }, delay - (currentTime - lastExecTime))
+      timeoutId = setTimeout(
+        () => {
+          func.apply(null, args)
+          lastExecTime = Date.now()
+        },
+        delay - (currentTime - lastExecTime),
+      )
     }
   }
 }

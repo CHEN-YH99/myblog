@@ -5,20 +5,12 @@
     </div>
     <nav class="toc-nav">
       <ul class="toc-list" v-if="tocItems.length > 0">
-        <li 
-          v-for="item in tocItems" 
+        <li
+          v-for="item in tocItems"
           :key="item.id"
-          :class="[
-            'toc-item',
-            `toc-level-${item.level}`,
-            { 'active': activeId === item.id }
-          ]"
+          :class="['toc-item', `toc-level-${item.level}`, { active: activeId === item.id }]"
         >
-          <button 
-            type="button"
-            @click.stop="handleTocClick(item.id)"
-            class="toc-link"
-          >
+          <button type="button" @click.stop="handleTocClick(item.id)" class="toc-link">
             {{ item.text }}
           </button>
         </li>
@@ -75,7 +67,7 @@ const generateToc = () => {
     const level = parseInt(heading.tagName.charAt(1))
     const text = heading.textContent?.trim() || ''
     const id = heading.id || `heading-${index}`
-    
+
     // 如果标题没有id，添加一个
     if (!heading.id) {
       heading.id = id
@@ -92,7 +84,7 @@ const generateToc = () => {
 const handleTocClick = (id: string) => {
   void 0 && console.log('🎯 TableOfContents: 点击目录项', id)
   void 0 && console.log('🎯 TableOfContents: 当前 activeId:', activeId.value)
-  
+
   const element = document.getElementById(id)
   if (!element) {
     void 0 && console.warn('❌ TableOfContents: 找不到目标元素', id)
@@ -119,9 +111,9 @@ const teardownIntersectionObserver = () => {
 
 const setupIntersectionObserver = () => {
   const headingElements = tocItems.value
-    .map(item => document.getElementById(item.id))
+    .map((item) => document.getElementById(item.id))
     .filter((el): el is HTMLElement => el !== null)
-  
+
   if (headingElements.length === 0) {
     void 0 && console.warn('TableOfContents: 没有找到标题元素')
     return
@@ -132,27 +124,29 @@ const setupIntersectionObserver = () => {
   observer.value = new IntersectionObserver(
     (entries) => {
       // 找到第一个进入视口的元素
-      const visibleEntries = entries.filter(entry => entry.isIntersecting)
+      const visibleEntries = entries.filter((entry) => entry.isIntersecting)
       if (visibleEntries.length > 0) {
         // 选择最上面的可见元素
         const topEntry = visibleEntries.reduce((top, current) => {
           return current.boundingClientRect.top < top.boundingClientRect.top ? current : top
         })
         activeId.value = topEntry.target.id
-        void 0 && console.log('TableOfContents: IntersectionObserver 更新 activeId 为', topEntry.target.id)
+        void 0 &&
+          console.log('TableOfContents: IntersectionObserver 更新 activeId 为', topEntry.target.id)
       }
     },
     {
       rootMargin: '-80px 0px -70% 0px',
-      threshold: 0.1
-    }
+      threshold: 0.1,
+    },
   )
 
   headingElements.forEach((element) => {
     if (element) observer.value?.observe(element)
   })
-  
-  void 0 && console.log('TableOfContents: IntersectionObserver 已设置，观察元素数:', headingElements.length)
+
+  void 0 &&
+    console.log('TableOfContents: IntersectionObserver 已设置，观察元素数:', headingElements.length)
 }
 
 // 观察文章内容变化
@@ -161,7 +155,8 @@ const observeContentChanges = () => {
   let contentElement = document.querySelector(selector)
 
   if (!contentElement) {
-    void 0 && console.warn('TableOfContents: 初次未找到内容元素，开始监听 body，等待内容出现:', selector)
+    void 0 &&
+      console.warn('TableOfContents: 初次未找到内容元素，开始监听 body，等待内容出现:', selector)
 
     // 监听 body，等待内容元素出现后再切换到精确监听
     if (mutationObserver) {
@@ -215,29 +210,29 @@ const observeContentChanges = () => {
 
   mutationObserver = new MutationObserver(() => debouncedRefresh())
   mutationObserver.observe(contentElement, { childList: true, subtree: true })
-  
+
   void 0 && console.log('TableOfContents: MutationObserver 已设置')
 }
 
 // 初始化
 const init = async () => {
   void 0 && console.log('TableOfContents: 开始初始化')
-  
+
   // 等待 DOM 更新
   await nextTick()
-  
+
   // 生成目录
   generateToc()
-  
+
   // 再次等待
   await nextTick()
-  
+
   // 设置观察器
   setupIntersectionObserver()
-  
+
   // 观察内容变化
   observeContentChanges()
-  
+
   void 0 && console.log('TableOfContents: 初始化完成')
 }
 
@@ -261,7 +256,7 @@ onUnmounted(() => {
 
 // 暴露方法供父组件调用
 defineExpose({
-  refresh: init
+  refresh: init,
 })
 </script>
 
@@ -303,22 +298,26 @@ defineExpose({
   margin: 0;
   font-size: 15px;
   font-weight: 700;
-  letter-spacing: .5px;
+  letter-spacing: 0.5px;
   color: var(--toc-text);
 }
 
 .toc-header h3::after {
-  content: "";
+  content: '';
   position: absolute;
   left: 0;
   bottom: -12px;
   width: 46px;
   height: 3px;
   border-radius: 3px;
-  background: linear-gradient(90deg, var(--toc-accent), color-mix(in srgb, var(--toc-accent) 40%, #7ee787));
+  background: linear-gradient(
+    90deg,
+    var(--toc-accent),
+    color-mix(in srgb, var(--toc-accent) 40%, #7ee787)
+  );
   transform-origin: left;
   transform: scaleX(0.85);
-  transition: transform .3s ease;
+  transition: transform 0.3s ease;
 }
 
 .toc-header:hover h3::after {
@@ -355,7 +354,11 @@ defineExpose({
   outline: none;
   text-decoration: none;
   border-left: 2px solid transparent;
-  transition: color .2s ease, background-color .2s ease, border-left-color .2s ease, transform .2s ease;
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease,
+    border-left-color 0.2s ease,
+    transform 0.2s ease;
   word-break: break-word;
   cursor: pointer;
   border-radius: 6px;
@@ -363,7 +366,7 @@ defineExpose({
 
 /* bullet dot */
 .toc-link::before {
-  content: "";
+  content: '';
   position: absolute;
   left: 6px; /* follows padding-left indentation per level */
   top: 50%;
@@ -372,9 +375,11 @@ defineExpose({
   border-radius: 50%;
   background: color-mix(in srgb, var(--toc-accent) 86%, #fff);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--toc-accent) 28%, transparent);
-  transform: translateY(-50%) scale(.5);
+  transform: translateY(-50%) scale(0.5);
   opacity: 0;
-  transition: transform .2s ease, opacity .2s ease;
+  transition:
+    transform 0.2s ease,
+    opacity 0.2s ease;
 }
 
 .toc-link:hover {
@@ -384,7 +389,10 @@ defineExpose({
   transform: translateX(2px);
 }
 
-.toc-link:hover::before { opacity: 1; transform: translateY(-50%) scale(1); }
+.toc-link:hover::before {
+  opacity: 1;
+  transform: translateY(-50%) scale(1);
+}
 
 /* active state */
 .toc-item.active .toc-link {
@@ -395,7 +403,10 @@ defineExpose({
   box-shadow: 0 2px 10px color-mix(in srgb, var(--toc-accent) 16%, transparent);
 }
 
-.toc-item.active .toc-link::before { opacity: 1; transform: translateY(-50%) scale(1); }
+.toc-item.active .toc-link::before {
+  opacity: 1;
+  transform: translateY(-50%) scale(1);
+}
 
 /* focus visible for keyboard users */
 .toc-link:focus-visible {
@@ -404,30 +415,83 @@ defineExpose({
 }
 
 /* Levels indentation (keep structure) */
-.toc-level-1 .toc-link { padding-left: 12px; font-weight: 600; }
-.toc-level-2 .toc-link { padding-left: 24px; }
-.toc-level-3 .toc-link { padding-left: 36px; }
-.toc-level-4 .toc-link { padding-left: 48px; }
-.toc-level-5 .toc-link { padding-left: 60px; }
-.toc-level-6 .toc-link { padding-left: 72px; }
+.toc-level-1 .toc-link {
+  padding-left: 12px;
+  font-weight: 600;
+}
+.toc-level-2 .toc-link {
+  padding-left: 24px;
+}
+.toc-level-3 .toc-link {
+  padding-left: 36px;
+}
+.toc-level-4 .toc-link {
+  padding-left: 48px;
+}
+.toc-level-5 .toc-link {
+  padding-left: 60px;
+}
+.toc-level-6 .toc-link {
+  padding-left: 72px;
+}
 
 /* Empty state */
-.toc-empty { text-align: center; padding: 20px 0; color: var(--toc-muted); }
-.empty-text { margin: 0 0 8px 0; font-size: 14px; color: var(--toc-text); opacity: .8; }
-.empty-hint { margin: 0; font-size: 12px; color: var(--toc-muted); font-style: italic; }
+.toc-empty {
+  text-align: center;
+  padding: 20px 0;
+  color: var(--toc-muted);
+}
+.empty-text {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  color: var(--toc-text);
+  opacity: 0.8;
+}
+.empty-hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--toc-muted);
+  font-style: italic;
+}
 
 /* Prevent horizontal overflow and scrollbar flicker */
-.toc-nav, .toc-list, .toc-link { max-width: 100%; box-sizing: border-box; }
-.toc-link { overflow-wrap: anywhere; word-break: break-word; white-space: normal; }
-.toc-container { -webkit-overflow-scrolling: touch; }
+.toc-nav,
+.toc-list,
+.toc-link {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+.toc-link {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  white-space: normal;
+}
+.toc-container {
+  -webkit-overflow-scrolling: touch;
+}
 
 /* Subtle entrance animation */
-@keyframes toc-fade-in { from { opacity: 0; transform: translateY(4px);} to { opacity: 1; transform: translateY(0);} }
-.toc-item { animation: toc-fade-in .25s ease both; }
+@keyframes toc-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.toc-item {
+  animation: toc-fade-in 0.25s ease both;
+}
 
 /* Polished thin scrollbar */
-.toc-container::-webkit-scrollbar { width: 6px; }
-.toc-container::-webkit-scrollbar-track { background: transparent; }
+.toc-container::-webkit-scrollbar {
+  width: 6px;
+}
+.toc-container::-webkit-scrollbar-track {
+  background: transparent;
+}
 .toc-container::-webkit-scrollbar-thumb {
   background: color-mix(in srgb, var(--toc-accent) 24%, #888);
   border-radius: 6px;
@@ -438,10 +502,16 @@ defineExpose({
 
 /* Responsive: keep hidden on small screens */
 @media (max-width: 1200px) {
-  .toc-container { display: none; }
+  .toc-container {
+    display: none;
+  }
 }
 
 /* Dark scheme tweaks */
-:global(.dark) .toc-link { color: #b5b5b5; }
-:global(.dark) .toc-item.active .toc-link { box-shadow: 0 2px 10px color-mix(in srgb, var(--toc-accent) 28%, #000); }
+:global(.dark) .toc-link {
+  color: #b5b5b5;
+}
+:global(.dark) .toc-item.active .toc-link {
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--toc-accent) 28%, #000);
+}
 </style>

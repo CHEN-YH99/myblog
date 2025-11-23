@@ -6,11 +6,12 @@ import api from '@/utils/http'
  * @returns 说说列表分页数据
  */
 export function getTalkList(params?: Api.Talk.SearchParams) {
-  return api.get({ url: '/api/talks', params })
-    .then(response => {
+  return api
+    .get({ url: '/api/talks', params })
+    .then((response) => {
       return response as Api.Talk.TalkList
     })
-    .catch(error => {
+    .catch((error) => {
       console.error('前台获取说说列表失败:', error)
       throw error
     })
@@ -22,11 +23,12 @@ export function getTalkList(params?: Api.Talk.SearchParams) {
  * @returns 说说详情
  */
 export function getTalkDetail(id: string) {
-  return api.get({ url: `/api/talks/${id}` })
-    .then(response => {
+  return api
+    .get({ url: `/api/talks/${id}` })
+    .then((response) => {
       return response as Api.Talk.TalkItem
     })
-    .catch(error => {
+    .catch((error) => {
       console.error('前台获取说说详情失败:', error)
       throw error
     })
@@ -43,7 +45,7 @@ export function likeTalk(id: string) {
   return api.post({
     url: `/api/talks/${id}/like`,
     data: {},
-    showErrorMessage: true
+    showErrorMessage: true,
   })
 }
 
@@ -55,7 +57,7 @@ export function likeTalk(id: string) {
 export function unlikeTalk(id: string) {
   return api.del({
     url: `/api/talks/${id}/like`,
-    showErrorMessage: true
+    showErrorMessage: true,
   })
 }
 
@@ -67,7 +69,7 @@ export function unlikeTalk(id: string) {
 export function getTalkLikeStatus(id: string) {
   return api.get({
     url: `/api/talks/${id}/like/status`,
-    showErrorMessage: false
+    showErrorMessage: false,
   })
 }
 
@@ -78,7 +80,7 @@ export function getTalkLikeStatus(id: string) {
 export function getUserLikedTalks() {
   return api.get({
     url: '/api/user/liked-talks',
-    showErrorMessage: false
+    showErrorMessage: false,
   })
 }
 
@@ -90,14 +92,17 @@ export function getUserLikedTalks() {
  * @param params 查询参数
  * @returns 回复列表分页数据
  */
-export function getTalkReplies(id: string, params?: {
-  current?: number
-  size?: number
-}) {
+export function getTalkReplies(
+  id: string,
+  params?: {
+    current?: number
+    size?: number
+  },
+) {
   return api.get({
     url: `/api/talks/${id}/replies`,
     params,
-    showErrorMessage: true
+    showErrorMessage: true,
   })
 }
 
@@ -107,18 +112,21 @@ export function getTalkReplies(id: string, params?: {
  * @param data 回复数据
  * @returns 回复结果
  */
-export function addTalkReply(id: string, data: {
-  content: string
-  author: string
-  email?: string
-  website?: string
-  parentId?: string
-  replyTo?: string
-}) {
+export function addTalkReply(
+  id: string,
+  data: {
+    content: string
+    author: string
+    email?: string
+    website?: string
+    parentId?: string
+    replyTo?: string
+  },
+) {
   return api.post({
     url: `/api/talks/${id}/replies`,
     data,
-    showErrorMessage: true
+    showErrorMessage: true,
   })
 }
 
@@ -131,7 +139,7 @@ export function likeReply(id: string) {
   return api.post({
     url: `/api/replies/${id}/like`,
     data: {},
-    showErrorMessage: true
+    showErrorMessage: true,
   })
 }
 
@@ -143,25 +151,27 @@ export function likeReply(id: string) {
 export function unlikeReply(id: string) {
   return api.del({
     url: `/api/replies/${id}/like`,
-    showErrorMessage: true
+    showErrorMessage: true,
   })
 }
 
 export function getAllTalks(params?: Api.Talk.SearchParams) {
-  return api.get({ url: '/api/talks', params })
-    .then(response => {
+  return api
+    .get({ url: '/api/talks', params })
+    .then((response) => {
       const data = response
-      
+
       if (Array.isArray(data)) {
         return data
       } else if (data && typeof data === 'object' && 'talks' in data) {
-        const talks = (data as any).talks
+        const talks = (data as Record<string, unknown>)
+          .talks as Api.Talk.TalkItem[]
         return talks
       } else {
         return []
       }
     })
-    .catch(error => {
+    .catch((error) => {
       console.error('前台获取说说失败:', error)
       throw error
     })

@@ -6,17 +6,14 @@
         <h3>推荐文章</h3>
       </div>
       <div class="articles-list">
-        <div 
-          v-for="article in relatedArticles" 
+        <div
+          v-for="article in relatedArticles"
           :key="article._id"
           class="article-item"
           @click.prevent="navigateToArticle(article)"
         >
           <div class="article-image">
-            <img 
-              :src="article.image || '/default-article.jpg'" 
-              :alt="article.title"
-            />
+            <img :src="article.image || '/default-article.jpg'" :alt="article.title" />
           </div>
           <div class="article-content">
             <h4 class="article-title">{{ article.title }}</h4>
@@ -24,7 +21,7 @@
         </div>
       </div>
     </div>
-    
+
     <!-- 无推荐文章时的提示 -->
     <div v-else-if="!loading && category" class="no-recommendations">
       <div class="related-header">
@@ -45,16 +42,16 @@ import { getAllArticles } from '@/api/articles'
 const props = defineProps({
   currentArticleId: {
     type: String,
-    required: true
+    required: true,
   },
   category: {
     type: String,
-    required: true
+    required: true,
   },
   limit: {
     type: Number,
-    default: 2
-  }
+    default: 2,
+  },
 })
 
 const router = useRouter()
@@ -68,68 +65,74 @@ const fetchRelatedArticles = async () => {
   }
 
   loading.value = true
-  
+
   try {
     void 0 && console.log('RelatedArticles: 开始获取相关文章')
     void 0 && console.log('RelatedArticles: 当前分类:', props.category)
     void 0 && console.log('RelatedArticles: 当前文章ID:', props.currentArticleId)
-    
+
     // 获取所有文章
     const allArticles = await getAllArticles()
     void 0 && console.log('RelatedArticles: API返回的所有文章数量:', allArticles?.length || 0)
-    
+
     if (allArticles && allArticles.length > 0) {
       void 0 && console.log('RelatedArticles: 第一篇文章的数据结构:', allArticles[0])
       void 0 && console.log('RelatedArticles: 第一篇文章的所有字段:', Object.keys(allArticles[0]))
-      
+
       // 检查ID字段
       allArticles.slice(0, 3).forEach((article, index) => {
-        void 0 && console.log(`RelatedArticles: 文章${index + 1}的ID字段:`, {
-          _id: article._id,
-          id: article.id,
-          title: article.title,
-          category: article.category
-        })
+        void 0 &&
+          console.log(`RelatedArticles: 文章${index + 1}的ID字段:`, {
+            _id: article._id,
+            id: article.id,
+            title: article.title,
+            category: article.category,
+          })
       })
     }
-    
+
     if (!allArticles || allArticles.length === 0) {
       void 0 && console.log('RelatedArticles: 没有获取到文章数据')
       relatedArticles.value = []
       return
     }
-    
+
     // 过滤相同分类的文章，排除当前文章
-    const sameCategory = allArticles.filter(article => {
+    const sameCategory = allArticles.filter((article) => {
       const isSameCategory = article.category === props.category
-      const isNotCurrentArticle = article._id !== props.currentArticleId && article.id !== props.currentArticleId
-      
-      void 0 && console.log('RelatedArticles: 文章过滤检查:', {
-        title: article.title,
-        articleCategory: article.category,
-        targetCategory: props.category,
-        isSameCategory,
-        articleId: article._id || article.id,
-        currentId: props.currentArticleId,
-        isNotCurrentArticle,
-        shouldInclude: isSameCategory && isNotCurrentArticle
-      })
-      
+      const isNotCurrentArticle =
+        article._id !== props.currentArticleId && article.id !== props.currentArticleId
+
+      void 0 &&
+        console.log('RelatedArticles: 文章过滤检查:', {
+          title: article.title,
+          articleCategory: article.category,
+          targetCategory: props.category,
+          isSameCategory,
+          articleId: article._id || article.id,
+          currentId: props.currentArticleId,
+          isNotCurrentArticle,
+          shouldInclude: isSameCategory && isNotCurrentArticle,
+        })
+
       return isSameCategory && isNotCurrentArticle
     })
-    
+
     void 0 && console.log('RelatedArticles: 过滤后的相同分类文章数量:', sameCategory.length)
-    
+
     // 限制为2篇
     const limitedArticles = sameCategory.slice(0, 2)
-    void 0 && console.log('RelatedArticles: 最终推荐文章:', limitedArticles.map(a => ({ 
-      title: a.title, 
-      id: a._id || a.id,
-      category: a.category 
-    })))
-    
+    void 0 &&
+      console.log(
+        'RelatedArticles: 最终推荐文章:',
+        limitedArticles.map((a) => ({
+          title: a.title,
+          id: a._id || a.id,
+          category: a.category,
+        })),
+      )
+
     relatedArticles.value = limitedArticles
-    
   } catch (error) {
     console.error('RelatedArticles: 获取相关文章失败:', error)
     relatedArticles.value = []
@@ -141,23 +144,22 @@ const fetchRelatedArticles = async () => {
 const navigateToArticle = async (article) => {
   void 0 && console.log('RelatedArticles: 点击文章跳转')
   void 0 && console.log('RelatedArticles: 文章对象:', article)
-  
+
   // 优先使用 _id 字段，因为这是MongoDB的主键
   const articleId = article._id || article.id
   void 0 && console.log('RelatedArticles: 最终使用的ID:', articleId)
-  
+
   if (!articleId) {
     console.error('RelatedArticles: 文章ID为空，无法跳转')
     return
   }
-  
+
   try {
     void 0 && console.log('RelatedArticles: 开始跳转到文章:', `/article/${articleId}`)
-    
+
     // 使用push进行导航，这是标准的Vue Router导航方式
     await router.push(`/article/${articleId}`)
     void 0 && console.log('RelatedArticles: 路由跳转成功')
-    
   } catch (error) {
     console.error('RelatedArticles: 路由跳转失败:', error)
     // 如果路由跳转失败，显示错误信息
@@ -166,9 +168,13 @@ const navigateToArticle = async (article) => {
 }
 
 // 监听props变化
-watch([() => props.category, () => props.currentArticleId], () => {
-  fetchRelatedArticles()
-}, { immediate: true })
+watch(
+  [() => props.category, () => props.currentArticleId],
+  () => {
+    fetchRelatedArticles()
+  },
+  { immediate: true },
+)
 
 onMounted(() => {
   fetchRelatedArticles()
@@ -279,28 +285,28 @@ onMounted(() => {
   .related-articles-container {
     margin: 20px 0;
   }
-  
+
   .related-articles,
   .no-recommendations {
     padding: 16px;
     margin: 0 -16px;
     border-radius: 0;
   }
-  
+
   .article-item {
     padding: 12px;
   }
-  
+
   .article-image {
     width: 60px;
     height: 45px;
     margin-right: 12px;
   }
-  
+
   .article-title {
     font-size: 14px;
   }
-  
+
   .related-header h3 {
     font-size: 18px;
   }

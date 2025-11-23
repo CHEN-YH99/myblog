@@ -7,22 +7,24 @@ import router from '@/router/index'
 import { useUserStore } from '@/stores/user'
 import 'element-plus/dist/index.css'
 import 'element-plus/theme-chalk/dark/css-vars.css'
-import '@/assets/style/common/scrollbar.scss'  // 滚动条样式
-import '@/assets/style/common/theme.scss'  // 主题样式
-import '@/assets/style/common/headpicture.scss'  // 头部大图样式
+import '@/assets/style/common/scrollbar.scss' // 滚动条样式
+import '@/assets/style/common/theme.scss' // 主题样式
+import '@/assets/style/common/headpicture.scss' // 头部大图样式
 import 'animate.css' // 动画库
 
 const app = createApp(App)
 const pinia = createPinia()
 
 // 配置pinia持久化插件
-pinia.use(createPersistedState({
-  storage: localStorage,
-  serializer: {
-    serialize: JSON.stringify,
-    deserialize: JSON.parse
-  }
-}))
+pinia.use(
+  createPersistedState({
+    storage: localStorage,
+    serializer: {
+      serialize: JSON.stringify,
+      deserialize: JSON.parse,
+    },
+  }),
+)
 
 app.use(pinia)
 app.use(router)

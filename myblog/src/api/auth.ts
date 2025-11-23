@@ -37,14 +37,20 @@ export const registerApi = (data: RegisterParams): Promise<void> => {
 
 // 忘记密码接口
 export const forgotPasswordApi = (email: string): Promise<void> => {
-  return api.post({ url: '/api/auth/forgot-password', data: { email } }) as Promise<void>
+  return api.post({
+    url: '/api/auth/forgot-password',
+    data: { email },
+  }) as Promise<void>
 }
 
 // 获取用户信息接口（客户端博客系统专用）
 export const getUserInfoApi = async (): Promise<LoginResponse['userInfo']> => {
-  // 客户端博客系统使用简化的用户信息接口，避免与后台管理系统的角色权限混淆
-  // 使用 /api/user/info 而不是 /api/auth/user-info（后者是后台管理系统专用）
-  const raw = await api.get({ url: '/api/user/info' }) as any
+  // 前台应使用需要鉴权的接口，后端会根据 Authorization 里的用户名返回对应用户
+  // 注意不要再使用 /api/user/info（该路径在后端被固定返回管理员信息，仅用于兼容旧端）
+  const raw = (await api.get({ url: '/api/auth/user-info' })) as Record<
+    string,
+    unknown
+  >
   const id = String(raw?.id ?? raw?.userId ?? '')
   const username = String(raw?.username ?? raw?.userName ?? '')
   const email = String(raw?.email ?? '')
@@ -56,8 +62,15 @@ export const getUserInfoApi = async (): Promise<LoginResponse['userInfo']> => {
 }
 
 // 刷新token接口
-export const refreshTokenApi = (refreshToken: string): Promise<{ token: string }> => {
-  return api.post({ url: '/api/auth/refresh-token', data: { refreshToken } }) as Promise<{ token: string }>
+export const refreshTokenApi = (
+  refreshToken: string,
+): Promise<{ token: string }> => {
+  return api.post({
+    url: '/api/auth/refresh-token',
+    data: { refreshToken },
+  }) as Promise<{
+    token: string
+  }>
 }
 
 // 登出接口

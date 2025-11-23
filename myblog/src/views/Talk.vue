@@ -12,385 +12,452 @@
         <!-- 海水波浪 -->
         <WaveContainer />
       </div>
-    
 
-    <!-- 说说列表 -->
-    <div class="talk-container">
-      <div class="talk-list" v-if="!loading && talkList.length > 0">
-        <div 
-          class="talk-item" 
-          v-for="talk in talkList" 
-          :key="talk._id"
-          :class="{ 'is-top': talk.isTop }"
-        >
-          <!-- 置顶标识 -->
-          <div class="top-badge" v-if="talk.isTop">
-            <i class="icon-pin">📌</i>
-            置顶
-          </div>
-
-          <!-- 说说内容 -->
-          <div class="talk-content">
-            <div class="content-text" v-html="getCachedFormattedContent(talk.content)"></div>
-            
-            <!-- 图片展示 -->
-            <div class="content-images" v-if="talk.images && talk.images.length > 0">
-              <div 
-                class="image-grid"
-                :class="`grid-${Math.min(talk.images.length, 9)}`"
-              >
-                <div 
-                  class="image-item" 
-                  v-for="(image, index) in talk.images.slice(0, 9)" 
-                  :key="index"
-                  @click="previewImage(talk.images, index)"
-                >
-                  <img 
-                    :src="getImageUrl(image)" 
-                    :alt="`图片${index + 1}`"
-                    loading="lazy"
-                    @error="handleImageError"
-                  />
-                  <!-- 更多图片提示 -->
-                  <div 
-                    class="more-images-overlay" 
-                    v-if="index === 8 && talk.images.length > 9"
-                  >
-                    {{ talk.images.length - 9 }}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- 说说元信息 -->
-          <div class="talk-meta">
-            <div class="meta-left">
-              <span class="publish-time">
-                <i class="icon-time">🕒</i>
-                {{ getCachedFormattedTime(talk.publishDate) }}
-              </span>
-              
-              <!-- 位置信息 -->
-              <span class="location-info" v-if="talk.location">
-                <i class="icon-location">📍</i>
-                {{ talk.location }}
-              </span>
-              
-              <!-- 心情信息 -->
-              <span class="mood-info" v-if="talk.mood">
-                <i class="icon-mood">{{ getMoodEmoji(talk.mood) }}</i>
-                {{ talk.mood }}
-              </span>
-              
-              <!-- 天气信息 -->
-              <span class="weather-info" v-if="talk.weather">
-                <i class="icon-weather">{{ getWeatherEmoji(talk.weather) }}</i>
-                {{ talk.weather }}
-              </span>
-            </div>
-          </div>
-
-          <!-- 说说交互区域 -->
-          <div class="talk-actions">
-            <div class="action-left">
-              <!-- 点赞按钮 -->
-              <button 
-                class="action-btn like-btn"
-                :class="{ 'liked': talkLikeStatus[talk._id] }"
-                @click="debouncedLikeTalk(talk)"
-                :disabled="likingTalks.has(talk._id)"
-              >
-                <i class="icon-like">{{ talkLikeStatus[talk._id] ? '❤️' : '🤍' }}</i>
-                <span class="action-text">{{ talk.likes || 0 }}</span>
-              </button>
-
-              <!-- 回复按钮 -->
-              <button 
-                class="action-btn reply-btn"
-                @click="toggleReplySection(talk._id)"
-              >
-                <i class="icon-reply">💬</i>
-                <span class="action-text">回复 ({{ getTalkReplyCount(talk._id) }})</span>
-              </button>
-
-              <!-- 浏览数 -->
-              <span class="view-count">
-                <i class="icon-view">👁️</i>
-                <span class="action-text">{{ talk.views || 0 }}</span>
-              </span>
-            </div>
-          </div>
-
-          <!-- 回复区域 -->
-          <div 
-            class="reply-section" 
-            v-if="activeReplyTalkId === talk._id"
-            :key="`reply-${talk._id}`"
+      <!-- 说说列表 -->
+      <div class="talk-container">
+        <div class="talk-list" v-if="!loading && talkList.length > 0">
+          <div
+            class="talk-item"
+            v-for="talk in talkList"
+            :key="talk._id"
+            :class="{ 'is-top': talk.isTop }"
           >
-            <!-- 回复表单 -->
-            <div class="reply-form">
-              <div class="form-header">
-                <h4>发表回复</h4>
-                <button 
-                  class="close-btn" 
-                  @click="closeReplySection"
-                  title="关闭回复"
+            <!-- 置顶标识 -->
+            <div class="top-badge" v-if="talk.isTop">
+              <i class="icon-pin">📌</i>
+              置顶
+            </div>
+
+            <!-- 说说内容 -->
+            <div class="talk-content">
+              <div
+                class="content-text"
+                v-html="getCachedFormattedContent(talk.content)"
+              ></div>
+
+              <!-- 图片展示 -->
+              <div
+                class="content-images"
+                v-if="talk.images && talk.images.length > 0"
+              >
+                <div
+                  class="image-grid"
+                  :class="`grid-${Math.min(talk.images.length, 9)}`"
                 >
-                  ✕
-                </button>
-              </div>
-              
-              <div class="form-body">
-                <!-- 简化回复表单，只保留回复内容 -->
-                <div class="form-group">
-                  <label for="reply-content">回复内容 *</label>
-                  <textarea 
-                    id="reply-content"
-                    v-model="replyForm.content"
-                    placeholder="说点什么吧..."
-                    rows="4"
-                    maxlength="500"
-                    required
-                  ></textarea>
-                  <div class="char-count">{{ replyForm.content.length }}/500</div>
-                </div>
-                
-                <div class="form-actions">
-                  <button 
-                    class="submit-btn"
-                    @click="submitReply(talk._id)"
-                    :disabled="!canSubmitReply || submittingReply"
+                  <div
+                    class="image-item"
+                    v-for="(image, index) in talk.images.slice(0, 9)"
+                    :key="index"
+                    @click="previewImage(talk.images, index)"
                   >
-                    {{ submittingReply ? '发布中...' : '发布回复' }}
-                  </button>
-                  <button 
-                    class="cancel-btn"
-                    @click="closeReplySection"
-                    :disabled="submittingReply"
-                  >
-                    取消
-                  </button>
+                    <img
+                      :src="getImageUrl(image)"
+                      :alt="`图片${index + 1}`"
+                      loading="lazy"
+                      @error="handleImageError"
+                    />
+                    <!-- 更多图片提示 -->
+                    <div
+                      class="more-images-overlay"
+                      v-if="index === 8 && talk.images.length > 9"
+                    >
+                      {{ talk.images.length - 9 }}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <!-- 回复列表 -->
-            <div class="replies-list" v-if="talkReplies[talk._id]?.length > 0">
-              <div class="replies-header">
-                <h4 class="replies-title">
-                  回复 ({{ talkReplies[talk._id]?.length || 0 }})
-                </h4>
-                <button 
-                  class="toggle-replies-btn"
-                  @click="toggleRepliesExpanded(talk._id)"
-                  :class="{ 'expanded': repliesExpanded[talk._id] }"
-                >
-                  <i class="icon-toggle">{{ repliesExpanded[talk._id] ? '🔽' : '▶️' }}</i>
-                  <span>{{ repliesExpanded[talk._id] ? '收起' : '展开' }}</span>
-                </button>
+            <!-- 说说元信息 -->
+            <div class="talk-meta">
+              <div class="meta-left">
+                <span class="publish-time">
+                  <i class="icon-time">🕒</i>
+                  {{ getCachedFormattedTime(talk.publishDate) }}
+                </span>
+
+                <!-- 位置信息 -->
+                <span class="location-info" v-if="talk.location">
+                  <i class="icon-location">📍</i>
+                  {{ talk.location }}
+                </span>
+
+                <!-- 心情信息 -->
+                <span class="mood-info" v-if="talk.mood">
+                  <i class="icon-mood">{{ getMoodEmoji(talk.mood) }}</i>
+                  {{ talk.mood }}
+                </span>
+
+                <!-- 天气信息 -->
+                <span class="weather-info" v-if="talk.weather">
+                  <i class="icon-weather">
+                    {{ getWeatherEmoji(talk.weather) }}
+                  </i>
+                  {{ talk.weather }}
+                </span>
               </div>
-              
-              <div 
-                class="replies-content"
-                v-show="repliesExpanded[talk._id]"
-                :class="{ 'expanded': repliesExpanded[talk._id] }"
-              >
-                <div 
-                  class="reply-item"
-                  v-for="reply in talkReplies[talk._id]"
-                  :key="reply._id"
+            </div>
+
+            <!-- 说说交互区域 -->
+            <div class="talk-actions">
+              <div class="action-left">
+                <!-- 点赞按钮 -->
+                <button
+                  class="action-btn like-btn"
+                  :class="{ liked: talkLikeStatus[talk._id] }"
+                  @click="debouncedLikeTalk(talk)"
+                  :disabled="likingTalks.has(talk._id)"
                 >
-                <div class="reply-header">
-                  <div class="reply-author">
-                    <span class="author-name">{{ reply.author }}</span>
-                    <span class="reply-time">{{ getCachedFormattedTime(reply.publishDate) }}</span>
+                  <i class="icon-like">
+                    {{ talkLikeStatus[talk._id] ? '❤️' : '🤍' }}
+                  </i>
+                  <span class="action-text">{{ talk.likes || 0 }}</span>
+                </button>
+
+                <!-- 回复按钮 -->
+                <button
+                  class="action-btn reply-btn"
+                  @click="toggleReplySection(talk._id)"
+                >
+                  <i class="icon-reply">💬</i>
+                  <span class="action-text">
+                    回复 ({{ getTalkReplyCount(talk._id) }})
+                  </span>
+                </button>
+
+                <!-- 浏览数 -->
+                <span class="view-count">
+                  <i class="icon-view">👁️</i>
+                  <span class="action-text">{{ talk.views || 0 }}</span>
+                </span>
+              </div>
+            </div>
+
+            <!-- 回复区域 -->
+            <div
+              class="reply-section"
+              v-if="activeReplyTalkId === talk._id"
+              :key="`reply-${talk._id}`"
+            >
+              <!-- 回复表单 -->
+              <div class="reply-form">
+                <div class="form-header">
+                  <h4>发表回复</h4>
+                  <button
+                    class="close-btn"
+                    @click="closeReplySection"
+                    title="关闭回复"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div class="form-body">
+                  <!-- 简化回复表单，只保留回复内容 -->
+                  <div class="form-group">
+                    <label for="reply-content">回复内容 *</label>
+                    <textarea
+                      id="reply-content"
+                      v-model="replyForm.content"
+                      placeholder="说点什么吧..."
+                      rows="4"
+                      maxlength="500"
+                      required
+                    ></textarea>
+                    <div class="char-count">
+                      {{ replyForm.content.length }}/500
+                    </div>
                   </div>
-                  <div class="reply-actions">
-                    <button 
-                      class="reply-like-btn"
-                      :class="{ 'liked': replyLikeStatus[reply._id] }"
-                      @click="debouncedLikeReply(reply)"
-                      :disabled="likingReplies.has(reply._id)"
+
+                  <div class="form-actions">
+                    <button
+                      class="submit-btn"
+                      @click="submitReply(talk._id)"
+                      :disabled="!canSubmitReply || submittingReply"
                     >
-                      <i class="icon-like">{{ replyLikeStatus[reply._id] ? '❤️' : '🤍' }}</i>
-                      <span>{{ reply.likes || 0 }}</span>
+                      {{ submittingReply ? '发布中...' : '发布回复' }}
+                    </button>
+                    <button
+                      class="cancel-btn"
+                      @click="closeReplySection"
+                      :disabled="submittingReply"
+                    >
+                      取消
                     </button>
                   </div>
                 </div>
-                
-                <div class="reply-content">
-                  <div v-if="reply.replyTo" class="reply-to">
-                    回复 @{{ reply.replyTo }}:
-                  </div>
-                  <div class="reply-text" v-html="getCachedFormattedContent(reply.content)"></div>
+              </div>
+
+              <!-- 回复列表 -->
+              <div
+                class="replies-list"
+                v-if="talkReplies[talk._id]?.length > 0"
+              >
+                <div class="replies-header">
+                  <h4 class="replies-title">
+                    回复 ({{ talkReplies[talk._id]?.length || 0 }})
+                  </h4>
+                  <button
+                    class="toggle-replies-btn"
+                    @click="toggleRepliesExpanded(talk._id)"
+                    :class="{ expanded: repliesExpanded[talk._id] }"
+                  >
+                    <i class="icon-toggle">
+                      {{ repliesExpanded[talk._id] ? '🔽' : '▶️' }}
+                    </i>
+                    <span>
+                      {{ repliesExpanded[talk._id] ? '收起' : '展开' }}
+                    </span>
+                  </button>
                 </div>
 
-                <!-- 子回复 -->
-                <div class="sub-replies" v-if="Array.isArray(reply.children) && reply.children.length > 0">
-                  <div 
-                    class="sub-reply-item"
-                    v-for="subReply in reply.children"
-                    :key="subReply._id"
+                <div
+                  class="replies-content"
+                  v-show="repliesExpanded[talk._id]"
+                  :class="{ expanded: repliesExpanded[talk._id] }"
+                >
+                  <div
+                    class="reply-item"
+                    v-for="reply in talkReplies[talk._id]"
+                    :key="reply._id"
                   >
-                    <div class="sub-reply-header">
-                      <span class="sub-reply-author">{{ subReply.author }}</span>
-                      <span class="sub-reply-time">{{ getCachedFormattedTime(subReply.publishDate) }}</span>
-                    </div>
-                    <div class="sub-reply-content">
-                      <div v-if="subReply.replyTo" class="reply-to">
-                        回复 @{{ subReply.replyTo }}:
+                    <div class="reply-header">
+                      <div class="reply-author">
+                        <span class="author-name">{{ reply.author }}</span>
+                        <span class="reply-time">{{
+                          getCachedFormattedTime(reply.publishDate)
+                        }}</span>
                       </div>
-                      <div class="sub-reply-text" v-html="getCachedFormattedContent(subReply.content)"></div>
+                      <div class="reply-actions">
+                        <button
+                          class="reply-like-btn"
+                          :class="{ liked: replyLikeStatus[reply._id] }"
+                          @click="debouncedLikeReply(reply)"
+                          :disabled="likingReplies.has(reply._id)"
+                        >
+                          <i class="icon-like">
+                            {{ replyLikeStatus[reply._id] ? '❤️' : '🤍' }}
+                          </i>
+                          <span>{{ reply.likes || 0 }}</span>
+                        </button>
+                      </div>
                     </div>
+
+                    <div class="reply-content">
+                      <div v-if="reply.replyTo" class="reply-to">
+                        回复 @{{ reply.replyTo }}:
+                      </div>
+                      <div
+                        class="reply-text"
+                        v-html="getCachedFormattedContent(reply.content)"
+                      ></div>
+                    </div>
+
+                    <!-- 子回复 -->
+                    <div
+                      class="sub-replies"
+                      v-if="Array.isArray(reply.children) && reply.children.length > 0"
+                    >
+                      <div
+                        class="sub-reply-item"
+                        v-for="subReply in reply.children"
+                        :key="subReply._id"
+                      >
+                        <div class="sub-reply-header">
+                          <span class="sub-reply-author">
+                            {{ subReply.author }}
+                          </span>
+                          <span class="sub-reply-time">{{
+                            getCachedFormattedTime(subReply.publishDate)
+                          }}</span>
+                        </div>
+                        <div class="sub-reply-content">
+                          <div v-if="subReply.replyTo" class="reply-to">
+                            回复 @{{ subReply.replyTo }}:
+                          </div>
+                          <div
+                            class="sub-reply-text"
+                            v-html="getCachedFormattedContent(subReply.content)"
+                          ></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- 加载更多回复 -->
+                  <div
+                    class="load-more-replies"
+                    v-if="hasMoreReplies[talk._id] && repliesExpanded[talk._id]"
+                  >
+                    <button
+                      class="load-more-btn"
+                      @click="loadAllReplies(talk._id)"
+                      :disabled="loadingReplies.has(talk._id)"
+                    >
+                      {{
+                        loadingReplies.has(talk._id)
+                          ? '加载中...'
+                          : '加载全部回复'
+                      }}
+                    </button>
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
 
-              <!-- 加载更多回复 -->
-              <div class="load-more-replies" v-if="hasMoreReplies[talk._id] && repliesExpanded[talk._id]">
-                <button 
-                  class="load-more-btn"
-                  @click="loadAllReplies(talk._id)"
-                  :disabled="loadingReplies.has(talk._id)"
+          <!-- 加载状态 -->
+          <div class="loading-container" v-if="loading">
+            <div class="loading-spinner">
+              <div class="spinner"></div>
+              <p>加载中...</p>
+            </div>
+          </div>
+
+          <!-- 空状态 -->
+          <div class="empty-container" v-if="!loading && talkList.length === 0">
+            <div class="empty-content">
+              <i class="icon-empty">📝</i>
+              <h3>暂无说说</h3>
+              <p>还没有发布任何说说哦~</p>
+            </div>
+          </div>
+
+          <!-- 分页：已隐藏，使用无限滚动替代 -->
+          <div class="pagination-container" v-if="false">
+            <div class="pagination">
+              <button
+                class="page-btn prev-btn"
+                :disabled="pagination.current <= 1"
+                @click="changePage(pagination.current - 1)"
+              >
+                <i class="icon-prev">‹</i>
+                上一页
+              </button>
+              <div class="page-numbers">
+                <button
+                  v-for="page in getPageNumbers()"
+                  :key="page"
+                  class="page-number"
+                  :class="{
+                    active: page === pagination.current,
+                    ellipsis: page === '...',
+                  }"
+                  :disabled="page === '...'"
+                  @click="page !== '...' && changePage(Number(page))"
                 >
-                  {{ loadingReplies.has(talk._id) ? '加载中...' : '加载全部回复' }}
+                  {{ page }}
                 </button>
               </div>
+              <button
+                class="page-btn next-btn"
+                :disabled="pagination.current >= Math.ceil(pagination.total / pagination.size)"
+                @click="changePage(pagination.current + 1)"
+              >
+                下一页
+                <i class="icon-next">›</i>
+              </button>
             </div>
           </div>
-        </div>
-      </div>
 
-      <!-- 加载状态 -->
-      <div class="loading-container" v-if="loading">
-        <div class="loading-spinner">
-          <div class="spinner"></div>
-          <p>加载中...</p>
-        </div>
-      </div>
-
-      <!-- 空状态 -->
-      <div class="empty-container" v-if="!loading && talkList.length === 0">
-        <div class="empty-content">
-          <i class="icon-empty">📝</i>
-          <h3>暂无说说</h3>
-          <p>还没有发布任何说说哦~</p>
-        </div>
-      </div>
-
-      <!-- 分页：已隐藏，使用无限滚动替代 -->
-      <div class="pagination-container" v-if="false">
-        <div class="pagination">
-          <button 
-            class="page-btn prev-btn" 
-            :disabled="pagination.current <= 1"
-            @click="changePage(pagination.current - 1)"
+          <!-- 加载更多按钮 -->
+          <div
+            class="load-more-section"
+            v-if="!loading && talkList.length > 0 && !isEnd"
           >
-            <i class="icon-prev">‹</i>
-            上一页
-          </button>
-          <div class="page-numbers">
-            <button 
-              v-for="page in getPageNumbers()" 
-              :key="page"
-              class="page-number"
-              :class="{ active: page === pagination.current, ellipsis: page === '...' }"
-              :disabled="page === '...'"
-              @click="page !== '...' && changePage(Number(page))"
+            <button
+              class="load-more-btn"
+              @click="loadMore"
+              :disabled="loadingMore"
             >
-              {{ page }}
+              <div class="btn-content">
+                <div class="loading-spinner" v-if="loadingMore">
+                  <div class="spinner-dots">
+                    <div class="dot dot-1"></div>
+                    <div class="dot dot-2"></div>
+                    <div class="dot dot-3"></div>
+                  </div>
+                </div>
+                <div class="btn-icon" v-else>
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M12 4V20M20 12H4"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                    />
+                  </svg>
+                </div>
+                <span class="btn-text">
+                  {{ loadingMore ? '加载中...' : '加载更多' }}
+                </span>
+              </div>
             </button>
           </div>
-          <button 
-            class="page-btn next-btn" 
-            :disabled="pagination.current >= Math.ceil(pagination.total / pagination.size)"
-            @click="changePage(pagination.current + 1)"
-          >
-            下一页
-            <i class="icon-next">›</i>
-          </button>
-        </div>
-      </div>
 
-      <!-- 加载更多按钮 -->
-      <div class="load-more-section" v-if="!loading && talkList.length > 0 && !isEnd">
-        <button 
-          class="load-more-btn"
-          @click="loadMore"
-          :disabled="loadingMore"
+          <!-- 结束提示 -->
+          <div class="end-tip" v-if="!loading && isEnd && talkList.length > 0">
+            <div class="end-content">
+              <i class="end-icon">🎉</i>
+              <span>已经到底啦，没有更多内容了</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 图片预览模态框 -->
+        <div
+          class="image-preview-modal"
+          v-if="showPreview"
+          @click="closePreview"
         >
-          <div class="btn-content">
-            <div class="loading-spinner" v-if="loadingMore">
-              <div class="spinner-dots">
-                <div class="dot dot-1"></div>
-                <div class="dot dot-2"></div>
-                <div class="dot dot-3"></div>
-              </div>
-            </div>
-            <div class="btn-icon" v-else>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 4V20M20 12H4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-              </svg>
-            </div>
-            <span class="btn-text">{{ loadingMore ? '加载中...' : '加载更多' }}</span>
-          </div>
-        </button>
-      </div>
-      
-      <!-- 结束提示 -->
-      <div class="end-tip" v-if="!loading && isEnd && talkList.length > 0">
-        <div class="end-content">
-          <i class="end-icon">🎉</i>
-          <span>已经到底啦，没有更多内容了</span>
-        </div>
-      </div>
-    </div>
+          <div class="modal-content" @click.stop>
+            <button class="close-btn" @click="closePreview">
+              <i class="icon-close">✕</i>
+            </button>
 
-    <!-- 图片预览模态框 -->
-    <div class="image-preview-modal" v-if="showPreview" @click="closePreview">
-      <div class="modal-content" @click.stop>
-        <button class="close-btn" @click="closePreview">
-          <i class="icon-close">✕</i>
-        </button>
-        
-        <div class="preview-container">
-          <button 
-            class="nav-btn prev-nav" 
-            v-if="previewImages.length > 1"
-            @click="prevImage"
-            :disabled="currentImageIndex <= 0"
-          >
-            <i class="icon-prev">‹</i>
-          </button>
-          
-          <div class="image-wrapper">
-            <img 
-              :src="getImageUrl(previewImages[currentImageIndex])" 
-              :alt="`预览图片 ${currentImageIndex + 1}`"
-              class="preview-image"
-            />
+            <div class="preview-container">
+              <button
+                class="nav-btn prev-nav"
+                v-if="previewImages.length > 1"
+                @click="prevImage"
+                :disabled="currentImageIndex <= 0"
+              >
+                <i class="icon-prev">‹</i>
+              </button>
+
+              <div class="image-wrapper">
+                <img
+                  :src="getImageUrl(previewImages[currentImageIndex])"
+                  :alt="`预览图片 ${currentImageIndex + 1}`"
+                  class="preview-image"
+                />
+              </div>
+
+              <button
+                class="nav-btn next-nav"
+                v-if="previewImages.length > 1"
+                @click="nextImage"
+                :disabled="currentImageIndex >= previewImages.length - 1"
+              >
+                <i class="icon-next">›</i>
+              </button>
+            </div>
+
+            <div class="preview-info" v-if="previewImages.length > 1">
+              {{ currentImageIndex + 1 }} / {{ previewImages.length }}
+            </div>
           </div>
-          
-          <button 
-            class="nav-btn next-nav" 
-            v-if="previewImages.length > 1"
-            @click="nextImage"
-            :disabled="currentImageIndex >= previewImages.length - 1"
-          >
-            <i class="icon-next">›</i>
-          </button>
-        </div>
-        
-        <div class="preview-info" v-if="previewImages.length > 1">
-          {{ currentImageIndex + 1 }} / {{ previewImages.length }}
         </div>
       </div>
     </div>
-    </div>
-  </div>
-  <!-- 页脚组件 -->
-  <Footer />
+    <!-- 页脚组件 -->
+    <Footer />
   </div>
 </template>
 
@@ -398,7 +465,16 @@
 import { ref, onMounted, onUnmounted, computed, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { getTalkList, likeTalk, unlikeTalk, getTalkLikeStatus, getTalkReplies, addTalkReply, likeReply, unlikeReply } from '@/api/talks'
+import {
+  getTalkList,
+  likeTalk,
+  unlikeTalk,
+  getTalkLikeStatus,
+  getTalkReplies,
+  addTalkReply,
+  likeReply,
+  unlikeReply,
+} from '@/api/talks'
 import { useUserStore } from '@/stores/user'
 import { useTalkLikes } from '@/composables/useTalkLikes'
 import { useTalksStore } from '@/stores/talks'
@@ -454,7 +530,7 @@ const talkList = ref<Talk[]>([])
 const pagination = ref({
   current: 1,
   size: 10,
-  total: 0
+  total: 0,
 })
 
 // ==================== 图片预览相关 ====================
@@ -481,7 +557,7 @@ const repliesExpanded = ref<Record<string, boolean>>({})
 
 // ==================== 回复表单数据 ====================
 const replyForm = ref({
-  content: ''
+  content: '',
 })
 
 // ==================== 计算属性 ====================
@@ -542,16 +618,16 @@ const fetchTalkList = async () => {
     const response = await getTalkList({
       current: pagination.value.current,
       size: pagination.value.size,
-      status: 'public' // 只获取公开的说说
+      status: 'public', // 只获取公开的说说
     })
-    
+
     if (response && response.records) {
       // 确保每个说说都有正确的likes字段
-      const processedTalks = response.records.map(talk => ({
+      const processedTalks = response.records.map((talk) => ({
         ...talk,
-        likes: talk.likes || 0 // 确保likes字段存在且为数字
+        likes: talk.likes || 0, // 确保likes字段存在且为数字
       }))
-      
+
       // 如果是加载更多（current > 1），则累加；否则重置
       if (pagination.value.current > 1) {
         talkList.value = [...talkList.value, ...processedTalks]
@@ -567,7 +643,7 @@ const fetchTalkList = async () => {
       const reachedEndByCount = talkList.value.length >= pagination.value.total
       const reachedEndByPage = response.records.length < pagination.value.size
       isEnd.value = reachedEndByCount || reachedEndByPage
-      
+
       // 每次获取说说列表后，初始化回复数量
       await initializeReplyCountForNewTalks()
     } else {
@@ -590,25 +666,30 @@ const fetchTalkList = async () => {
  */
 const loadMore = async () => {
   if (loading.value || loadingMore.value || isEnd.value) return
-  if (talkList.value.length >= pagination.value.total && pagination.value.total > 0) {
+  if (
+    talkList.value.length >= pagination.value.total &&
+    pagination.value.total > 0
+  ) {
     isEnd.value = true
     return
   }
-  
+
   loadingMore.value = true
-  
+
   try {
     // 添加最小延迟确保用户能看到加载动画
     const startTime = Date.now()
     const minDelay = 800 // 最小显示800ms的加载动画
-    
+
     pagination.value.current += 1
     await fetchTalkList()
-    
+
     // 确保加载动画至少显示指定时间
     const elapsedTime = Date.now() - startTime
     if (elapsedTime < minDelay) {
-      await new Promise(resolve => setTimeout(resolve, minDelay - elapsedTime))
+      await new Promise((resolve) =>
+        setTimeout(resolve, minDelay - elapsedTime),
+      )
     }
   } catch (error) {
     console.error('加载更多失败:', error)
@@ -658,7 +739,8 @@ const getImageUrl = (image: string) => {
  */
 const handleImageError = (event: Event) => {
   const img = event.target as HTMLImageElement
-  img.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjVmNWY1Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPuWbvueJh+WKoOi9veWksei0pTwvdGV4dD48L3N2Zz4='
+  img.src =
+    'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjVmNWY1Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPuWbvueJh+WKoOi9veWksei0pTwvdGV4dD48L3N2Zz4='
 }
 
 // ==================== 时间和状态格式化 ====================
@@ -667,41 +749,41 @@ const handleImageError = (event: Event) => {
  */
 const formatTime = (dateString: string) => {
   if (!dateString) return ''
-  
+
   const date = new Date(dateString)
   const now = new Date()
   const diff = now.getTime() - date.getTime()
-  
+
   // 小于1分钟
   if (diff < 60 * 1000) {
     return '刚刚'
   }
-  
+
   // 小于1小时
   if (diff < 60 * 60 * 1000) {
     const minutes = Math.floor(diff / (60 * 1000))
     return `${minutes}分钟前`
   }
-  
+
   // 小于1天
   if (diff < 24 * 60 * 60 * 1000) {
     const hours = Math.floor(diff / (60 * 60 * 1000))
     return `${hours}小时前`
   }
-  
+
   // 小于7天
   if (diff < 7 * 24 * 60 * 60 * 1000) {
     const days = Math.floor(diff / (24 * 60 * 60 * 1000))
     return `${days}天前`
   }
-  
+
   // 超过7天显示具体日期
   return date.toLocaleDateString('zh-CN', {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
     hour: '2-digit',
-    minute: '2-digit'
+    minute: '2-digit',
   })
 }
 
@@ -720,18 +802,18 @@ const getStatusText = (status: number | string) => {
  */
 const getMoodEmoji = (mood: string) => {
   const moodMap: Record<string, string> = {
-    '开心': '😊',
-    '快乐': '😄',
-    '兴奋': '🤩',
-    '满足': '😌',
-    '平静': '😐',
-    '无聊': '😑',
-    '疲惫': '😴',
-    '难过': '😢',
-    '生气': '😠',
-    '焦虑': '😰',
-    '惊讶': '😲',
-    '思考': '🤔'
+    开心: '😊',
+    快乐: '😄',
+    兴奋: '🤩',
+    满足: '😌',
+    平静: '😐',
+    无聊: '😑',
+    疲惫: '😴',
+    难过: '😢',
+    生气: '😠',
+    焦虑: '😰',
+    惊讶: '😲',
+    思考: '🤔',
   }
   return moodMap[mood] || '😊'
 }
@@ -741,17 +823,17 @@ const getMoodEmoji = (mood: string) => {
  */
 const getWeatherEmoji = (weather: string) => {
   const weatherMap: Record<string, string> = {
-    '晴天': '☀️',
-    '多云': '⛅',
-    '阴天': '☁️',
-    '小雨': '🌦️',
-    '中雨': '🌧️',
-    '大雨': '⛈️',
-    '雪天': '❄️',
-    '雾天': '🌫️',
-    '风天': '💨',
-    '炎热': '🔥',
-    '寒冷': '🧊'
+    晴天: '☀️',
+    多云: '⛅',
+    阴天: '☁️',
+    小雨: '🌦️',
+    中雨: '🌧️',
+    大雨: '⛈️',
+    雪天: '❄️',
+    雾天: '🌫️',
+    风天: '💨',
+    炎热: '🔥',
+    寒冷: '🧊',
   }
   return weatherMap[weather] || '☀️'
 }
@@ -761,12 +843,15 @@ const getWeatherEmoji = (weather: string) => {
  * 切换页码
  */
 const changePage = (page: number) => {
-  if (page < 1 || page > Math.ceil(pagination.value.total / pagination.value.size)) {
+  if (
+    page < 1 ||
+    page > Math.ceil(pagination.value.total / pagination.value.size)
+  ) {
     return
   }
   pagination.value.current = page
   fetchTalkList()
-  
+
   // 滚动到顶部
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
@@ -778,7 +863,7 @@ const getPageNumbers = () => {
   const current = pagination.value.current
   const total = Math.ceil(pagination.value.total / pagination.value.size)
   const pages: (number | string)[] = []
-  
+
   if (total <= 7) {
     // 总页数小于等于7，显示所有页码
     for (let i = 1; i <= total; i++) {
@@ -811,7 +896,7 @@ const getPageNumbers = () => {
       pages.push(total)
     }
   }
-  
+
   return pages
 }
 
@@ -858,7 +943,7 @@ const nextImage = () => {
  */
 const handleKeydown = (event: KeyboardEvent) => {
   if (!showPreview.value) return
-  
+
   switch (event.key) {
     case 'Escape':
       closePreview()
@@ -887,20 +972,20 @@ const onVisibilityChange = () => {
  */
 const handleLikeTalk = async (talk: Talk) => {
   if (likingTalks.value.has(talk._id)) return
-  
+
   try {
     likingTalks.value.add(talk._id)
-    
+
     // 记录操作前的状态
     const wasLiked = isLikedByStore(talk._id)
-    
+
     // 使用统一的点赞处理逻辑（只传递一个参数）
     await handleLikeByStore(talk._id)
-    
+
     // 更新本地状态以保持一致性
     const isNowLiked = isLikedByStore(talk._id)
     talkLikeStatus.value[talk._id] = isNowLiked
-    
+
     // 更新点赞数
     if (!wasLiked && isNowLiked) {
       // 点赞：增加1
@@ -919,7 +1004,7 @@ const handleLikeTalk = async (talk: Talk) => {
 // 点赞回复
 const handleLikeReply = async (reply: Reply) => {
   if (likingReplies.value.has(reply._id)) return
-  
+
   // 检查用户是否已登录
   const userStore = useUserStore()
   if (!userStore.isLoggedIn) {
@@ -927,11 +1012,11 @@ const handleLikeReply = async (reply: Reply) => {
     router.push('/login')
     return
   }
-  
+
   try {
     likingReplies.value.add(reply._id)
     const isLiked = replyLikeStatus.value[reply._id]
-    
+
     if (isLiked) {
       await unlikeReply(reply._id)
       replyLikeStatus.value[reply._id] = false
@@ -966,18 +1051,18 @@ const closeReplySection = () => {
   activeReplyTalkId.value = ''
   // 重置表单
   replyForm.value = {
-    content: ''
+    content: '',
   }
 }
 
 // 加载说说回复
 const loadTalkReplies = async (talkId: string) => {
   if (loadingReplies.value.has(talkId)) return
-  
+
   try {
     loadingReplies.value.add(talkId)
-    const response = await getTalkReplies(talkId, { current: 1, size: 10 }) as Api.Reply.ReplyList
-    
+    const response = (await getTalkReplies(talkId, { current: 1, size: 10 })) as Api.Reply.ReplyList
+
     if (response && response.records) {
       talkReplies.value[talkId] = response.records
       hasMoreReplies.value[talkId] = response.records.length >= 10
@@ -997,14 +1082,14 @@ const loadTalkReplies = async (talkId: string) => {
 // 加载更多回复
 const loadMoreReplies = async (talkId: string) => {
   if (loadingReplies.value.has(talkId)) return
-  
+
   try {
     loadingReplies.value.add(talkId)
     const currentReplies = talkReplies.value[talkId] || []
     const current = Math.floor(currentReplies.length / 10) + 1
-    
-    const response = await getTalkReplies(talkId, { current, size: 10 }) as Api.Reply.ReplyList
-    
+
+    const response = (await getTalkReplies(talkId, { current, size: 10 })) as Api.Reply.ReplyList
+
     if (response && response.records) {
       talkReplies.value[talkId] = [...currentReplies, ...response.records]
       hasMoreReplies.value[talkId] = response.records.length >= 10
@@ -1022,20 +1107,23 @@ const loadMoreReplies = async (talkId: string) => {
 // 加载全部回复
 const loadAllReplies = async (talkId: string) => {
   if (loadingReplies.value.has(talkId)) return
-  
+
   try {
     loadingReplies.value.add(talkId)
-    
+
     // 获取回复总数
     const totalCount = talkReplyCount.value[talkId] || 0
     if (totalCount === 0) {
       hasMoreReplies.value[talkId] = false
       return
     }
-    
+
     // 一次性加载所有回复
-    const response = await getTalkReplies(talkId, { current: 1, size: totalCount }) as Api.Reply.ReplyList
-    
+    const response = (await getTalkReplies(talkId, {
+      current: 1,
+      size: totalCount,
+    })) as Api.Reply.ReplyList
+
     if (response && response.records) {
       talkReplies.value[talkId] = response.records
       hasMoreReplies.value[talkId] = false // 已加载全部，不再显示"加载更多"按钮
@@ -1053,7 +1141,7 @@ const loadAllReplies = async (talkId: string) => {
 // 提交回复
 const submitReply = async (talkId: string) => {
   if (!canSubmitReply.value || submittingReply.value) return
-  
+
   // 检查用户是否已登录
   const userStore = useUserStore()
   if (!userStore.isLoggedIn) {
@@ -1061,39 +1149,45 @@ const submitReply = async (talkId: string) => {
     router.push('/login')
     return
   }
-  
+
   try {
     submittingReply.value = true
-    
+
     const replyData = {
       content: replyForm.value.content.trim(),
-      author: userStore.userInfo?.nickname || userStore.userInfo?.username || '匿名用户',
+      author:
+        userStore.userInfo?.nickname ||
+        userStore.userInfo?.username ||
+        '匿名用户',
     }
-    
+
     // 正确调用API：传递talkId和replyData两个参数
     await addTalkReply(talkId, replyData)
-    
+
     // 重新加载回复列表，这会更新回复数量
     await loadTalkReplies(talkId)
-    
+
     // 更新回复总数
     const currentReplies = talkReplies.value[talkId] || []
     if (currentReplies.length > 0) {
       // 如果有回复数据，重新获取准确的总数
       try {
-        const response = await getTalkReplies(talkId, { current: 1, size: 1 }) as Api.Reply.ReplyList
+        const response = (await getTalkReplies(talkId, {
+          current: 1,
+          size: 1,
+        })) as Api.Reply.ReplyList
         talkReplyCount.value[talkId] = response?.total || currentReplies.length
       } catch (error) {
         // 如果获取失败，至少增加1（新增的回复）
         talkReplyCount.value[talkId] = (talkReplyCount.value[talkId] || 0) + 1
       }
     }
-    
+
     // 重置表单
     replyForm.value = {
-      content: '' // 清空内容
+      content: '', // 清空内容
     }
-    
+
     // 提交成功后，回复数量会自动更新，因为getTalkReplyCount依赖于talkReplies
     // 无需手动刷新页面，响应式数据会自动更新UI
   } catch (error) {
@@ -1118,7 +1212,7 @@ const getTalkReplyCount = (talkId: string): number => {
 const initializeLikeStatus = async () => {
   // 只初始化store的点赞状态，不传入talkIds
   await talksStore.initializeLikeStatus()
-  
+
   // 同步本地状态 - 确保新说说默认为未点赞状态
   for (const talk of talkList.value) {
     talkLikeStatus.value[talk._id] = isLikedByStore(talk._id)
@@ -1129,7 +1223,10 @@ const initializeLikeStatus = async () => {
 const initializeReplyCount = async () => {
   for (const talk of talkList.value) {
     try {
-      const response = await getTalkReplies(talk._id, { current: 1, size: 1 }) as Api.Reply.ReplyList
+      const response = (await getTalkReplies(talk._id, {
+        current: 1,
+        size: 1,
+      })) as Api.Reply.ReplyList
       // 保存真实的回复总数
       talkReplyCount.value[talk._id] = response?.total || 0
       console.log(`初始化说说 ${talk._id} 的回复数量: ${talkReplyCount.value[talk._id]}`)
@@ -1146,7 +1243,10 @@ const initializeReplyCountForNewTalks = async () => {
     // 只为还没有初始化回复数据的说说获取回复总数
     if (talkReplyCount.value[talk._id] === undefined) {
       try {
-        const response = await getTalkReplies(talk._id, { current: 1, size: 1 }) as Api.Reply.ReplyList
+        const response = (await getTalkReplies(talk._id, {
+          current: 1,
+          size: 1,
+        })) as Api.Reply.ReplyList
         // 保存真实的回复总数
         talkReplyCount.value[talk._id] = response?.total || 0
         console.log(`初始化新说说 ${talk._id} 的回复数量: ${talkReplyCount.value[talk._id]}`)
@@ -1162,11 +1262,8 @@ const initializeReplyCountForNewTalks = async () => {
 onMounted(async () => {
   await resetTalks()
   // 初始化点赞状态和回复数量（并行执行以提高性能）
-  await Promise.all([
-    initializeLikeStatus(),
-    initializeReplyCount()
-  ])
-  
+  await Promise.all([initializeLikeStatus(), initializeReplyCount()])
+
   document.addEventListener('keydown', handleKeydown)
   // 页面可见性或窗口获取焦点时自动刷新，确保与后台同步
   window.addEventListener('focus', fetchTalkList as EventListener)
@@ -1174,44 +1271,51 @@ onMounted(async () => {
 })
 
 // 监听点赞状态变化，保持实时同步
-watch(() => talksStore.likedTalks, (newLikedTalks) => {
-  // 同步本地状态
-  for (const talk of talkList.value) {
-    talkLikeStatus.value[talk._id] = newLikedTalks.has(talk._id)
-  }
-}, { deep: true })
+watch(
+  () => talksStore.likedTalks,
+  (newLikedTalks) => {
+    // 同步本地状态
+    for (const talk of talkList.value) {
+      talkLikeStatus.value[talk._id] = newLikedTalks.has(talk._id)
+    }
+  },
+  { deep: true },
+)
 
 // 监听用户登录状态变化
-watch(() => userStore.isLoggedIn, async (isLoggedIn) => {
-  if (isLoggedIn) {
-    // 用户登录后重新初始化点赞状态
-    await initializeLikeStatus()
-  } else {
-    // 用户登出后重置点赞状态
-    talksStore.resetLikeStatus()
-    for (const talk of talkList.value) {
-      talkLikeStatus.value[talk._id] = false
+watch(
+  () => userStore.isLoggedIn,
+  async (isLoggedIn) => {
+    if (isLoggedIn) {
+      // 用户登录后重新初始化点赞状态
+      await initializeLikeStatus()
+    } else {
+      // 用户登出后重置点赞状态
+      talksStore.resetLikeStatus()
+      for (const talk of talkList.value) {
+        talkLikeStatus.value[talk._id] = false
+      }
     }
-  }
-})
- 
- onUnmounted(() => {
+  },
+)
+
+onUnmounted(() => {
   document.removeEventListener('keydown', handleKeydown)
   document.body.style.overflow = ''
   window.removeEventListener('focus', fetchTalkList as EventListener)
   document.removeEventListener('visibilitychange', onVisibilityChange)
-  
+
   // 清理缓存
   formatTimeCache.clear()
   formatContentCache.clear()
-  
+
   // 取消防抖函数
   debouncedLikeTalk.cancel()
   debouncedLikeReply.cancel()
 })
- </script>
- 
- <style scoped>
+</script>
+
+<style scoped>
 .talk-page {
   min-height: 100vh;
   background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
@@ -1263,7 +1367,7 @@ watch(() => userStore.isLoggedIn, async (isLoggedIn) => {
 }
 
 .top-badge .icon-pin::before {
-  content: "📌";
+  content: '📌';
 }
 
 .talk-content {
@@ -1383,35 +1487,35 @@ watch(() => userStore.isLoggedIn, async (isLoggedIn) => {
     max-width: 240px; /* 移动端稍小 */
     gap: 0.2rem;
   }
-  
+
   .image-grid.grid-1 {
     grid-template-columns: 1fr;
     max-width: 80px;
   }
-  
+
   .image-grid.grid-2 {
     grid-template-columns: 1fr 1fr;
     max-width: 160px;
   }
-  
+
   .image-grid.grid-3 {
     grid-template-columns: 1fr 1fr 1fr;
     max-width: 240px;
   }
-  
+
   .image-grid.grid-4 {
     grid-template-columns: 1fr 1fr;
     grid-template-rows: 1fr 1fr;
     max-width: 160px;
   }
-  
+
   .image-grid.grid-5,
   .image-grid.grid-6 {
     grid-template-columns: 1fr 1fr 1fr;
     grid-template-rows: 1fr 1fr;
     max-width: 240px;
   }
-  
+
   .image-grid.grid-7,
   .image-grid.grid-8,
   .image-grid.grid-9 {
@@ -1419,11 +1523,11 @@ watch(() => userStore.isLoggedIn, async (isLoggedIn) => {
     grid-template-rows: 1fr 1fr 1fr;
     max-width: 240px;
   }
-  
+
   .image-item {
     border-radius: 3px;
   }
-  
+
   .more-images-overlay {
     font-size: 0.8rem;
   }
@@ -1530,8 +1634,12 @@ watch(() => userStore.isLoggedIn, async (isLoggedIn) => {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .empty-content {
@@ -1539,7 +1647,7 @@ watch(() => userStore.isLoggedIn, async (isLoggedIn) => {
 }
 
 .empty-content .icon-empty::before {
-  content: "📝";
+  content: '📝';
   font-size: 4rem;
   display: block;
   margin-bottom: 1rem;
@@ -1592,11 +1700,11 @@ watch(() => userStore.isLoggedIn, async (isLoggedIn) => {
 }
 
 .page-btn .icon-arrow-left::before {
-  content: "←";
+  content: '←';
 }
 
 .page-btn .icon-arrow-right::before {
-  content: "→";
+  content: '→';
 }
 
 .page-info {
@@ -1648,7 +1756,7 @@ watch(() => userStore.isLoggedIn, async (isLoggedIn) => {
 }
 
 .close-btn .icon-close::before {
-  content: "✕";
+  content: '✕';
 }
 
 .preview-container {
@@ -1703,30 +1811,30 @@ watch(() => userStore.isLoggedIn, async (isLoggedIn) => {
   .talk-page {
     padding: 1rem 0;
   }
-  
+
   .page-title {
     font-size: 2rem;
   }
-  
+
   .page-subtitle {
     font-size: 1rem;
   }
-  
+
   .talk-card {
     padding: 1.5rem;
     margin: 0 0.5rem;
     border-radius: 16px;
   }
-  
+
   .talk-meta {
     flex-direction: column;
     gap: 0.75rem;
   }
-  
+
   .meta-item {
     align-self: flex-start;
   }
-  
+
   .image-grid.grid-4,
   .image-grid.grid-5,
   .image-grid.grid-6,
@@ -1735,39 +1843,39 @@ watch(() => userStore.isLoggedIn, async (isLoggedIn) => {
   .image-grid.grid-9 {
     grid-template-columns: 1fr 1fr;
   }
-  
+
   .action-buttons {
     flex-wrap: wrap;
     gap: 1rem;
   }
-  
+
   .view-count {
     margin-left: 0;
     width: 100%;
     justify-content: center;
   }
-  
+
   .form-actions {
     flex-direction: column;
   }
-  
+
   .submit-btn,
   .cancel-btn {
     width: 100%;
   }
-  
+
   .nav-btn.prev-btn {
     left: -2rem;
   }
-  
+
   .nav-btn.next-btn {
     right: -2rem;
   }
-  
+
   .image-preview-modal {
     padding: 1rem;
   }
-  
+
   .modal-content .close-btn {
     top: -2rem;
     font-size: 1.5rem;
@@ -1778,59 +1886,59 @@ watch(() => userStore.isLoggedIn, async (isLoggedIn) => {
   .talk-container {
     padding: 0 0.5rem;
   }
-  
+
   .talk-card {
     padding: 1rem;
     margin: 0;
   }
-  
+
   .page-title {
     font-size: 1.5rem;
   }
-  
+
   .content-text {
     font-size: 1rem;
   }
-  
+
   .image-grid {
     gap: 0.5rem;
   }
-  
+
   .action-btn {
     padding: 0.5rem 1rem;
     font-size: 0.8rem;
   }
-  
+
   .load-more-btn {
     padding: 0.875rem 2rem;
     font-size: 0.9rem;
     min-width: 140px;
     min-height: 45px;
   }
-  
+
   .nav-btn {
     font-size: 1.5rem;
     padding: 0.75rem;
   }
-  
+
   .nav-btn.prev-btn,
   .nav-btn.next-btn {
     position: fixed;
     top: 50%;
   }
-  
+
   .nav-btn.prev-btn {
     left: 1rem;
   }
-  
+
   .nav-btn.next-btn {
     right: 1rem;
   }
-  
+
   .reply-form {
     padding: 1rem;
   }
-  
+
   .reply-item {
     padding: 1rem;
   }
@@ -2046,7 +2154,7 @@ watch(() => userStore.isLoggedIn, async (isLoggedIn) => {
 }
 
 .replies-title::before {
-  content: "💭";
+  content: '💭';
 }
 
 /* 回复区域头部样式 */
@@ -2071,7 +2179,7 @@ watch(() => userStore.isLoggedIn, async (isLoggedIn) => {
 }
 
 .replies-count::before {
-  content: "💬";
+  content: '💬';
   font-size: 1.1rem;
 }
 
@@ -2274,7 +2382,12 @@ watch(() => userStore.isLoggedIn, async (isLoggedIn) => {
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
   transition: left 0.6s ease;
 }
 
@@ -2346,7 +2459,9 @@ watch(() => userStore.isLoggedIn, async (isLoggedIn) => {
 }
 
 @keyframes dotPulse {
-  0%, 80%, 100% {
+  0%,
+  80%,
+  100% {
     transform: scale(0.8);
     opacity: 0.5;
   }
@@ -2392,13 +2507,17 @@ watch(() => userStore.isLoggedIn, async (isLoggedIn) => {
 }
 
 .icon-loading::before {
-  content: "⏳";
+  content: '⏳';
   animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .infinite-sentinel {
@@ -2416,7 +2535,7 @@ watch(() => userStore.isLoggedIn, async (isLoggedIn) => {
 }
 
 .icon-check::before {
-  content: "✅";
+  content: '✅';
 }
 
 /* 图片预览模态框 */
@@ -2509,11 +2628,11 @@ watch(() => userStore.isLoggedIn, async (isLoggedIn) => {
 }
 
 .icon-chevron-left::before {
-  content: "‹";
+  content: '‹';
 }
 
 .icon-chevron-right::before {
-  content: "›";
+  content: '›';
 }
 
 .preview-info {
@@ -2531,30 +2650,30 @@ watch(() => userStore.isLoggedIn, async (isLoggedIn) => {
   .talk-page {
     padding: 1rem 0;
   }
-  
+
   .page-title {
     font-size: 2rem;
   }
-  
+
   .page-subtitle {
     font-size: 1rem;
   }
-  
+
   .talk-card {
     padding: 1.5rem;
     margin: 0 0.5rem;
     border-radius: 16px;
   }
-  
+
   .talk-meta {
     flex-direction: column;
     gap: 0.75rem;
   }
-  
+
   .meta-item {
     align-self: flex-start;
   }
-  
+
   .image-grid.grid-4,
   .image-grid.grid-5,
   .image-grid.grid-6,
@@ -2563,39 +2682,39 @@ watch(() => userStore.isLoggedIn, async (isLoggedIn) => {
   .image-grid.grid-9 {
     grid-template-columns: 1fr 1fr;
   }
-  
+
   .action-buttons {
     flex-wrap: wrap;
     gap: 1rem;
   }
-  
+
   .view-count {
     margin-left: 0;
     width: 100%;
     justify-content: center;
   }
-  
+
   .form-actions {
     flex-direction: column;
   }
-  
+
   .submit-btn,
   .cancel-btn {
     width: 100%;
   }
-  
+
   .nav-btn.prev-btn {
     left: -2rem;
   }
-  
+
   .nav-btn.next-btn {
     right: -2rem;
   }
-  
+
   .image-preview-modal {
     padding: 1rem;
   }
-  
+
   .modal-content .close-btn {
     top: -2rem;
     font-size: 1.5rem;
@@ -2606,52 +2725,52 @@ watch(() => userStore.isLoggedIn, async (isLoggedIn) => {
   .talk-container {
     padding: 0 0.5rem;
   }
-  
+
   .talk-card {
     padding: 1rem;
     margin: 0;
   }
-  
+
   .page-title {
     font-size: 1.5rem;
   }
-  
+
   .content-text {
     font-size: 1rem;
   }
-  
+
   .image-grid {
     gap: 0.5rem;
   }
-  
+
   .action-btn {
     padding: 0.5rem 1rem;
     font-size: 0.8rem;
   }
-  
+
   .nav-btn {
     font-size: 1.5rem;
     padding: 0.75rem;
   }
-  
+
   .nav-btn.prev-btn,
   .nav-btn.next-btn {
     position: fixed;
     top: 50%;
   }
-  
+
   .nav-btn.prev-btn {
     left: 1rem;
   }
-  
+
   .nav-btn.next-btn {
     right: 1rem;
   }
-  
+
   .reply-form {
     padding: 1rem;
   }
-  
+
   .reply-item {
     padding: 1rem;
   }

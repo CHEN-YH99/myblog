@@ -7,18 +7,18 @@ import { getPhotos } from '@/api/photos'
 export const usePhotos = () => {
   // 照片列表
   const photos = ref<Api.Photo.PhotoItem[]>([])
-  
+
   // 加载状态
   const loading = ref(false)
-  
+
   // 错误信息
   const error = ref<string | null>(null)
-  
+
   // 分页信息
   const pagination = reactive({
     current: 1,
     size: 20,
-    total: 0
+    total: 0,
   })
 
   /**
@@ -27,14 +27,14 @@ export const usePhotos = () => {
   const initPhotos = async (params?: Api.Photo.SearchParams) => {
     loading.value = true
     error.value = null
-    
+
     try {
       const response = await getPhotos({
         current: pagination.current,
         size: pagination.size,
-        ...params
+        ...params,
       })
-      
+
       photos.value = response.photos
       pagination.total = response.total
       pagination.current = response.currentPage
@@ -70,6 +70,6 @@ export const usePhotos = () => {
     pagination,
     initPhotos,
     findPhoto,
-    refreshPhotos
+    refreshPhotos,
   }
 }

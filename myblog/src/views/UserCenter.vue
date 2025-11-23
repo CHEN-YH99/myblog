@@ -20,7 +20,9 @@
           <el-avatar :size="120" :src="displayAvatar" />
         </div>
         <div class="user-details">
-          <h2 class="username">{{ userInfo?.nickname || userInfo?.username || '用户' }}</h2>
+          <h2 class="username">
+            {{ userInfo?.nickname || userInfo?.username || '用户' }}
+          </h2>
           <p class="user-email" v-if="userInfo?.email">{{ userInfo.email }}</p>
           <div class="user-stats">
             <div class="stat-item">
@@ -44,7 +46,9 @@
         <!-- 我的点赞 -->
         <div class="function-card">
           <div class="card-header">
-            <h3><el-icon><Star /></el-icon> 我的点赞</h3>
+            <h3>
+              <el-icon><Star /></el-icon> 我的点赞
+            </h3>
           </div>
           <div class="card-content">
             <el-tabs v-model="activeTab" class="user-tabs">
@@ -53,40 +57,52 @@
                   <el-empty description="暂无点赞的文章" :image-size="100" />
                 </div>
                 <div v-else class="articles-grid">
-                  <div 
-                    v-for="article in likedArticlesList" 
+                  <div
+                    v-for="article in likedArticlesList"
                     :key="article._id"
                     class="article-item"
                     @click="goToArticle(article)"
                   >
                     <div class="article-cover">
-                      <img :src="article.image || '/default-article.svg'" :alt="article.title" />
+                      <img
+                        :src="article.image || '/default-article.svg'"
+                        :alt="article.title"
+                      />
                     </div>
                     <div class="article-info">
                       <h4 class="article-title">{{ article.title }}</h4>
                       <p class="article-summary">{{ article.excerpt }}</p>
                       <div class="article-meta">
-                        <span class="article-date">{{ formatDate(article.publishDate) }}</span>
-                        <span class="article-views">{{ article.views }} 阅读</span>
+                        <span class="article-date">
+                          {{ formatDate(article.publishDate) }}
+                        </span>
+                        <span class="article-views">
+                          {{ article.views }} 阅读
+                        </span>
                       </div>
                     </div>
                   </div>
                 </div>
               </el-tab-pane>
-              
+
               <el-tab-pane label="点赞说说" name="talks">
                 <div v-if="likedTalksList.length === 0" class="empty-state">
                   <el-empty description="暂无点赞的说说" :image-size="100" />
                 </div>
                 <div v-else class="talks-list">
-                  <div 
-                    v-for="talk in likedTalksList" 
+                  <div
+                    v-for="talk in likedTalksList"
                     :key="talk._id"
                     class="talk-item"
                   >
-                    <div class="talk-content" v-html="formatContent(talk.content)"></div>
+                    <div
+                      class="talk-content"
+                      v-html="formatContent(talk.content)"
+                    ></div>
                     <div class="talk-meta">
-                      <span class="talk-date">{{ formatDate(talk.publishDate) }}</span>
+                      <span class="talk-date">
+                        {{ formatDate(talk.publishDate) }}
+                      </span>
                       <span class="talk-likes">{{ talk.likes }} 点赞</span>
                     </div>
                   </div>
@@ -99,12 +115,18 @@
         <!-- 账户设置 -->
         <div class="function-card">
           <div class="card-header">
-            <h3><el-icon><Setting /></el-icon> 账户设置</h3>
+            <h3>
+              <el-icon><Setting /></el-icon> 账户设置
+            </h3>
           </div>
           <div class="card-content">
             <div class="setting-item">
               <span class="setting-label">修改密码</span>
-              <el-button type="primary" size="small" @click="showPasswordDialog = true">
+              <el-button
+                type="primary"
+                size="small"
+                @click="showPasswordDialog = true"
+              >
                 修改
               </el-button>
             </div>
@@ -142,41 +164,50 @@
         />
       </el-form-item>
       <el-form-item label="新密码" prop="newPassword">
-         <el-input
-           v-model="passwordForm.newPassword"
-           type="password"
-           placeholder="请输入新密码"
-           show-password
-         />
-         <!-- 密码强度指示器 -->
-         <div v-if="passwordForm.newPassword" class="password-strength-indicator">
-           <div class="strength-bar">
-             <div 
-               class="strength-fill" 
-               :class="passwordStrength"
-               :style="{ backgroundColor: passwordStrengthColor }"
-             ></div>
-           </div>
-           <span class="strength-text" :style="{ color: passwordStrengthColor }">
-             密码强度：{{ passwordStrengthText }}
-           </span>
-         </div>
-         <!-- 密码要求提示 -->
-         <div class="password-tips">
-           <p class="tip-title">密码要求：</p>
-           <ul class="tip-list">
-             <li :class="{ 'valid': passwordForm.newPassword.length >= 6 }">
-               至少6个字符
-             </li>
-             <li :class="{ 'valid': /[a-zA-Z]/.test(passwordForm.newPassword) && /\d/.test(passwordForm.newPassword) }">
-               包含字母和数字
-             </li>
-             <li :class="{ 'valid': passwordStrength === 'strong' }">
-               建议包含大小写字母、数字和特殊字符
-             </li>
-           </ul>
-         </div>
-       </el-form-item>
+        <el-input
+          v-model="passwordForm.newPassword"
+          type="password"
+          placeholder="请输入新密码"
+          show-password
+        />
+        <!-- 密码强度指示器 -->
+        <div
+          v-if="passwordForm.newPassword"
+          class="password-strength-indicator"
+        >
+          <div class="strength-bar">
+            <div
+              class="strength-fill"
+              :class="passwordStrength"
+              :style="{ backgroundColor: passwordStrengthColor }"
+            ></div>
+          </div>
+          <span class="strength-text" :style="{ color: passwordStrengthColor }">
+            密码强度：{{ passwordStrengthText }}
+          </span>
+        </div>
+        <!-- 密码要求提示 -->
+        <div class="password-tips">
+          <p class="tip-title">密码要求：</p>
+          <ul class="tip-list">
+            <li :class="{ valid: passwordForm.newPassword.length >= 6 }">
+              至少6个字符
+            </li>
+            <li
+              :class="{
+                valid:
+                  /[a-zA-Z]/.test(passwordForm.newPassword) &&
+                  /\d/.test(passwordForm.newPassword),
+              }"
+            >
+              包含字母和数字
+            </li>
+            <li :class="{ valid: passwordStrength === 'strong' }">
+              建议包含大小写字母、数字和特殊字符
+            </li>
+          </ul>
+        </div>
+      </el-form-item>
       <el-form-item label="确认密码" prop="confirmPassword">
         <el-input
           v-model="passwordForm.confirmPassword"
@@ -189,7 +220,11 @@
     <template #footer>
       <span class="dialog-footer">
         <el-button @click="showPasswordDialog = false">取消</el-button>
-        <el-button type="primary" @click="handleChangePassword" :loading="changingPassword">
+        <el-button
+          type="primary"
+          @click="handleChangePassword"
+          :loading="changingPassword"
+        >
           确定
         </el-button>
       </span>
@@ -231,7 +266,8 @@ const getDefaultAvatar = (name) => {
 const displayAvatar = computed(() => {
   const user = userStore.userInfo
   if (user && user.avatar) return user.avatar
-  const name = user?.nickname || user?.username || (user?.id ? String(user.id) : 'User')
+  const name =
+    user?.nickname || user?.username || (user?.id ? String(user.id) : 'User')
   return getDefaultAvatar(name)
 })
 
@@ -247,7 +283,7 @@ const userInfo = computed(() => userStore.userInfo)
 const userStats = computed(() => ({
   articlesLiked: articlesStore.likedArticles.size,
   talksLiked: talksStore.likedTalks.size,
-  repliesCount: 0 // 暂时设为0，后续可以从API获取
+  repliesCount: 0, // 暂时设为0，后续可以从API获取
 }))
 
 // 点赞的文章列表
@@ -264,7 +300,7 @@ const loadingLikedTalks = ref(false)
 const passwordForm = ref({
   currentPassword: '',
   newPassword: '',
-  confirmPassword: ''
+  confirmPassword: '',
 })
 
 const passwordFormRef = ref()
@@ -287,9 +323,14 @@ const checkPasswordStrength = (password: string) => {
   const hasLowerCase = /[a-z]/.test(password)
   const hasNumber = /\d/.test(password)
   const hasSpecialChar = /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password)
-  
-  const typeCount = [hasUpperCase, hasLowerCase, hasNumber, hasSpecialChar].filter(Boolean).length
-  
+
+  const typeCount = [
+    hasUpperCase,
+    hasLowerCase,
+    hasNumber,
+    hasSpecialChar,
+  ].filter(Boolean).length
+
   if (password.length >= 8 && typeCount >= 3) {
     passwordStrength.value = 'strong'
     passwordStrengthText.value = '强'
@@ -309,7 +350,7 @@ const checkPasswordStrength = (password: string) => {
 const passwordRules = {
   currentPassword: [
     { required: true, message: '请输入当前密码', trigger: 'blur' },
-    { min: 1, message: '当前密码不能为空', trigger: 'blur' }
+    { min: 1, message: '当前密码不能为空', trigger: 'blur' },
   ],
   newPassword: [
     { required: true, message: '请输入新密码', trigger: 'blur' },
@@ -321,36 +362,42 @@ const passwordRules = {
           callback()
           return
         }
-        
+
         // 检查密码强度
         checkPasswordStrength(value)
-        
+
         // 必须包含字母和数字
         const hasLetter = /[a-zA-Z]/.test(value)
         const hasNumber = /\d/.test(value)
-        
+
         if (!hasLetter || !hasNumber) {
           callback(new Error('密码必须包含字母和数字'))
           return
         }
-        
+
         // 不能与当前密码相同
         if (value === passwordForm.value.currentPassword) {
           callback(new Error('新密码不能与当前密码相同'))
           return
         }
-        
+
         // 不能包含常见弱密码
-        const weakPasswords = ['123456', 'password', 'qwerty', '111111', '123123']
-        if (weakPasswords.some(weak => value.toLowerCase().includes(weak))) {
+        const weakPasswords = [
+          '123456',
+          'password',
+          'qwerty',
+          '111111',
+          '123123',
+        ]
+        if (weakPasswords.some((weak) => value.toLowerCase().includes(weak))) {
           callback(new Error('密码过于简单，请使用更复杂的密码'))
           return
         }
-        
+
         callback()
       },
-      trigger: 'blur'
-    }
+      trigger: 'blur',
+    },
   ],
   confirmPassword: [
     { required: true, message: '请再次输入新密码', trigger: 'blur' },
@@ -362,9 +409,9 @@ const passwordRules = {
           callback()
         }
       },
-      trigger: 'blur'
-    }
-  ]
+      trigger: 'blur',
+    },
+  ],
 }
 
 // 跳转到文章详情
@@ -385,30 +432,28 @@ const formatContent = (content: string) => {
 
 // 处理退出登录
 const handleLogout = () => {
-  ElMessageBox.confirm(
-    '确定要退出登录吗？',
-    '退出确认',
-    {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning',
-    }
-  ).then(() => {
-    userStore.logout()
-    router.push('/')
-    ElMessage.success('已退出登录')
-  }).catch(() => {
-    // 用户取消退出
+  ElMessageBox.confirm('确定要退出登录吗？', '退出确认', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning',
   })
+    .then(() => {
+      userStore.logout()
+      router.push('/')
+      ElMessage.success('已退出登录')
+    })
+    .catch(() => {
+      // 用户取消退出
+    })
 }
 
 // 处理修改密码
 const handleChangePassword = async () => {
   if (!passwordFormRef.value) return
-  
+
   try {
     await passwordFormRef.value.validate()
-    
+
     // 检查密码强度，如果是弱密码给出警告
     if (passwordStrength.value === 'weak') {
       const confirmResult = await ElMessageBox.confirm(
@@ -418,28 +463,28 @@ const handleChangePassword = async () => {
           confirmButtonText: '继续修改',
           cancelButtonText: '重新设置',
           type: 'warning',
-        }
+        },
       ).catch(() => false)
-      
+
       if (!confirmResult) {
         return
       }
     }
-    
+
     changingPassword.value = true
-    
+
     // 调用修改密码的API
     const passwordData: ChangePasswordParams = {
       currentPassword: passwordForm.value.currentPassword,
-      newPassword: passwordForm.value.newPassword
+      newPassword: passwordForm.value.newPassword,
     }
-    
+
     await changePassword(passwordData)
-    
+
     ElMessage.success('密码修改成功，请使用新密码重新登录')
     showPasswordDialog.value = false
     resetPasswordForm()
-    
+
     // 修改密码成功后，退出登录让用户重新登录
     setTimeout(() => {
       userStore.logout()
@@ -447,10 +492,10 @@ const handleChangePassword = async () => {
     }, 1500)
   } catch (error: any) {
     console.error('修改密码失败:', error)
-    
+
     // 更详细的错误处理
     let errorMessage = '修改密码失败，请稍后重试'
-    
+
     if (error?.response?.status === 400) {
       errorMessage = '当前密码错误，请检查后重试'
     } else if (error?.response?.status === 401) {
@@ -464,7 +509,7 @@ const handleChangePassword = async () => {
     } else if (error?.message) {
       errorMessage = error.message
     }
-    
+
     ElMessage.error(errorMessage)
   } finally {
     changingPassword.value = false
@@ -482,7 +527,7 @@ const resetPasswordForm = () => {
   passwordForm.value = {
     currentPassword: '',
     newPassword: '',
-    confirmPassword: ''
+    confirmPassword: '',
   }
   passwordStrength.value = 'weak'
   passwordStrengthText.value = '弱'
@@ -491,30 +536,33 @@ const resetPasswordForm = () => {
 }
 
 // 监听新密码输入，实时更新密码强度
-watch(() => passwordForm.value.newPassword, (newPassword) => {
-  checkPasswordStrength(newPassword)
-})
+watch(
+  () => passwordForm.value.newPassword,
+  (newPassword) => {
+    checkPasswordStrength(newPassword)
+  },
+)
 
 // 获取用户已点赞的文章列表
 const loadLikedArticles = async () => {
   if (!userStore.isLoggedIn) return
-  
+
   loadingLikedArticles.value = true
   try {
     // 优先从store中获取已点赞的文章ID
     const likedArticleIds = Array.from(articlesStore.likedArticles)
-    
+
     if (likedArticleIds.length === 0) {
       likedArticlesList.value = []
       return
     }
-    
+
     // 从所有文章中筛选出已点赞的文章
     const allArticles = articlesStore.articles
-    const localLikedArticles = allArticles.filter(article => 
-      likedArticleIds.includes(article._id)
+    const localLikedArticles = allArticles.filter((article) =>
+      likedArticleIds.includes(article._id),
     )
-    
+
     // 如果本地文章数据完整（找到了所有已点赞的文章），直接使用
     if (localLikedArticles.length === likedArticleIds.length) {
       likedArticlesList.value = localLikedArticles
@@ -540,35 +588,35 @@ const loadLikedArticles = async () => {
 // 获取用户已点赞的说说列表
 const loadLikedTalks = async () => {
   if (!userStore.isLoggedIn) return
-  
+
   loadingLikedTalks.value = true
   try {
     // 确保点赞状态已初始化
     if (!talksStore.likeStatusInitialized) {
       await talksStore.initializeLikeStatus()
     }
-    
+
     // 从store中获取已点赞的说说ID
     const likedTalkIds = Array.from(talksStore.likedTalks)
-    
+
     if (likedTalkIds.length === 0) {
       likedTalksList.value = []
       return
     }
-    
+
     // 尝试从Talk页面获取说说数据（如果可用）
     try {
       const { getTalkList } = await import('@/api/talks')
       const response = await getTalkList({
         current: 1,
         size: 100, // 获取足够多的说说来匹配点赞的ID
-        status: 'public'
+        status: 'public',
       })
-      
+
       if (response && response.records) {
         // 筛选出已点赞的说说
-        const likedTalks = response.records.filter(talk => 
-          likedTalkIds.includes(talk._id)
+        const likedTalks = response.records.filter((talk) =>
+          likedTalkIds.includes(talk._id),
         )
         likedTalksList.value = likedTalks
       } else {
@@ -590,22 +638,22 @@ const loadLikedTalks = async () => {
 // 初始化数据
 const initData = async () => {
   if (!userStore.isLoggedIn) return
-  
+
   try {
     // 确保点赞状态已初始化
     if (articlesStore.likedArticles.size === 0) {
       await articlesStore.initializeLikeStatus()
     }
-    
+
     // 确保文章数据已加载
     if (articlesStore.articles.length === 0) {
       console.log('文章数据为空，开始加载文章数据...')
       await articlesStore.fetchArticles()
     }
-    
+
     // 加载已点赞的说说列表（内部会处理点赞状态初始化）
     await loadLikedTalks()
-    
+
     // 加载已点赞的文章列表
     await loadLikedArticles()
   } catch (error) {
@@ -618,16 +666,19 @@ onMounted(() => {
 })
 
 // 监听用户登录状态变化
-watch(() => userStore.isLoggedIn, async (isLoggedIn) => {
-  if (isLoggedIn) {
-    // 用户登录后重新初始化数据
-    await initData()
-  } else {
-    // 用户登出后清空数据
-    likedArticlesList.value = []
-    likedTalksList.value = []
-  }
-})
+watch(
+  () => userStore.isLoggedIn,
+  async (isLoggedIn) => {
+    if (isLoggedIn) {
+      // 用户登录后重新初始化数据
+      await initData()
+    } else {
+      // 用户登出后清空数据
+      likedArticlesList.value = []
+      likedTalksList.value = []
+    }
+  },
+)
 
 // 监听点赞状态变化，实时更新列表
 watch(
@@ -638,7 +689,7 @@ watch(
       loadLikedArticles()
     }
   },
-  { deep: true }
+  { deep: true },
 )
 
 watch(
@@ -647,18 +698,18 @@ watch(
     // 当点赞状态发生变化时，过滤已有的说说列表而不是重新加载
     if (userStore.isLoggedIn && activeTab.value === 'talks') {
       // 过滤出仍然被点赞的说说
-      likedTalksList.value = likedTalksList.value.filter(talk => 
-        newLikedTalks.has(talk._id)
+      likedTalksList.value = likedTalksList.value.filter((talk) =>
+        newLikedTalks.has(talk._id),
       )
     }
   },
-  { deep: true }
+  { deep: true },
 )
 
 // 监听tab切换，确保数据及时更新
 watch(activeTab, (newTab) => {
   if (!userStore.isLoggedIn) return
-  
+
   if (newTab === 'articles') {
     loadLikedArticles()
   } else if (newTab === 'talks') {
@@ -749,7 +800,11 @@ watch(activeTab, (newTab) => {
 .card-header {
   padding: 1.5rem;
   border-bottom: 1px solid var(--border-color);
-  background: linear-gradient(135deg, var(--primary-color), var(--primary-color-light));
+  background: linear-gradient(
+    135deg,
+    var(--primary-color),
+    var(--primary-color-light)
+  );
 }
 
 .card-header h3 {
@@ -870,117 +925,117 @@ watch(activeTab, (newTab) => {
 }
 
 /* 空状态 */
- .empty-state {
-   text-align: center;
-   padding: 2rem;
- }
+.empty-state {
+  text-align: center;
+  padding: 2rem;
+}
 
- /* 密码强度指示器样式 */
- .password-strength-indicator {
-   margin-top: 8px;
-   display: flex;
-   align-items: center;
-   gap: 8px;
- }
+/* 密码强度指示器样式 */
+.password-strength-indicator {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 
- .strength-bar {
-   flex: 1;
-   height: 4px;
-   background-color: #e4e7ed;
-   border-radius: 2px;
-   overflow: hidden;
- }
+.strength-bar {
+  flex: 1;
+  height: 4px;
+  background-color: #e4e7ed;
+  border-radius: 2px;
+  overflow: hidden;
+}
 
- .strength-fill {
-   height: 100%;
-   transition: all 0.3s ease;
-   border-radius: 2px;
- }
+.strength-fill {
+  height: 100%;
+  transition: all 0.3s ease;
+  border-radius: 2px;
+}
 
- .strength-fill.weak {
-   width: 33%;
- }
+.strength-fill.weak {
+  width: 33%;
+}
 
- .strength-fill.medium {
-   width: 66%;
- }
+.strength-fill.medium {
+  width: 66%;
+}
 
- .strength-fill.strong {
-   width: 100%;
- }
+.strength-fill.strong {
+  width: 100%;
+}
 
- .strength-text {
-   font-size: 12px;
-   font-weight: 500;
-   white-space: nowrap;
- }
+.strength-text {
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
 
- /* 密码要求提示样式 */
- .password-tips {
-   margin-top: 12px;
-   padding: 12px;
-   background-color: #f8f9fa;
-   border-radius: 6px;
-   border: 1px solid #e9ecef;
- }
+/* 密码要求提示样式 */
+.password-tips {
+  margin-top: 12px;
+  padding: 12px;
+  background-color: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+}
 
- .tip-title {
-   margin: 0 0 8px 0;
-   font-size: 13px;
-   font-weight: 500;
-   color: #495057;
- }
+.tip-title {
+  margin: 0 0 8px 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: #495057;
+}
 
- .tip-list {
-   margin: 0;
-   padding: 0;
-   list-style: none;
- }
+.tip-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
 
- .tip-list li {
-   font-size: 12px;
-   color: #6c757d;
-   margin-bottom: 4px;
-   position: relative;
-   padding-left: 16px;
- }
+.tip-list li {
+  font-size: 12px;
+  color: #6c757d;
+  margin-bottom: 4px;
+  position: relative;
+  padding-left: 16px;
+}
 
- .tip-list li:before {
-   content: '○';
-   position: absolute;
-   left: 0;
-   color: #dc3545;
-   transition: all 0.3s ease;
- }
+.tip-list li:before {
+  content: '○';
+  position: absolute;
+  left: 0;
+  color: #dc3545;
+  transition: all 0.3s ease;
+}
 
- .tip-list li.valid {
-   color: #28a745;
- }
+.tip-list li.valid {
+  color: #28a745;
+}
 
- .tip-list li.valid:before {
-   content: '●';
-   color: #28a745;
- }
+.tip-list li.valid:before {
+  content: '●';
+  color: #28a745;
+}
 
- .tip-list li:last-child {
-   margin-bottom: 0;
- }
+.tip-list li:last-child {
+  margin-bottom: 0;
+}
 
 /* 响应式设计 */
 @media (max-width: 768px) {
   .user-center-container {
     padding: 1rem;
   }
-  
+
   .user-info-card {
     flex-direction: column;
     text-align: center;
   }
-  
+
   .user-stats {
     justify-content: center;
   }
-  
+
   .articles-grid {
     grid-template-columns: 1fr;
   }

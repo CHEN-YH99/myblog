@@ -5,7 +5,9 @@
       <div class="large-img">
         <img :src="currentCategory?.coverImage || defaultCover" alt="" />
         <div class="inner-header flex">
-          <h1 class="animate__animated animate__backInDown">{{ currentCategory?.title || '相册分类' }}</h1>
+          <h1 class="animate__animated animate__backInDown">
+            {{ currentCategory?.title || '相册分类' }}
+          </h1>
         </div>
       </div>
       <!-- 海水波浪 -->
@@ -28,14 +30,17 @@
     <!-- 照片列表（仅在分类可展示时显示） -->
     <div class="photo-list" v-if="isCategoryActive">
       <div v-if="photos.length" class="photos-grid">
-        <div 
-          v-for="photo in photos" 
-          :key="photo._id" 
+        <div
+          v-for="photo in photos"
+          :key="photo._id"
           class="photo-item"
           @click="showPhotoDetail(photo)"
         >
           <div class="photo-container">
-            <img :src="photo.thumbnailUrl || photo.imageUrl" :alt="photo.title" />
+            <img
+              :src="photo.thumbnailUrl || photo.imageUrl"
+              :alt="photo.title"
+            />
             <div class="photo-overlay">
               <div class="photo-info">
                 <h3>{{ photo.title }}</h3>
@@ -61,7 +66,11 @@
       class="photo-dialog"
     >
       <div v-if="selectedPhoto" class="photo-dialog-content">
-        <img :src="selectedPhoto.imageUrl" :alt="selectedPhoto.title" class="photo-preview" />
+        <img
+          :src="selectedPhoto.imageUrl"
+          :alt="selectedPhoto.title"
+          class="photo-preview"
+        />
         <div class="photo-details">
           <h3>{{ selectedPhoto.title }}</h3>
           <p>{{ selectedPhoto.description }}</p>
@@ -126,23 +135,31 @@ const displayedPhotoCount = computed(() => {
   if (typeof serverCount === 'number') return serverCount
   return 0
 })
-const createdAtStr = computed(() => currentCategory.value?.createdAt ? formatDate(currentCategory.value.createdAt) : '-')
+const createdAtStr = computed(() =>
+  currentCategory.value?.createdAt
+    ? formatDate(currentCategory.value.createdAt)
+    : '-',
+)
 
 // 取服务端分类更新时间与客户端最新上传图片时间的较大者，确保与管理端一致或更“新”
 const latestPhotoUploadAtMs = computed(() => {
   const times = photos.value
-    .map(p => p.uploadDate)
+    .map((p) => p.uploadDate)
     .filter(Boolean)
-    .map(d => new Date(d as string).getTime())
-    .filter(t => !Number.isNaN(t))
+    .map((d) => new Date(d as string).getTime())
+    .filter((t) => !Number.isNaN(t))
   return times.length ? Math.max(...times) : 0
 })
 const computedUpdatedAtISO = computed(() => {
-  const serverMs = currentCategory.value?.updatedAt ? new Date(currentCategory.value.updatedAt).getTime() : 0
+  const serverMs = currentCategory.value?.updatedAt
+    ? new Date(currentCategory.value.updatedAt).getTime()
+    : 0
   const ms = Math.max(serverMs, latestPhotoUploadAtMs.value)
   return ms ? new Date(ms).toISOString() : ''
 })
-const updatedAtStr = computed(() => computedUpdatedAtISO.value ? formatDate(computedUpdatedAtISO.value) : '-')
+const updatedAtStr = computed(() =>
+  computedUpdatedAtISO.value ? formatDate(computedUpdatedAtISO.value) : '-',
+)
 
 /**
  * 格式化日期
@@ -153,7 +170,7 @@ const formatDate = (dateString: string) => {
   return date.toLocaleDateString('zh-CN', {
     year: 'numeric',
     month: 'long',
-    day: 'numeric'
+    day: 'numeric',
   })
 }
 
@@ -173,9 +190,10 @@ const fetchCategoryAndPhotos = async (id: string) => {
   isRefreshing = true
   try {
     // 先尝试从列表中匹配（兼容 id 和 _id）
-    currentCategory.value = photoCategories.value.find(
-      (category) => category._id === id || category.id === id
-    ) || currentCategory.value
+    currentCategory.value =
+      photoCategories.value.find(
+        (category) => category._id === id || category.id === id,
+      ) || currentCategory.value
 
     // 再请求详情，确保 photoCount / createdAt / updatedAt 为最新
     const detail = await getPhotoCategoryDetail(id)
@@ -191,12 +209,20 @@ const fetchCategoryAndPhotos = async (id: string) => {
     }
 
     // 计算用于查询照片列表的分类ID（优先 id，其余 _id）
-    const fetchCategoryId = currentCategory.value?.id || currentCategory.value?._id || id
+    const fetchCategoryId =
+      currentCategory.value?.id || currentCategory.value?._id || id
     await initPhotos({ categoryId: fetchCategoryId, isVisible: true })
 
     // 如果按 id 查询没有数据，回退用 _id 再查一次（兼容历史数据存储 categoryId 为 _id 的情况）
-    if (photos.value.length === 0 && currentCategory.value?._id && currentCategory.value._id !== fetchCategoryId) {
-      await initPhotos({ categoryId: currentCategory.value._id, isVisible: true })
+    if (
+      photos.value.length === 0 &&
+      currentCategory.value?._id &&
+      currentCategory.value._id !== fetchCategoryId
+    ) {
+      await initPhotos({
+        categoryId: currentCategory.value._id,
+        isVisible: true,
+      })
     }
   } catch (e) {
     console.warn('刷新分类与照片数据失败: ', e)
@@ -208,7 +234,7 @@ const fetchCategoryAndPhotos = async (id: string) => {
 /**
  * 初始化数据 + 开启轮询
  */
- onMounted(async () => {
+onMounted(async () => {
   // 初始化图片分类列表（确保有本地缓存可匹配）
   await initPhotoCategories({ isVisible: true })
 
@@ -225,7 +251,7 @@ watch(
     if (typeof newId === 'string' && newId) {
       await fetchCategoryAndPhotos(newId)
     }
-  }
+  },
 )
 
 // 组件卸载清理轮询
@@ -245,66 +271,68 @@ onUnmounted(() => {
     padding: 20px;
     border-radius: 10px;
     box-shadow: 0 2px 12px 0 rgba(212, 212, 212, 0.723);
-    
+
     .category-header {
       h2 {
         font-size: 24px;
         margin-bottom: 15px;
       }
-      
+
       .description {
         font-size: 16px;
         color: #b1b1b1;
         margin-bottom: 20px;
         line-height: 1.6;
       }
-      
+
       .meta {
         display: flex;
         gap: 20px;
         font-size: 14px;
         color: #888;
-        
+
         span {
           &:not(:last-child)::after {
-            content: " | ";
+            content: ' | ';
             margin-left: 10px;
           }
         }
       }
     }
   }
-  
+
   .photo-list {
     width: 80%;
     margin: 30px auto;
-    
+
     .photos-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
       gap: 20px;
-      
+
       .photo-item {
         cursor: pointer;
         border-radius: 10px;
         overflow: hidden;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-        
+        transition:
+          transform 0.3s ease,
+          box-shadow 0.3s ease;
+
         &:hover {
           transform: translateY(-5px);
           box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-          
+
           .photo-overlay {
             opacity: 1;
           }
         }
-        
+
         .photo-container {
           position: relative;
           width: 100%;
           padding-top: 100%; // 1:1 宽高比
-          
+
           img {
             position: absolute;
             top: 0;
@@ -314,11 +342,11 @@ onUnmounted(() => {
             object-fit: cover;
             transition: transform 0.3s ease;
           }
-          
+
           &:hover img {
             transform: scale(1.05);
           }
-          
+
           .photo-overlay {
             position: absolute;
             top: 0;
@@ -331,15 +359,15 @@ onUnmounted(() => {
             display: flex;
             align-items: flex-end;
             padding: 20px;
-            
+
             .photo-info {
               color: white;
-              
+
               h3 {
                 font-size: 16px;
                 margin-bottom: 5px;
               }
-              
+
               p {
                 font-size: 14px;
                 opacity: 0.8;
@@ -350,7 +378,7 @@ onUnmounted(() => {
       }
     }
   }
-  
+
   .photo-dialog {
     .photo-dialog-content {
       .photo-preview {
@@ -359,29 +387,29 @@ onUnmounted(() => {
         object-fit: contain;
         margin-bottom: 20px;
       }
-      
+
       .photo-details {
         h3 {
           font-size: 20px;
           margin-bottom: 10px;
         }
-        
+
         p {
           font-size: 16px;
           color: #666;
           margin-bottom: 20px;
           line-height: 1.6;
         }
-        
+
         .photo-meta {
           display: flex;
           gap: 20px;
           font-size: 14px;
           color: #888;
-          
+
           span {
             &:not(:last-child)::after {
-              content: " | ";
+              content: ' | ';
               margin-left: 10px;
             }
           }
@@ -389,7 +417,7 @@ onUnmounted(() => {
       }
     }
   }
-  
+
   .empty {
     text-align: center;
     padding: 50px 0;

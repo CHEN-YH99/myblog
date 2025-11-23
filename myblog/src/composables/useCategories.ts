@@ -12,14 +12,14 @@ export function useCategories() {
   const error = ref<string | null>(null)
 
   // 计算属性
-  const activeCategoriesCount = computed(() => 
-    categories.value.filter(cat => cat.status === 'active').length
+  const activeCategoriesCount = computed(
+    () => categories.value.filter((cat) => cat.status === 'active').length,
   )
 
-  const sortedCategories = computed(() => 
+  const sortedCategories = computed(() =>
     [...categories.value]
-      .filter(cat => cat.status === 'active')
-      .sort((a, b) => (a.sort || 0) - (b.sort || 0))
+      .filter((cat) => cat.status === 'active')
+      .sort((a, b) => (a.sort || 0) - (b.sort || 0)),
   )
 
   // 初始化分类数据
@@ -32,20 +32,20 @@ export function useCategories() {
     try {
       loading.value = true
       error.value = null
-      
+
       // console.log('开始获取分类数据...')
       // 传递分页参数以获取详细的分类数据
       const result = await getCategories({ page: 1, size: 100 })
       // console.log('获取到分类数据:', result)
-      
+
       categories.value = Array.isArray(result) ? result : []
       // console.log('设置分类数据完成，最终数量:', categories.value.length)
-      
+
       // 输出每个分类的详细信息
       categories.value.forEach((cat, index) => {
         // console.log(`分类 ${index + 1}: 名称=「${cat.name}」, slug=「${cat.slug}」, 状态=${cat.status}`)
       })
-      
+
       return categories.value
     } catch (err) {
       error.value = err instanceof Error ? err.message : '获取分类失败'
@@ -70,9 +70,7 @@ export function useCategories() {
 
   // 根据名称或 slug 查找分类
   const findCategory = (nameOrSlug: string) => {
-    return categories.value.find(cat => 
-      cat.name === nameOrSlug || cat.slug === nameOrSlug
-    )
+    return categories.value.find((cat) => cat.name === nameOrSlug || cat.slug === nameOrSlug)
   }
 
   // 重置状态
@@ -95,6 +93,6 @@ export function useCategories() {
     getCategoryArticles,
     findCategory,
     resetCategories,
-    refreshCategories: () => initCategories(true)
+    refreshCategories: () => initCategories(true),
   }
 }

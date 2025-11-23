@@ -11,15 +11,21 @@
       <!-- 海水波浪 -->
       <WaveContainer />
     </div>
-     <!-- 内容 -->
+    <!-- 内容 -->
     <!-- 使用 visiblePhotoCategories：已过滤出可展示分类 -->
-    <div v-if="visiblePhotoCategories.length" class="timeline_content animate__animated animate__fadeInUp">
+    <div
+      v-if="visiblePhotoCategories.length"
+      class="timeline_content animate__animated animate__fadeInUp"
+    >
       <!-- 标签栏 -->
-      <div class= "tags-info">
+      <div class="tags-info">
         <section class="tag-cloud">
           <ul>
-            <li v-for="(item, index) in visiblePhotoCategories" :key="item._id">
-              <router-link :to="'/photo-category/' + item._id" class="photo-link">
+            <li v-for="item in visiblePhotoCategories" :key="item._id">
+              <router-link
+                :to="'/photo-category/' + item._id"
+                class="photo-link"
+              >
                 <div class="image-container">
                   <img :src="item.coverImage" :alt="item.title" />
                   <div class="overlay">
@@ -62,7 +68,9 @@ const isPhotoCategoryVisible = (item: any): boolean => {
 }
 
 // 已过滤的分类列表（仅展示可见分类）
-const visiblePhotoCategories = computed(() => photoCategories.value.filter(isPhotoCategoryVisible))
+const visiblePhotoCategories = computed(() =>
+  photoCategories.value.filter(isPhotoCategoryVisible),
+)
 
 // 组件挂载时初始化数据
 onMounted(async () => {
@@ -103,7 +111,7 @@ onMounted(async () => {
             img {
               filter: saturate(3); // 饱和度增加
             }
-            
+
             .overlay {
               background-color: rgba(0, 0, 0, 0.4); // 背景变深
             }

@@ -5,14 +5,19 @@
       <div class="inner-header flex">
         <h1 class="animate__animated animate__backInDown">小灰个人博客</h1>
       </div>
-      <el-icon color="#ffffff" size="30px" class="turndown" @click="scrollDown"><arrow-down-bold /></el-icon>
+      <el-icon color="#ffffff" size="30px" class="turndown" @click="scrollDown"
+        ><arrow-down-bold
+      /></el-icon>
       <!-- 海水波浪 -->
       <WaveContainer />
     </div>
     <!-- 内容区域 -->
     <div class="main-content">
       <!-- 回到顶部控件 -->
-      <el-backtop class="backtop animate__animated animate__slideInUp" target="body" />
+      <el-backtop
+        class="backtop animate__animated animate__slideInUp"
+        target="body"
+      />
 
       <!-- 加载状态 -->
       <div v-if="loading" class="loading-container">
@@ -37,24 +42,24 @@
 
       <!-- 正常内容 -->
       <el-row v-else class="animate__animated animate__fadeInUp">
-        <div v-if="articleslist.length" class="content-list flex ">
+        <div v-if="articleslist.length" class="content-list flex">
           <!-- 左侧文章列表 -->
           <el-col :span="18">
             <div
               v-for="(article, index) in pagedArticles"
-              :key="article._id || ((currentPage - 1) * pageSize + index)"
+              :key="article._id || (currentPage - 1) * pageSize + index"
               class="article-card"
               :class="{
                 // 使用全局索引保证跨页也交错
-                reverse: (((currentPage - 1) * pageSize + index) % 2) === 1
+                reverse: ((currentPage - 1) * pageSize + index) % 2 === 1,
               }"
               @click="goToArticle(article)"
-              style="cursor: pointer;"
+              style="cursor: pointer"
             >
               <div class="card-image">
-                <el-image 
-                  style="width: 100%; height: 100%;" 
-                  :src="article.image || url" 
+                <el-image
+                  style="width: 100%; height: 100%"
+                  :src="article.image || url"
                   :fit="fit"
                   lazy
                   :loading="'lazy'"
@@ -78,12 +83,23 @@
 
                 <div class="article-meta">
                   <span v-if="article.isTop" class="meta-item">📌 置顶</span>
-                  <span class="meta-item">📅 发表于 {{ formatDate(article.publishDate) }}</span>
-                  <span class="meta-item">🔄 更新于 {{ formatDate(article.updateDate) }}</span>
+                  <span class="meta-item"
+                    >📅 发表于 {{ formatDate(article.publishDate) }}</span
+                  >
+
+                  <span class="meta-item"
+                    >🔄 更新于 {{ formatDate(article.updateDate) }}</span
+                  >
                 </div>
 
                 <div class="article-tags">
-                  <template v-if="article.tags && Array.isArray(article.tags) && article.tags.length">
+                  <template
+                    v-if="
+                      article.tags &&
+                      Array.isArray(article.tags) &&
+                      article.tags.length
+                    "
+                  >
                     <span
                       class="tag"
                       v-for="(tag, i) in article.tags"
@@ -105,8 +121,8 @@
                   <span
                     class="like-btn"
                     :class="{
-                      'liked': isLiked(article._id),
-                      'loading': isLiking(article._id)
+                      liked: isLiked(article._id),
+                      loading: isLiking(article._id),
                     }"
                     @click.stop="handleLike(article._id)"
                   >
@@ -146,7 +162,12 @@
             <!-- 右侧个人信息栏 -->
             <div class="about-me">
               <el-image :src="url" :fit="fit" lazy />
-              <el-avatar class="avatar" shape="circle" size="large" :src="url" />
+              <el-avatar
+                class="avatar"
+                shape="circle"
+                size="large"
+                :src="url"
+              />
               <h5>小灰的个人博客</h5>
               <div class="pub about-me-content">
                 <p>👋 写出<i>HelloWord你就可以拿高薪了</i></p>
@@ -165,23 +186,41 @@
               <div class="my-tags">
                 <button class="custom-gitee-btn" @click="openGitee">
                   <el-icon class="icon" size="18">
-                    <svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
-                      <path fill="currentColor" d="M512 1024C229.222 1024 0 794.778 0 512S229.222 0 512 0s512 229.222 512 512-229.222 512-512 512z m259.149-568.883h-290.74a25.293 25.293 0 0 0-25.292 25.293l-0.026 63.206c0 13.952 11.315 25.293 25.267 25.293h177.024c13.978 0 25.293 11.315 25.293 25.267v12.646a75.853 75.853 0 0 1-75.853 75.853h-240.23a25.293 25.293 0 0 1-25.267-25.293V417.203a75.853 75.853 0 0 1 75.827-75.853h353.946a25.293 25.293 0 0 0 25.267-25.292l0.077-63.207a25.293 25.293 0 0 0-25.268-25.293H417.152a189.62 189.62 0 0 0-189.62 189.645V771.15c0 13.977 11.316 25.293 25.294 25.293h372.94a170.65 170.65 0 0 0 170.65-170.65V480.384a25.293 25.293 0 0 0-25.293-25.267z"/>
+                    <svg
+                      viewBox="0 0 1024 1024"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        fill="currentColor"
+                        d="M512 1024C229.222 1024 0 794.778 0 512S229.222 0 512 0s512 229.222 512 512-229.222 512-512 512z m259.149-568.883h-290.74a25.293 25.293 0 0 0-25.292 25.293l-0.026 63.206c0 13.952 11.315 25.293 25.267 25.293h177.024c13.978 0 25.293 11.315 25.293 25.267v12.646a75.853 75.853 0 0 1-75.853 75.853h-240.23a25.293 25.293 0 0 1-25.267-25.293V417.203a75.853 75.853 0 0 1 75.827-75.853h353.946a25.293 25.293 0 0 0 25.267-25.292l0.077-63.207a25.293 25.293 0 0 0-25.268-25.293H417.152a189.62 189.62 0 0 0-189.62 189.645V771.15c0 13.977 11.316 25.293 25.294 25.293h372.94a170.65 170.65 0 0 0 170.65-170.65V480.384a25.293 25.293 0 0 0-25.293-25.267z"
+                      />
                     </svg>
                   </el-icon>
                   My Gitee
                 </button>
               </div>
               <div class="my-links">
-                <img src="../assets/images/csdn.svg" alt="CSDN" @click="openLink('csdn')" />
-                <img src="../assets/images/github.svg" alt="GitHub" @click="openLink('github')" />
-                <img src="../assets/images/哔哩哔哩.svg" alt="哔哩哔哩" @click="openLink('bilibili')" />
+                <img
+                  src="../assets/images/csdn.svg"
+                  alt="CSDN"
+                  @click="openLink('csdn')"
+                />
+                <img
+                  src="../assets/images/github.svg"
+                  alt="GitHub"
+                  @click="openLink('github')"
+                />
+                <img
+                  src="../assets/images/哔哩哔哩.svg"
+                  alt="哔哩哔哩"
+                  @click="openLink('bilibili')"
+                />
               </div>
             </div>
             <!-- 公告栏 -->
             <div class="about-me article-info">
               <div class="tag-cloud">
-                <div class="tag-header"> 📢公告 </div>
+                <div class="tag-header">📢公告</div>
                 <div class="tags-content">
                   <p>📅 创建于2025-06-03</p>
                   <p>📝 博客地址:https://github.com/CHEN-YH99/myblog</p>
@@ -208,9 +247,9 @@
               </section>
             </div>
             <!-- 网站咨询栏 -->
-            <div class="about-me article-info"> 
-              <div class="tag-cloud"> 
-                <div class="tag-header"> 📒网站咨询 </div>
+            <div class="about-me article-info">
+              <div class="tag-cloud">
+                <div class="tag-header">📒网站咨询</div>
                 <div class="tags-content">
                   <p>文章数目: {{ formatNumber(articleslist.length) }}</p>
                   <p>运行时间: {{ formatTime(Date.now() - startTime) }}</p>
@@ -220,15 +259,15 @@
               </div>
             </div>
           </el-col>
-        </div>	
+        </div>
         <div v-else class="empty">
-           <el-empty description="暂无文章" :image-size="200">
-             <el-button type="primary" @click="retryLoadData">刷新</el-button>
-           </el-empty>
+          <el-empty description="暂无文章" :image-size="200">
+            <el-button type="primary" @click="retryLoadData">刷新</el-button>
+          </el-empty>
         </div>
       </el-row>
     </div>
-    <Footer/>
+    <Footer />
   </div>
 </template>
 
@@ -259,7 +298,6 @@ const articlesStore = useArticlesStore()
 
 // 性能优化相关
 
-
 // 使用优化后的 composable
 const {
   articles: articleslist,
@@ -272,21 +310,17 @@ const {
   initArticles,
   cleanup,
   goToArticle,
-  watchPagination
-} = useArticles({ 
+  watchPagination,
+} = useArticles({
   routeName: 'Home',
   autoInit: true,
-  defaultPageSize: 10
+  defaultPageSize: 10,
 })
 
 // 点赞功能
-const { 
-  isLiked, 
-  isLiking, 
-  handleLike
-} = useLikes({
+const { isLiked, isLiking, handleLike } = useLikes({
   debounceDelay: 500,
-  cooldownTime: 1000
+  cooldownTime: 1000,
 })
 
 // 用户统计数据
@@ -294,7 +328,7 @@ const userStats = ref({
   totalUsers: 0,
   activeUsers: 0,
   newUsersToday: 0,
-  newUsersThisMonth: 0
+  newUsersThisMonth: 0,
 })
 
 // 今日访问量（模拟数据）
@@ -302,40 +336,46 @@ const todayVisits = ref(0)
 
 // 计算总点赞数
 const totalLikes = computed(() => {
-  return articleslist.value.reduce((total, article) => total + (article.likes || 0), 0)
+  return articleslist.value.reduce(
+    (total, article) => total + (article.likes || 0),
+    0,
+  )
 })
 
 // 计算总阅读量
 const totalViews = computed(() => {
-  return articleslist.value.reduce((total, article) => total + (article.views || 0), 0)
+  return articleslist.value.reduce(
+    (total, article) => total + (article.views || 0),
+    0,
+  )
 })
 
 // 获取网站运行时间
-const startTime: number = new Date('2025-06-03').getTime(); 
+const startTime: number = new Date('2025-06-03').getTime()
 const url = ref(bgImage)
 const fit = ref('cover')
 
 // 格式化日期
 const formatTime = (ms: number): string => {
-  const days: number = Math.floor(ms / (1000 * 60 * 60 * 24));
-  return `${days}天`;
+  const days: number = Math.floor(ms / (1000 * 60 * 60 * 24))
+  return `${days}天`
 }
 
 // 日期格式化函数
 const formatDate = (dateString: string | Date | undefined): string => {
   if (!dateString) return '暂无日期'
-  
+
   try {
     const date = new Date(dateString)
     if (isNaN(date.getTime())) return '无效日期'
-    
+
     const year = date.getFullYear()
     const month = String(date.getMonth() + 1).padStart(2, '0')
     const day = String(date.getDate()).padStart(2, '0')
     const hours = String(date.getHours()).padStart(2, '0')
     const minutes = String(date.getMinutes()).padStart(2, '0')
     const seconds = String(date.getSeconds()).padStart(2, '0')
-    
+
     return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
   } catch (error) {
     console.error('日期格式化错误:', error)
@@ -354,9 +394,9 @@ const truncateText = (text: string, maxLength: number): string => {
 const scrollDown = () => {
   try {
     const target = document.body || document.documentElement
-    target.scrollTo({ 
-      top: target.scrollTop + window.innerHeight, 
-      behavior: 'smooth'
+    target.scrollTo({
+      top: target.scrollTop + window.innerHeight,
+      behavior: 'smooth',
     })
   } catch (error) {
     console.error('滚动失败:', error)
@@ -364,8 +404,6 @@ const scrollDown = () => {
     window.scrollBy(0, window.innerHeight)
   }
 }
-
-
 
 // 处理图片加载错误
 const handleImageError = (event: Event) => {
@@ -399,7 +437,9 @@ const handleSizeChange = async (size: number) => {
 // 滚动到顶部
 const scrollToTop = () => {
   try {
-    const container = document.querySelector('.main-content') as HTMLElement | null
+    const container = document.querySelector(
+      '.main-content',
+    ) as HTMLElement | null
     if (container) {
       container.scrollTo({ top: 0, behavior: 'smooth' })
     } else {
@@ -422,9 +462,9 @@ const openLink = (type: string) => {
   const links = {
     csdn: 'https://blog.csdn.net/',
     github: 'https://github.com/',
-    bilibili: 'https://www.bilibili.com/'
+    bilibili: 'https://www.bilibili.com/',
   }
-  
+
   const url = links[type as keyof typeof links]
   if (url) {
     confirmAndOpen(url)
@@ -437,7 +477,7 @@ const searchByTag = (tag: string) => {
   if (!t) return
   router.push({
     name: 'CategoryTag',
-    params: { tag: t }
+    params: { tag: t },
   })
 }
 
@@ -446,7 +486,7 @@ const loadUserStats = async () => {
   try {
     const stats = await getUserStats()
     userStats.value = stats
-    
+
     // 模拟今日访问量
     todayVisits.value = Math.floor(Math.random() * 1000) + 100
   } catch (error) {
@@ -462,15 +502,16 @@ const tagslist = computed(() => {
     const allTags = Array.from(
       new Set(
         articleslist.value
-          .flatMap(article => article.tags || [])
-          .filter((tag): tag is string => tag !== undefined && tag !== null && tag.trim() !== '')
-      )
+          .flatMap((article) => article.tags || [])
+          .filter(
+            (tag): tag is string =>
+              tag !== undefined && tag !== null && tag.trim() !== '',
+          ),
+      ),
     )
-    
+
     // 随机选择20个标签
-    return [...allTags]
-      .sort(() => Math.random() - 0.5)
-      .slice(0, 20)
+    return [...allTags].sort(() => Math.random() - 0.5).slice(0, 20)
   } catch (error) {
     console.error('生成标签列表失败:', error)
     return []
@@ -481,14 +522,14 @@ const tagslist = computed(() => {
 const colorFor = (str: string) => {
   try {
     if (!str) return '#666'
-    
+
     let hash = 0
     for (let i = 0; i < str.length; i++) {
       hash = (hash * 31 + str.charCodeAt(i)) >>> 0
     }
-    const hue = hash % 360          // 色相 0-359
-    const sat = 72                  // 饱和度，深色背景下略高更鲜明
-    const light = 68                // 明度，注意和背景对比度
+    const hue = hash % 360 // 色相 0-359
+    const sat = 72 // 饱和度，深色背景下略高更鲜明
+    const light = 68 // 明度，注意和背景对比度
     return `hsl(${hue}deg, ${sat}%, ${light}%)`
   } catch (error) {
     console.error('生成颜色失败:', error)
@@ -513,15 +554,15 @@ onMounted(async () => {
   try {
     // 先加载文章数据
     await initArticles()
-    
+
     // 如果用户已登录，在文章数据加载完成后初始化点赞状态
     if (userStore.isLoggedIn) {
       await articlesStore.initializeLikeStatus()
     }
-    
+
     // 并行加载用户统计数据
     await loadUserStats()
-    
+
     // 启用分页状态监听
     stopWatchingPagination = watchPagination()
   } catch (error) {
@@ -530,19 +571,22 @@ onMounted(async () => {
 })
 
 // 监听用户登录状态变化
-watch(() => userStore.isLoggedIn, async (isLoggedIn) => {
-  try {
-    if (isLoggedIn) {
-      // 用户登录后重新初始化点赞状态
-      await articlesStore.initializeLikeStatus()
-    } else {
-      // 用户登出后重置点赞状态
-      articlesStore.resetLikeStatus()
+watch(
+  () => userStore.isLoggedIn,
+  async (isLoggedIn) => {
+    try {
+      if (isLoggedIn) {
+        // 用户登录后重新初始化点赞状态
+        await articlesStore.initializeLikeStatus()
+      } else {
+        // 用户登出后重置点赞状态
+        articlesStore.resetLikeStatus()
+      }
+    } catch (error) {
+      console.error('用户状态变化处理失败:', error)
     }
-  } catch (error) {
-    console.error('用户状态变化处理失败:', error)
-  }
-})
+  },
+)
 
 onBeforeUnmount(() => {
   try {
@@ -567,8 +611,6 @@ const retryLoadData = async () => {
     ElMessage.error('重新加载失败，请稍后再试')
   }
 }
-
-
 </script>
 
 <style scoped lang="scss">
@@ -579,7 +621,7 @@ const retryLoadData = async () => {
 
 .loading-container {
   padding: 20px;
-  
+
   .el-skeleton {
     margin-bottom: 20px;
   }
@@ -588,7 +630,7 @@ const retryLoadData = async () => {
 .error-container {
   text-align: center;
   padding: 40px 20px;
-  
+
   .retry-btn {
     margin-top: 20px;
   }
@@ -607,7 +649,7 @@ const retryLoadData = async () => {
 .my-links img {
   cursor: pointer;
   transition: transform 0.2s ease;
-  
+
   &:hover {
     transform: scale(1.1);
   }
@@ -616,7 +658,7 @@ const retryLoadData = async () => {
 .custom-gitee-btn {
   cursor: pointer;
   transition: all 0.2s ease;
-  
+
   &:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
@@ -626,7 +668,7 @@ const retryLoadData = async () => {
 .tag {
   cursor: pointer;
   transition: all 0.2s ease;
-  
+
   &:hover {
     transform: scale(1.05);
     opacity: 0.8;
@@ -634,8 +676,10 @@ const retryLoadData = async () => {
 }
 
 .article-card {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+
   &:hover {
     transform: translateY(-2px);
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
@@ -645,16 +689,16 @@ const retryLoadData = async () => {
 .like-btn {
   cursor: pointer;
   transition: all 0.2s ease;
-  
+
   &:hover {
     transform: scale(1.05);
   }
-  
+
   &.loading {
     pointer-events: none;
     opacity: 0.6;
   }
-  
+
   &.liked {
     color: #f56c6c;
   }

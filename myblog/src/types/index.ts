@@ -5,7 +5,6 @@
 // 导出全局类型声明
 // http.d.ts 和 api.d.ts 是全局类型声明，会自动被TypeScript识别
 
-
 // 导出常用的业务类型
 export type Article = Api.Article.ArticleItem
 export type ArticleList = Api.Article.ArticleList
