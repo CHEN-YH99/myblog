@@ -3,13 +3,14 @@
  */
 
 // 数字简化显示（k、w格式）
-export function formatNumber(num: number): string {
-  if (typeof num !== 'number' || isNaN(num)) {
+export function formatNumber(num: number | string): string {
+  const n = typeof num === 'string' ? Number(num) : num
+  if (typeof n !== 'number' || isNaN(n)) {
     return '0'
   }
 
-  const absNum = Math.abs(num)
-  const sign = num < 0 ? '-' : ''
+  const absNum = Math.abs(n)
+  const sign = n < 0 ? '-' : ''
 
   if (absNum >= 100000000) {
     // 大于等于1亿，显示为亿

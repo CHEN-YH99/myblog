@@ -124,7 +124,7 @@
                       liked: isLiked(article._id),
                       loading: isLiking(article._id),
                     }"
-                    @click.stop="handleLike(article._id)"
+                    @click.stop="onToggleLike(article._id)"
                   >
                     <el-icon v-if="!isLiking(article._id)">
                       {{ isLiked(article._id) ? '❤️' : '🤍' }}
@@ -277,7 +277,7 @@ import { ArrowDownBold, Loading, Picture } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useArticles } from '@/composables/useArticles'
-import { useLikes } from '@/composables/useLikes'
+// import { useLikes } from '@/composables/useLikes'
 import { useUserStore } from '@/stores/user'
 import { useArticlesStore } from '@/stores/getarticles'
 import { formatNumber } from '@/utils/format'
@@ -317,11 +317,22 @@ const {
   defaultPageSize: 10,
 })
 
-// 点赞功能
-const { isLiked, isLiking, handleLike } = useLikes({
-  debounceDelay: 500,
-  cooldownTime: 1000,
-})
+// 点赞功能（直接使用 articlesStore 提供的状态与动作）
+const likedIds = computed(() => articlesStore.likedArticleIds)
+const isLiked = (id: string) => likedIds.value.includes(id)
+const isLiking = (id: string) => articlesStore.isLiking(id)
+const onToggleLike = async (id: string) => {
+  try {
+    if (!userStore.isLoggedIn) {
+      ElMessage.warning('请先登录后再进行点赞')
+      return
+    }
+    await articlesStore.toggleLike(id)
+  } catch (error: any) {
+    const msg = error?.message || '操作失败，请重试'
+    ElMessage.error(msg)
+  }
+}
 
 // 用户统计数据
 const userStats = ref({
@@ -555,8 +566,8 @@ onMounted(async () => {
     // 先加载文章数据
     await initArticles()
 
-    // 如果用户已登录，在文章数据加载完成后初始化点赞状态
-    if (userStore.isLoggedIn) {
+    // 如果用户已登录且尚未初始化，再初始化点赞状态（避免与 fetchArticles 内部的初始化重复触发）
+    if (userStore.isLoggedIn && !articlesStore.likeStatusInitialized) {
       await articlesStore.initializeLikeStatus()
     }
 

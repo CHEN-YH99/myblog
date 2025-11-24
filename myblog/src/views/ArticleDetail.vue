@@ -220,7 +220,9 @@ import {
 } from '@element-plus/icons-vue'
 import ReadingProgress from '@/components/ReadingProgress.vue'
 import WaveContainer from '@/components/WaveContainer.vue'
-import { useLikes } from '@/composables/useLikes'
+import { useArticlesStore } from '@/stores/getarticles'
+import { useUserStore } from '@/stores/user'
+
 import { formatNumber } from '@/utils/format'
 import { handleError } from '@/utils/error-handler'
 import { getArticle } from '@/api/articles'
@@ -241,6 +243,7 @@ const error = ref<string>('')
 const tocRef = ref<InstanceType<typeof TableOfContents> | null>(null)
 
 // 使用全局点赞状态管理
+const articlesStore = useArticlesStore()
 
 // 获取文章ID
 const articleId = computed(() => route.params.id as string)
@@ -457,22 +460,29 @@ const shareArticle = async () => {
   }
 }
 
-// 点赞功能
-const { isLiked, isLiking, handleLike } = useLikes()
+// 点赞功能（直接使用 articlesStore，组件内只负责本地文章详情的乐观更新）
+const isLiked = (id: string) => articlesStore.isLiked(id)
+const isLiking = (id: string) => articlesStore.isLiking(id)
 
-const likeArticle = () => {
+const likeArticle = async () => {
   if (!article.value?._id) return
+  const id = article.value._id
+  const willLike = !isLiked(id)
+  const prevLikes = article.value.likes || 0
+
+  // 组件本地乐观更新：store 不会自动更新详情对象的 likes
+  article.value.likes = Math.max(0, prevLikes + (willLike ? 1 : -1))
+
   try {
-    const id = article.value._id
-    const willLike = !isLiked(id)
-    // Optimistic update: 预先更新 UI
-    article.value.likes = Math.max(
-      0,
-      (article.value.likes || 0) + (willLike ? 1 : -1),
-    )
-    // 触发实际的点赞操作（已做防抖与错误回滚）
-    handleLike(id)
+    const res = await (willLike
+      ? articlesStore.likeArticle(id)
+      : articlesStore.unlikeArticle(id))
+    if (res && typeof res.likes === 'number') {
+      article.value.likes = res.likes
+    }
   } catch (error) {
+    // 回滚本地乐观更新
+    article.value.likes = prevLikes
     handleError(error)
   }
 }

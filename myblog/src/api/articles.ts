@@ -230,9 +230,11 @@ export function likeArticle(articleId: string) {
  * @returns 取消点赞结果
  */
 export function unlikeArticle(articleId: string) {
+  // 服务端定义为 POST /api/articles/:id/unlike（不是 DELETE /like）
   return api
-    .del<Api.Article.LikeResponse>({
-      url: `/api/articles/${articleId}/like`,
+    .post<Api.Article.LikeResponse>({
+      url: `/api/articles/${articleId}/unlike`,
+      data: {},
       showErrorMessage: true,
     })
     .then((result) => {

@@ -22,6 +22,10 @@ export const useTalksStore = defineStore('talks', {
   }),
 
   getters: {
+    // 便于追踪依赖的已点赞说说ID数组和数量
+    likedTalkIds: (state) => Array.from(state.likedTalks),
+    likedTalksCount: (state) => Array.from(state.likedTalks).length,
+
     // 检查说说是否已点赞
     isLiked: (state) => (talkId: string) => {
       return state.likedTalks.has(talkId)

@@ -3,52 +3,43 @@
     <div class="content">
       <div class="left-wrap">
         <div class="user-wrap box-style">
-          <img class="bg" src="@imgs/user/bg.webp" />
-          <img class="avatar" src="@imgs/user/avatar.webp" />
+          <img class="bg" src="@imgs/user/bg.jpg" :alt="t('userCenter.card.coverAlt')" />
+          <img class="avatar" :src="userAvatar" :alt="t('userCenter.card.avatarAlt')" />
           <h2 class="name">{{ userInfo.userName }}</h2>
-          <p class="des">你好，{{ userInfo.userName }}.</p>
+          <p class="des">{{ t('userCenter.card.greeting', { name: userInfo.userName }) }}</p>
 
           <div class="outer-info">
             <div>
               <i class="iconfont-sys">&#xe72e;</i>
-              <span>jdkjjfnndf@mall.com</span>
+              <span>{{ t('userCenter.card.info.email') }}</span>
             </div>
             <div>
               <i class="iconfont-sys">&#xe608;</i>
-              <span>交互专家</span>
+              <span>{{ t('userCenter.card.info.role') }}</span>
             </div>
             <div>
               <i class="iconfont-sys">&#xe736;</i>
-              <span>广东省深圳市</span>
+              <span>{{ t('userCenter.card.info.location') }}</span>
             </div>
             <div>
               <i class="iconfont-sys">&#xe811;</i>
-              <span>字节跳动－某某平台部－UED</span>
+              <span>{{ t('userCenter.card.info.department') }}</span>
             </div>
           </div>
 
           <div class="lables">
-            <h3>标签</h3>
+            <h3>{{ t('userCenter.card.tagsTitle') }}</h3>
             <div>
-              <div v-for="item in lableList" :key="item">
+              <div v-for="item in labelList" :key="item">
                 {{ item }}
               </div>
             </div>
           </div>
         </div>
-
-        <!-- <el-carousel class="gallery" height="160px"
-          :interval="5000"
-          indicator-position="none"
-        >
-          <el-carousel-item class="item" v-for="item in galleryList" :key="item">
-            <img :src="item"/>
-          </el-carousel-item>
-        </el-carousel> -->
       </div>
       <div class="right-wrap">
         <div class="info box-style">
-          <h1 class="title">基本设置</h1>
+          <h1 class="title">{{ t('userCenter.sections.basicSettings') }}</h1>
 
           <ElForm
             :model="form"
@@ -59,13 +50,17 @@
             label-position="top"
           >
             <ElRow>
-              <ElFormItem label="姓名" prop="realName">
+              <ElFormItem :label="t('userCenter.form.realName')" prop="realName">
                 <el-input v-model="form.realName" :disabled="!isEdit" />
               </ElFormItem>
-              <ElFormItem label="性别" prop="sex" class="right-input">
-                <ElSelect v-model="form.sex" placeholder="Select" :disabled="!isEdit">
+              <ElFormItem :label="t('userCenter.form.sex')" prop="sex" class="right-input">
+                <ElSelect
+                  v-model="form.sex"
+                  :placeholder="t('userCenter.form.selectGender')"
+                  :disabled="!isEdit"
+                >
                   <ElOption
-                    v-for="item in options"
+                    v-for="item in genderOptions"
                     :key="item.value"
                     :label="item.label"
                     :value="item.value"
@@ -75,40 +70,40 @@
             </ElRow>
 
             <ElRow>
-              <ElFormItem label="昵称" prop="nikeName">
+              <ElFormItem :label="t('userCenter.form.nikeName')" prop="nikeName">
                 <ElInput v-model="form.nikeName" :disabled="!isEdit" />
               </ElFormItem>
-              <ElFormItem label="邮箱" prop="email" class="right-input">
+              <ElFormItem :label="t('userCenter.form.email')" prop="email" class="right-input">
                 <ElInput v-model="form.email" :disabled="!isEdit" />
               </ElFormItem>
             </ElRow>
 
             <ElRow>
-              <ElFormItem label="手机" prop="mobile">
+              <ElFormItem :label="t('userCenter.form.mobile')" prop="mobile">
                 <ElInput v-model="form.mobile" :disabled="!isEdit" />
               </ElFormItem>
-              <ElFormItem label="地址" prop="address" class="right-input">
+              <ElFormItem :label="t('userCenter.form.address')" prop="address" class="right-input">
                 <ElInput v-model="form.address" :disabled="!isEdit" />
               </ElFormItem>
             </ElRow>
 
-            <ElFormItem label="个人介绍" prop="des" :style="{ height: '130px' }">
+            <ElFormItem :label="t('userCenter.form.des')" prop="des" :style="{ height: '130px' }">
               <ElInput type="textarea" :rows="4" v-model="form.des" :disabled="!isEdit" />
             </ElFormItem>
 
             <div class="el-form-item-right">
               <ElButton type="primary" style="width: 90px" v-ripple @click="edit">
-                {{ isEdit ? '保存' : '编辑' }}
+                {{ isEdit ? t('userCenter.actions.save') : t('userCenter.actions.edit') }}
               </ElButton>
             </div>
           </ElForm>
         </div>
 
         <div class="info box-style" style="margin-top: 20px">
-          <h1 class="title">更改密码</h1>
+          <h1 class="title">{{ t('userCenter.sections.changePassword') }}</h1>
 
           <ElForm :model="pwdForm" class="form" label-width="86px" label-position="top">
-            <ElFormItem label="当前密码" prop="password">
+            <ElFormItem :label="t('userCenter.form.password')" prop="password">
               <ElInput
                 v-model="pwdForm.password"
                 type="password"
@@ -117,7 +112,7 @@
               />
             </ElFormItem>
 
-            <ElFormItem label="新密码" prop="newPassword">
+            <ElFormItem :label="t('userCenter.form.newPassword')" prop="newPassword">
               <ElInput
                 v-model="pwdForm.newPassword"
                 type="password"
@@ -126,7 +121,7 @@
               />
             </ElFormItem>
 
-            <ElFormItem label="确认新密码" prop="confirmPassword">
+            <ElFormItem :label="t('userCenter.form.confirmPassword')" prop="confirmPassword">
               <ElInput
                 v-model="pwdForm.confirmPassword"
                 type="password"
@@ -137,7 +132,7 @@
 
             <div class="el-form-item-right">
               <ElButton type="primary" style="width: 90px" v-ripple @click="editPwd">
-                {{ isEditPwd ? '保存' : '编辑' }}
+                {{ isEditPwd ? t('userCenter.actions.save') : t('userCenter.actions.edit') }}
               </ElButton>
             </div>
           </ElForm>
@@ -149,6 +144,7 @@
 
 <script setup lang="ts">
   import { ref, reactive, computed, onMounted } from 'vue'
+  import { useI18n } from 'vue-i18n'
   import { useUserStore } from '@/store/modules/user'
   import { ElForm, FormInstance, FormRules, ElMessage } from 'element-plus'
   import { fetchChangePassword } from '@/api/user'
@@ -156,20 +152,38 @@
 
   defineOptions({ name: 'UserCenter' })
 
+  const { t } = useI18n()
+
   const userStore = useUserStore()
   const userInfo = computed(() => userStore.getUserInfo)
+
+  const getDefaultAvatar = (username: string) => {
+    const name = username || 'User'
+    const colors = ['409eff', '67c23a', 'e6a23c', 'f56c6c', '909399']
+    const color = colors[name.length % colors.length]
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=${color}&color=fff&size=200`
+  }
+
+  const userAvatar = computed(() => {
+    const info = userInfo.value as any
+    const name = info?.userName || 'User'
+    const avatar = info?.avatar
+    return avatar && typeof avatar === 'string' && avatar.length > 0
+      ? avatar
+      : getDefaultAvatar(name)
+  })
 
   const isEdit = ref(false)
   const isEditPwd = ref(false)
   const date = ref('')
   const form = reactive({
-    realName: 'John Snow',
-    nikeName: '皮卡丘',
-    email: '59301283@mall.com',
+    realName: 'HUiChen',
+    nikeName: '大炮',
+    email: '463463463@gmall.com',
     mobile: '18888888888',
-    address: '广东省深圳市宝安区西乡街道101栋201',
-    sex: '2',
-    des: 'Art Design Pro 是一款漂亮的后台管理系统模版.'
+    address: '广东省广州市天河区',
+    sex: '1',
+    des: '欢迎来到小灰个人博客'
   })
 
   const pwdForm = reactive({
@@ -180,33 +194,40 @@
 
   const ruleFormRef = ref<FormInstance>()
 
-  const rules = reactive<FormRules>({
+  const rules = computed<FormRules>(() => ({
     realName: [
-      { required: true, message: '请输入昵称', trigger: 'blur' },
-      { min: 2, max: 50, message: '长度在 2 到 30 个字符', trigger: 'blur' }
+      { required: true, message: t('userCenter.validation.realNameRequired'), trigger: 'blur' },
+      { min: 2, max: 50, message: t('userCenter.validation.realNameLength'), trigger: 'blur' }
     ],
     nikeName: [
-      { required: true, message: '请输入昵称', trigger: 'blur' },
-      { min: 2, max: 50, message: '长度在 2 到 30 个字符', trigger: 'blur' }
+      { required: true, message: t('userCenter.validation.nikeNameRequired'), trigger: 'blur' },
+      { min: 2, max: 50, message: t('userCenter.validation.nikeNameLength'), trigger: 'blur' }
     ],
-    email: [{ required: true, message: '请输入昵称', trigger: 'blur' }],
-    mobile: [{ required: true, message: '请输入手机号码', trigger: 'blur' }],
-    address: [{ required: true, message: '请输入地址', trigger: 'blur' }],
-    sex: [{ type: 'array', required: true, message: '请选择性别', trigger: 'blur' }]
-  })
+    email: [{ required: true, message: t('userCenter.validation.emailRequired'), trigger: 'blur' }],
+    mobile: [{ required: true, message: t('userCenter.validation.mobileRequired'), trigger: 'blur' }],
+    address: [{ required: true, message: t('userCenter.validation.addressRequired'), trigger: 'blur' }],
+    sex: [{ required: true, message: t('userCenter.validation.genderRequired'), trigger: 'change' }]
+  }))
 
-  const options = [
+  const genderOptions = computed(() => [
     {
       value: '1',
-      label: '男'
+      label: t('userCenter.gender.male')
     },
     {
       value: '2',
-      label: '女'
+      label: t('userCenter.gender.female')
     }
-  ]
+  ])
 
-  const lableList: Array<string> = ['专注设计', '很有想法', '辣~', '大长腿', '川妹子', '海纳百川']
+  const labelList = computed(() => [
+    t('userCenter.card.tags.design'),
+    t('userCenter.card.tags.creative'),
+    t('userCenter.card.tags.curious'),
+    t('userCenter.card.tags.bold'),
+    t('userCenter.card.tags.gamer'),
+    t('userCenter.card.tags.inclusive')
+  ])
 
   onMounted(() => {
     getDate()
@@ -215,23 +236,19 @@
   const getDate = () => {
     const d = new Date()
     const h = d.getHours()
-    let text = ''
+    let textKey = 'greeting.morning'
 
-    if (h >= 6 && h < 9) {
-      text = '早上好'
-    } else if (h >= 9 && h < 11) {
-      text = '上午好'
-    } else if (h >= 11 && h < 13) {
-      text = '中午好'
-    } else if (h >= 13 && h < 18) {
-      text = '下午好'
+    if (h >= 6 && h < 12) {
+      textKey = 'greeting.morning'
+    } else if (h >= 12 && h < 18) {
+      textKey = 'greeting.afternoon'
     } else if (h >= 18 && h < 24) {
-      text = '晚上好'
-    } else if (h >= 0 && h < 6) {
-      text = '很晚了，早点睡'
+      textKey = 'greeting.evening'
+    } else {
+      textKey = 'greeting.dawn'
     }
 
-    date.value = text
+    date.value = t(textKey)
   }
 
   const edit = () => {
@@ -247,23 +264,23 @@
 
     // 保存修改：进行基础校验
     if (!pwdForm.password) {
-      ElMessage.error('请输入当前密码')
+      ElMessage.error(t('userCenter.messages.enterCurrentPassword'))
       return
     }
     if (!pwdForm.newPassword) {
-      ElMessage.error('请输入新密码')
+      ElMessage.error(t('userCenter.messages.enterNewPassword'))
       return
     }
     if (!pwdForm.confirmPassword) {
-      ElMessage.error('请确认新密码')
+      ElMessage.error(t('userCenter.messages.confirmNewPassword'))
       return
     }
     if (pwdForm.newPassword !== pwdForm.confirmPassword) {
-      ElMessage.error('两次输入的新密码不一致')
+      ElMessage.error(t('userCenter.messages.passwordMismatch'))
       return
     }
     if (pwdForm.newPassword.length < 6) {
-      ElMessage.error('新密码长度不能少于6位')
+      ElMessage.error(t('userCenter.messages.passwordTooShort'))
       return
     }
 
@@ -274,7 +291,7 @@
       })
 
       // 成功提示并强制重新登录
-      ElMessage.success('密码修改成功，请使用新密码重新登录')
+      ElMessage.success(t('userCenter.messages.passwordUpdated'))
       isEditPwd.value = false
       // 重置表单
       pwdForm.password = ''
@@ -286,15 +303,15 @@
     } catch (error: any) {
       if (error instanceof HttpError) {
         if (error.code === 400) {
-          ElMessage.error('当前密码错误，请检查后重试')
+          ElMessage.error(t('userCenter.messages.currentPasswordIncorrect'))
         } else if (error.code === 401) {
-          ElMessage.error('登录已过期，请重新登录')
+          ElMessage.error(t('userCenter.messages.sessionExpired'))
           userStore.logOut()
         } else {
-          ElMessage.error(error.message || '修改密码失败')
+          ElMessage.error(error.message || t('userCenter.messages.passwordChangeFailed'))
         }
       } else {
-        ElMessage.error(error?.message || '修改密码失败')
+        ElMessage.error(error?.message || t('userCenter.messages.passwordChangeFailed'))
       }
     }
   }

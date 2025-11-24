@@ -207,24 +207,8 @@ export function useLikes(options: UseLikesOptions = {}) {
       lastOperationTime.value = Date.now()
 
       try {
-        // 乐观更新：先更新UI状态
-        if (shouldLike) {
-          articlesStore.likedArticles.add(articleId)
-        } else {
-          articlesStore.likedArticles.delete(articleId)
-        }
-
-        // 执行实际的点赞操作
-        const success = await performLikeOperation(articleId, shouldLike)
-
-        // 如果操作失败，回滚UI状态
-        if (!success) {
-          if (shouldLike) {
-            articlesStore.likedArticles.delete(articleId)
-          } else {
-            articlesStore.likedArticles.add(articleId)
-          }
-        }
+        // 执行点赞/取消点赞（由 Store 内部负责乐观更新与回滚）
+        await performLikeOperation(articleId, shouldLike)
       } catch (error) {
         // 发生异常时回滚UI状态
         if (shouldLike) {

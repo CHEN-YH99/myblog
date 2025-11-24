@@ -4,6 +4,8 @@ import {
   likeArticle,
   unlikeArticle,
   getBatchLikeStatus,
+  getLikeStatus,
+  getArticleLikes,
 } from '@/api/articles'
 import { useUserStore } from '@/stores/user'
 import {
@@ -37,16 +39,31 @@ export const useArticlesStore = defineStore('articles', {
     // 用户已点赞的文章ID集合
     likedArticles: new Set<string>(),
 
-    // 正在处理点赞的文章ID集合
+    // 正在处理点赞的文章ID集合（防止并发）
     likingArticles: new Set<string>(),
 
     // 点赞状态初始化标记
     likeStatusInitialized: false,
+
+    // 点赞/取消点赞点击冷却时间（毫秒）
+    likeCooldownMs: 700,
+
+    // 记录每篇文章最后一次点赞/取消操作的时间戳
+    lastActionAt: new Map<string, number>(),
   }),
 
   getters: {
     articlesCount: (state) => state.articles.length,
     isDataFresh: (state) => Date.now() - state.lastFetchTime < state.cacheTimeout,
+
+    // 便于追踪依赖的已点赞文章ID数组（相比直接使用 Set.size 更稳定触发响应）
+    likedArticleIds: (state) => Array.from(state.likedArticles),
+    likedArticlesCount: (state) => Array.from(state.likedArticles).length,
+    likingArticleIds: (state) => Array.from(state.likingArticles),
+
+    // 便于组件使用的查询函数
+    isLiked: (state) => (articleId: string) => state.likedArticles.has(articleId),
+    isLiking: (state) => (articleId: string) => state.likingArticles.has(articleId),
 
     // 标签云数据
     tagslist: (state) => {
@@ -88,38 +105,47 @@ export const useArticlesStore = defineStore('articles', {
           }
         }
 
-        // 从localStorage恢复点赞状态（用户键：优先使用id，兜底使用username）
-        const userKey = userInfo?.id || userInfo?.username
-        if (!userKey) {
+        // 从localStorage恢复点赞状态（支持按 id 与 username 双键合并）
+        const idKey = userInfo?.id
+        const nameKey = userInfo?.username
+        if (!idKey && !nameKey) {
           console.warn('无法获取用户标识，使用空状态初始化点赞状态')
           this.likedArticles.clear()
           this.likeStatusInitialized = true
           return
         }
 
-        const savedLikedArticles = getLikedArticles(userKey)
+        const savedById = idKey ? getLikedArticles(idKey) : []
+        const savedByName = nameKey ? getLikedArticles(nameKey) : []
+        const mergedSaved = Array.from(new Set([...(savedById || []), ...(savedByName || [])]))
 
         // 清空当前状态
         this.likedArticles.clear()
 
-        // 如果有文章数据，同步服务器状态
+        // 如果有文章数据，同步服务器状态（与本地状态取并集，避免误清本地）
         if (this.articles.length > 0) {
           const articleIds = this.articles.map((article) => article._id)
           const response = await getBatchLikeStatus(articleIds)
 
-          // 以服务器状态为准，清空本地状态后重新设置
+          // 基于本地合并集开始
+          const mergedSet = new Set<string>(mergedSaved)
+
+          // 合并服务端为 true 的状态
           Object.entries(response).forEach(([articleId, isLiked]) => {
-            if (isLiked) {
-              this.likedArticles.add(articleId)
-            }
+            if (isLiked) mergedSet.add(articleId)
           })
 
-          // 保存服务器状态到localStorage
+          // 应用合并结果到内存 Set
+          this.likedArticles.clear()
+          mergedSet.forEach((id) => this.likedArticles.add(id))
+
+          // 保存合并后的状态到localStorage（双键写入，避免后续切换标识）
           const finalLikedArticles = Array.from(this.likedArticles)
-          saveLikedArticles(finalLikedArticles, userKey)
+          if (idKey) saveLikedArticles(finalLikedArticles, idKey)
+          if (nameKey) saveLikedArticles(finalLikedArticles, nameKey)
         } else {
-          // 如果没有文章数据，使用本地保存的状态
-          savedLikedArticles.forEach((articleId) => {
+          // 如果没有文章数据，使用本地保存的状态（合并 id/username 两处数据）
+          mergedSaved.forEach((articleId) => {
             this.likedArticles.add(articleId)
           })
         }
@@ -128,10 +154,13 @@ export const useArticlesStore = defineStore('articles', {
         /* init like status synced (debug log removed) */
       } catch (error) {
         console.error('初始化点赞状态失败:', error)
-        // 如果服务器请求失败，使用本地状态
-        const userKey = userStore.userInfo?.id || userStore.userInfo?.username
-        const savedLikedArticles = getLikedArticles(userKey)
-        savedLikedArticles.forEach((articleId) => {
+        // 如果服务器请求失败，使用本地状态（合并 id 与 username）
+        const idKey = userStore.userInfo?.id
+        const nameKey = userStore.userInfo?.username
+        const savedById = idKey ? getLikedArticles(idKey) : []
+        const savedByName = nameKey ? getLikedArticles(nameKey) : []
+        const merged = Array.from(new Set([...(savedById || []), ...(savedByName || [])]))
+        merged.forEach((articleId) => {
           this.likedArticles.add(articleId)
         })
         this.likeStatusInitialized = true
@@ -153,35 +182,53 @@ export const useArticlesStore = defineStore('articles', {
       this.likeStatusInitialized = false
     },
 
-    // 点赞文章
-    async likeArticle(articleId: string) {
+    // 点赞文章（乐观更新 + 冷却 + 并发保护）
+    async likeArticle(articleId: string, options?: { force?: boolean }) {
       const userStore = useUserStore()
       if (!userStore.isLoggedIn) {
         throw new Error('请先登录')
       }
 
-      if (this.likingArticles.has(articleId)) return // 防止重复点击
+      const now = Date.now()
+      const last = this.lastActionAt.get(articleId) || 0
+      if (!options?.force && now - last < this.likeCooldownMs) return
+      if (!options?.force && this.likingArticles.has(articleId)) return // 防止并发
 
+      this.lastActionAt.set(articleId, now)
       this.likingArticles.add(articleId)
+
+      // 已点赞则直接返回，避免重复请求（force 时忽略）
+      if (!options?.force && this.likedArticles.has(articleId)) {
+        this.likingArticles.delete(articleId)
+        return
+      }
+
+      const article = this.articles.find((a) => a._id === articleId)
+      const prevLikes = Number((article as any)?.likes) || 0
+
+      // 乐观更新本地状态 + 立即写入本地存储（按账号隔离）
+      this.likedArticles.add(articleId)
+      if (article) article.likes = prevLikes + 1
+      const idKey = userStore.userInfo?.id
+      const nameKey = userStore.userInfo?.username
+      if (idKey) addLikedArticle(articleId, idKey)
+      if (nameKey) addLikedArticle(articleId, nameKey)
 
       try {
         const result = await likeArticle(articleId)
 
-        // 更新本地状态
-        this.likedArticles.add(articleId)
-
-        // 保存到localStorage（按用户键隔离）
-        const userKey = userStore.userInfo?.id || userStore.userInfo?.username
-        addLikedArticle(articleId, userKey)
-
-        // 更新文章点赞数
-        const article = this.articles.find((a) => a._id === articleId)
-        if (article) {
+        // 以服务端结果为准
+        if (article && typeof result?.likes === 'number') {
           article.likes = result.likes
         }
 
         return result
       } catch (error) {
+        // 回滚乐观更新 + 回滚本地存储
+        this.likedArticles.delete(articleId)
+        if (article) article.likes = prevLikes
+        if (idKey) removeLikedArticle(articleId, idKey)
+        if (nameKey) removeLikedArticle(articleId, nameKey)
         console.error('点赞失败:', error)
         throw error
       } finally {
@@ -189,33 +236,50 @@ export const useArticlesStore = defineStore('articles', {
       }
     },
 
-    // 取消点赞
-    async unlikeArticle(articleId: string) {
+    // 取消点赞（乐观更新 + 冷却 + 并发保护）
+    async unlikeArticle(articleId: string, options?: { force?: boolean }) {
       const userStore = useUserStore()
       if (!userStore.isLoggedIn) {
         throw new Error('请先登录')
       }
 
-      if (this.likingArticles.has(articleId)) return
+      const now = Date.now()
+      const last = this.lastActionAt.get(articleId) || 0
+      if (now - last < this.likeCooldownMs) return
+      if (this.likingArticles.has(articleId)) return // 防止并发
 
+      // 若当前未点赞，则无需请求
+      if (!this.likedArticles.has(articleId)) return
+
+      this.lastActionAt.set(articleId, now)
       this.likingArticles.add(articleId)
+
+      const article = this.articles.find((a) => a._id === articleId)
+      const prevLikes = Number((article as any)?.likes) || 0
+
+      // 乐观更新
+      this.likedArticles.delete(articleId)
+      if (article && prevLikes > 0) article.likes = prevLikes - 1
 
       try {
         const result = await unlikeArticle(articleId)
 
-        this.likedArticles.delete(articleId)
+        // 从localStorage移除（按用户键隔离）
+        const idKey = userStore.userInfo?.id
+        const nameKey = userStore.userInfo?.username
+        if (idKey) removeLikedArticle(articleId, idKey)
+        if (nameKey) removeLikedArticle(articleId, nameKey)
 
-        // 保存到localStorage（按用户键隔离）
-        const userKey = userStore.userInfo?.id || userStore.userInfo?.username
-        removeLikedArticle(articleId, userKey)
-
-        const article = this.articles.find((a) => a._id === articleId)
-        if (article) {
+        // 以服务端结果为准
+        if (article && typeof result?.likes === 'number') {
           article.likes = result.likes
         }
 
         return result
       } catch (error) {
+        // 回滚乐观更新
+        this.likedArticles.add(articleId)
+        if (article) article.likes = prevLikes
         console.error('取消点赞失败:', error)
         throw error
       } finally {
@@ -223,10 +287,72 @@ export const useArticlesStore = defineStore('articles', {
       }
     },
 
-    // 切换点赞状态
+    // 与服务端对齐某篇文章的点赞状态，并同步到本地存储
+    async reconcileLikeStatus(articleId: string): Promise<boolean> {
+      try {
+        const status = await getLikeStatus(articleId)
+        const isLiked = !!(status as any)?.isLiked
+        const userStore = useUserStore()
+        const idKey = userStore.userInfo?.id
+        const nameKey = userStore.userInfo?.username
+        if (isLiked) {
+          this.likedArticles.add(articleId)
+          if (idKey) addLikedArticle(articleId, idKey)
+          if (nameKey) addLikedArticle(articleId, nameKey)
+        } else {
+          this.likedArticles.delete(articleId)
+          if (idKey) removeLikedArticle(articleId, idKey)
+          if (nameKey) removeLikedArticle(articleId, nameKey)
+        }
+        return isLiked
+      } catch (e) {
+        // 如果校验失败，不改变现有状态
+        return this.likedArticles.has(articleId)
+      }
+    },
+
+    // 切换点赞状态（带冲突自愈：当本地与服务端不一致导致400时自动对齐后再执行期望操作）
     async toggleLike(articleId: string) {
-      const isLiked = this.likedArticles.has(articleId)
-      return isLiked ? this.unlikeArticle(articleId) : this.likeArticle(articleId)
+      // 确保已初始化点赞状态，避免未初始化时误判
+      if (!this.likeStatusInitialized) {
+        await this.initializeLikeStatus()
+      }
+
+      const localLiked = this.likedArticles.has(articleId)
+      if (localLiked) {
+        try {
+          return await this.unlikeArticle(articleId)
+        } catch (e: any) {
+          // 400 等错误时尝试自愈
+          const code = e?.code || e?.response?.status
+          if (code === 400) {
+            const serverLiked = await this.reconcileLikeStatus(articleId)
+            if (serverLiked) {
+              // 服务端仍显示已点赞，用户意图是取消 -> 强制再次执行取消，忽略冷却/并发保护
+              return await this.unlikeArticle(articleId, { force: true })
+            }
+          }
+          throw e
+        }
+      } else {
+        try {
+          return await this.likeArticle(articleId)
+        } catch (e: any) {
+          const code = e?.code || e?.response?.status
+          if (code === 400) {
+            // 很可能是服务端判定已点赞，本地状态不同步
+            const serverLiked = await this.reconcileLikeStatus(articleId)
+            if (serverLiked) {
+              // 用户意图是切换（取消），强制执行取消
+              return await this.unlikeArticle(articleId, { force: true })
+            } else {
+              // 服务端认为未点赞，则强制重试点赞
+              return await this.likeArticle(articleId, { force: true })
+            }
+          }
+          throw e
+        }
+      }
     },
 
     // 组件订阅管理
@@ -292,6 +418,9 @@ export const useArticlesStore = defineStore('articles', {
           ? articles.map((article: any) => ({
               ...article,
               cover: article.cover || '/default-article.jpg',
+              // 强制数值化，兼容历史文档 likes/views 为字符串的情况
+              likes: Number((article as any)?.likes) || 0,
+              views: Number((article as any)?.views) || 0,
             }))
           : []
 

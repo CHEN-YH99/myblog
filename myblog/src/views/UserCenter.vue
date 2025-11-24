@@ -279,10 +279,10 @@ const changingPassword = ref(false)
 // 用户信息
 const userInfo = computed(() => userStore.userInfo)
 
-// 用户统计数据
+// 用户统计数据（使用 getter/可枚举数组确保响应式更新）
 const userStats = computed(() => ({
-  articlesLiked: articlesStore.likedArticles.size,
-  talksLiked: talksStore.likedTalks.size,
+  articlesLiked: articlesStore.likedArticleIds.length,
+  talksLiked: talksStore.likedTalksCount,
   repliesCount: 0, // 暂时设为0，后续可以从API获取
 }))
 
@@ -680,30 +680,28 @@ watch(
   },
 )
 
-// 监听点赞状态变化，实时更新列表
+// 监听点赞状态变化，实时更新列表（使用派生数组以确保响应式触发）
 watch(
-  () => articlesStore.likedArticles,
+  () => articlesStore.likedArticleIds,
   () => {
-    // 当点赞状态发生变化时，重新加载已点赞的文章列表
     if (userStore.isLoggedIn && activeTab.value === 'articles') {
       loadLikedArticles()
     }
   },
-  { deep: true },
+  { deep: false },
 )
 
 watch(
-  () => talksStore.likedTalks,
-  (newLikedTalks) => {
-    // 当点赞状态发生变化时，过滤已有的说说列表而不是重新加载
+  () => talksStore.likedTalkIds,
+  (newLikedTalkIds: string[]) => {
     if (userStore.isLoggedIn && activeTab.value === 'talks') {
-      // 过滤出仍然被点赞的说说
+      const likedSet = new Set(newLikedTalkIds)
       likedTalksList.value = likedTalksList.value.filter((talk) =>
-        newLikedTalks.has(talk._id),
+        likedSet.has(talk._id),
       )
     }
   },
-  { deep: true },
+  { deep: false },
 )
 
 // 监听tab切换，确保数据及时更新

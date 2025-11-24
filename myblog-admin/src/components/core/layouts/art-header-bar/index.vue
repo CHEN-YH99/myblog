@@ -24,9 +24,6 @@
           </div>
         </div>
 
-        <!-- 快速入口 -->
-        <ArtFastEnter v-if="shouldShowFastEnter && width >= headerBarFastEnterMinWidth" />
-
         <!-- 面包屑 -->
         <ArtBreadcrumb
           v-if="(shouldShowBreadcrumb && isLeftMenu) || (shouldShowBreadcrumb && isDualMenu)"
@@ -40,21 +37,6 @@
       </div>
 
       <div class="right">
-        <!-- 搜索 -->
-        <div class="search-wrap" v-if="shouldShowGlobalSearch">
-          <div class="search-input" @click="openSearchDialog">
-            <div class="left">
-              <i class="iconfont-sys">&#xe710;</i>
-              <span>{{ $t('topBar.search.title') }}</span>
-            </div>
-            <div class="search-keydown">
-              <i class="iconfont-sys" v-if="isWindows">&#xeeac;</i>
-              <i class="iconfont-sys" v-else>&#xe9ab;</i>
-              <span>k</span>
-            </div>
-          </div>
-        </div>
-
         <!-- 全屏按钮 -->
         <div class="btn-box screen-box" v-if="shouldShowFullscreen" @click="toggleFullScreen">
           <div
@@ -62,13 +44,6 @@
             :class="{ 'full-screen-btn': !isFullscreen, 'exit-full-screen-btn': isFullscreen }"
           >
             <i class="iconfont-sys">{{ isFullscreen ? '&#xe62d;' : '&#xe8ce;' }}</i>
-          </div>
-        </div>
-        <!-- 通知 -->
-        <div class="btn-box notice-btn" v-if="shouldShowNotification" @click="visibleNotice">
-          <div class="btn notice-button">
-            <i class="iconfont-sys notice-btn">&#xe6c2;</i>
-            <span class="count notice-btn"></span>
           </div>
         </div>
         <!-- 聊天 -->
@@ -179,12 +154,11 @@
     </div>
     <ArtWorkTab />
 
-    <ArtNotification v-model:value="showNotice" ref="notice" />
   </div>
 </template>
 
 <script setup lang="ts">
-  import { ref, computed, onMounted, onUnmounted } from 'vue'
+  import { ref, computed, onMounted } from 'vue'
   import { storeToRefs } from 'pinia'
   import { useI18n } from 'vue-i18n'
   import { useRouter } from 'vue-router'
@@ -219,16 +193,12 @@
   const {
     shouldShowMenuButton,
     shouldShowRefreshButton,
-    shouldShowFastEnter,
     shouldShowBreadcrumb,
-    shouldShowGlobalSearch,
     shouldShowFullscreen,
-    shouldShowNotification,
     shouldShowChat,
     shouldShowLanguage,
     shouldShowSettings,
-    shouldShowThemeToggle,
-    fastEnterMinWidth: headerBarFastEnterMinWidth
+    shouldShowThemeToggle
   } = useHeaderBar()
 
   const { menuOpen, systemThemeColor, showSettingGuide, menuType, isDark, tabStyle } =
@@ -254,8 +224,6 @@
       : getDefaultAvatar(name)
   })
 
-  const showNotice = ref(false)
-  const notice = ref(null)
   const userMenuPopover = ref()
 
   // 菜单类型判断
@@ -268,11 +236,6 @@
 
   onMounted(() => {
     initLanguage()
-    document.addEventListener('click', bodyCloseNotice)
-  })
-
-  onUnmounted(() => {
-    document.removeEventListener('click', bodyCloseNotice)
   })
 
   /**
@@ -372,38 +335,6 @@
     if (showSettingGuide.value) {
       settingStore.hideSettingGuide()
     }
-  }
-
-  /**
-   * 打开全局搜索对话框
-   */
-  const openSearchDialog = (): void => {
-    mittBus.emit('openSearchDialog')
-  }
-
-  /**
-   * 点击页面其他区域关闭通知面板
-   * @param {Event} e - 点击事件对象
-   */
-  const bodyCloseNotice = (e: any): void => {
-    let { className } = e.target
-
-    if (showNotice.value) {
-      if (typeof className === 'object') {
-        showNotice.value = false
-        return
-      }
-      if (className.indexOf('notice-btn') === -1) {
-        showNotice.value = false
-      }
-    }
-  }
-
-  /**
-   * 切换通知面板显示状态
-   */
-  const visibleNotice = (): void => {
-    showNotice.value = !showNotice.value
   }
 
   /**

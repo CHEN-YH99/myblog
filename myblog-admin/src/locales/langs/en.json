@@ -32,6 +32,74 @@
       "description": "More configurations"
     }
   },
+  "userCenter": {
+    "card": {
+      "coverAlt": "Profile background",
+      "avatarAlt": "User avatar",
+      "greeting": "Hello, {name}.",
+      "tagsTitle": "Tags",
+      "info": {
+        "email": "4523765372@qq.com",
+        "role": "Frontend developer",
+        "location": "Shenzhen, Guangdong",
+        "department": "UED Department"
+      },
+      "tags": {
+        "design": "Design focused",
+        "creative": "Full of ideas",
+        "curious": "Curious soul",
+        "bold": "Straight shooter",
+        "gamer": "Game lover",
+        "inclusive": "Open minded"
+      }
+    },
+    "sections": {
+      "basicSettings": "Basic Settings",
+      "changePassword": "Change Password"
+    },
+    "form": {
+      "realName": "Full Name",
+      "sex": "Gender",
+      "nikeName": "Nickname",
+      "email": "Email",
+      "mobile": "Phone",
+      "address": "Address",
+      "des": "About Me",
+      "selectGender": "Select gender",
+      "password": "Current Password",
+      "newPassword": "New Password",
+      "confirmPassword": "Confirm Password"
+    },
+    "gender": {
+      "male": "Male",
+      "female": "Female"
+    },
+    "actions": {
+      "edit": "Edit",
+      "save": "Save"
+    },
+    "messages": {
+      "enterCurrentPassword": "Please enter your current password",
+      "enterNewPassword": "Please enter a new password",
+      "confirmNewPassword": "Please confirm the new password",
+      "passwordMismatch": "The two passwords do not match",
+      "passwordTooShort": "New password must be at least 6 characters",
+      "passwordUpdated": "Password updated successfully, please log in again with the new password",
+      "currentPasswordIncorrect": "Current password is incorrect, please try again",
+      "sessionExpired": "Login expired, please log in again",
+      "passwordChangeFailed": "Failed to change password"
+    },
+    "validation": {
+      "realNameRequired": "Please enter a full name",
+      "realNameLength": "Length must be between 2 and 50 characters",
+      "nikeNameRequired": "Please enter a nickname",
+      "nikeNameLength": "Length must be between 2 and 50 characters",
+      "emailRequired": "Please enter an email",
+      "mobileRequired": "Please enter a phone number",
+      "addressRequired": "Please enter an address",
+      "genderRequired": "Please select a gender"
+    }
+  },
   "common": {
     "tips": "Prompt",
     "cancel": "Cancel",

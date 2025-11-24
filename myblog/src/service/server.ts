@@ -761,7 +761,7 @@ app.post('/api/articles/:id/like', async (req: Request, res: Response) => {
       // 从token中提取用户标识符
       const tokenParts = authorization.split('-');
       if (tokenParts.length >= 5) {
-        const username = decodeURIComponent(tokenParts[3]);
+        const username = decodeURIComponent(tokenParts.slice(3, -1).join('-'));
         userIdentifier = `user_${username}`;
       }
     }
@@ -817,10 +817,10 @@ app.post('/api/articles/:id/unlike', async (req: Request, res: Response) => {
     // 获取用户标识符（优先使用token中的用户信息，开发环境下避免IP冲突）
     let userIdentifier = clientIP;
     if (authorization && authorization.startsWith('mock-jwt-token-')) {
-      // 从token中提取用户标识符
+      // 从token中提取用户标识符（支持用户名中包含连字符）
       const tokenParts = authorization.split('-');
       if (tokenParts.length >= 5) {
-        const username = decodeURIComponent(tokenParts[3]);
+        const username = decodeURIComponent(tokenParts.slice(3, -1).join('-'));
         userIdentifier = `user_${username}`;
       }
     }
@@ -875,10 +875,10 @@ app.get('/api/articles/:id/like-status', async (req: Request, res: Response) => 
     // 获取用户标识符（优先使用token中的用户信息，开发环境下避免IP冲突）
     let userIdentifier = clientIP;
     if (authorization && authorization.startsWith('mock-jwt-token-')) {
-      // 从token中提取用户标识符
+      // 从token中提取用户标识符（支持用户名中包含连字符）
       const tokenParts = authorization.split('-');
       if (tokenParts.length >= 5) {
-        const username = decodeURIComponent(tokenParts[3]);
+        const username = decodeURIComponent(tokenParts.slice(3, -1).join('-'));
         userIdentifier = `user_${username}`;
       }
     }
@@ -904,6 +904,17 @@ app.post('/api/articles/batch-like-status', async (req: Request, res: Response) 
     const { articleIds } = (req.body || {}) as { articleIds: string[] };
     const rawIP = req.ip || (req.connection as any)?.remoteAddress || 'unknown';
     const clientIP = normalizeIP(rawIP);
+    const authorization = req.get('Authorization') || '';
+
+    // 统一用户标识（与点赞/取消接口一致）：优先 token 用户，其次 IP
+    let userIdentifier = clientIP;
+    if (authorization && authorization.startsWith('mock-jwt-token-')) {
+      const tokenParts = authorization.split('-');
+      if (tokenParts.length >= 5) {
+        const username = decodeURIComponent(tokenParts.slice(3, -1).join('-'));
+        userIdentifier = `user_${username}`;
+      }
+    }
 
     if (!Array.isArray(articleIds) || articleIds.length === 0) {
       return res.json(createResponse({}, '无文章ID'));
@@ -911,7 +922,7 @@ app.post('/api/articles/batch-like-status', async (req: Request, res: Response) 
 
     const likes = await Like.find({
       targetType: 'article',
-      ip: clientIP,
+      ip: userIdentifier,
       targetId: { $in: articleIds }
     }).select('targetId').lean();
 
@@ -2062,13 +2073,12 @@ app.get('/api/talks/:id/like/status', async (req: Request, res: Response) => {
     const clientIP = normalizeIP(rawIP);
     const authorization = req.get('Authorization') || '';
 
-    // 获取用户标识符（优先使用token中的用户信息，开发环境下避免IP冲突）
+    // 获取用户标识符（优先使用token中的用户信息，支持用户名内含连字符；否则回退到IP）
     let userIdentifier = clientIP;
     if (authorization && authorization.startsWith('mock-jwt-token-')) {
-      // 从token中提取用户标识符
       const tokenParts = authorization.split('-');
       if (tokenParts.length >= 5) {
-        const username = decodeURIComponent(tokenParts[3]);
+        const username = decodeURIComponent(tokenParts.slice(3, -1).join('-'));
         userIdentifier = `user_${username}`;
       }
     }

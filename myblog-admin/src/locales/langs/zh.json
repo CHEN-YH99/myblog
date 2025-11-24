@@ -32,6 +32,74 @@
       "description": "等更多配置"
     }
   },
+  "userCenter": {
+    "card": {
+      "coverAlt": "个人背景图",
+      "avatarAlt": "用户头像",
+      "greeting": "你好，{name}。",
+      "tagsTitle": "标签",
+      "info": {
+        "email": "4523765372@qq.com",
+        "role": "前端开发员",
+        "location": "广东省深圳市",
+        "department": "某某平台部－UED"
+      },
+      "tags": {
+        "design": "专注设计",
+        "creative": "很有想法",
+        "curious": "爪娃子",
+        "bold": "大炮哥",
+        "gamer": "游戏爱好者",
+        "inclusive": "海纳百川"
+      }
+    },
+    "sections": {
+      "basicSettings": "基本设置",
+      "changePassword": "更改密码"
+    },
+    "form": {
+      "realName": "姓名",
+      "sex": "性别",
+      "nikeName": "昵称",
+      "email": "邮箱",
+      "mobile": "手机",
+      "address": "地址",
+      "des": "个人介绍",
+      "selectGender": "请选择性别",
+      "password": "当前密码",
+      "newPassword": "新密码",
+      "confirmPassword": "确认新密码"
+    },
+    "gender": {
+      "male": "男",
+      "female": "女"
+    },
+    "actions": {
+      "edit": "编辑",
+      "save": "保存"
+    },
+    "messages": {
+      "enterCurrentPassword": "请输入当前密码",
+      "enterNewPassword": "请输入新密码",
+      "confirmNewPassword": "请确认新密码",
+      "passwordMismatch": "两次输入的新密码不一致",
+      "passwordTooShort": "新密码长度不能少于6位",
+      "passwordUpdated": "密码修改成功，请使用新密码重新登录",
+      "currentPasswordIncorrect": "当前密码错误，请检查后重试",
+      "sessionExpired": "登录已过期，请重新登录",
+      "passwordChangeFailed": "修改密码失败"
+    },
+    "validation": {
+      "realNameRequired": "请输入姓名",
+      "realNameLength": "长度需在 2 到 50 个字符",
+      "nikeNameRequired": "请输入昵称",
+      "nikeNameLength": "长度需在 2 到 50 个字符",
+      "emailRequired": "请输入邮箱",
+      "mobileRequired": "请输入手机号码",
+      "addressRequired": "请输入地址",
+      "genderRequired": "请选择性别"
+    }
+  },
   "common": {
     "tips": "提示",
     "cancel": "取消",

@@ -142,7 +142,8 @@ export const useUserStore = defineStore(
 
         // 清理说说点赞状态
         const talksStore = useTalksStore()
-        talksStore.resetLikeStatus()(/* log removed */ '用户已登出，清理相关状态')
+        talksStore.resetLikeStatus()
+        /* log removed */
       }
     }
 
