@@ -328,6 +328,11 @@
   onMounted(() => {
     setupWindowResizeListener()
   })
+
+  onUnmounted(() => {
+    // 清理全局 resize 句柄，避免潜在内存泄漏
+    window.onresize = null
+  })
 </script>
 
 <style lang="scss" scoped>

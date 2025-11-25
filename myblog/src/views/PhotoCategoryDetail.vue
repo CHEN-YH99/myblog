@@ -37,10 +37,7 @@
           @click="showPhotoDetail(photo)"
         >
           <div class="photo-container">
-            <img
-              :src="photo.thumbnailUrl || photo.imageUrl"
-              :alt="photo.title"
-            />
+            <img :src="photo.thumbnailUrl || photo.imageUrl" :alt="photo.title" />
             <div class="photo-overlay">
               <div class="photo-info">
                 <h3>{{ photo.title }}</h3>
@@ -66,11 +63,7 @@
       class="photo-dialog"
     >
       <div v-if="selectedPhoto" class="photo-dialog-content">
-        <img
-          :src="selectedPhoto.imageUrl"
-          :alt="selectedPhoto.title"
-          class="photo-preview"
-        />
+        <img :src="selectedPhoto.imageUrl" :alt="selectedPhoto.title" class="photo-preview" />
         <div class="photo-details">
           <h3>{{ selectedPhoto.title }}</h3>
           <p>{{ selectedPhoto.description }}</p>
@@ -136,9 +129,7 @@ const displayedPhotoCount = computed(() => {
   return 0
 })
 const createdAtStr = computed(() =>
-  currentCategory.value?.createdAt
-    ? formatDate(currentCategory.value.createdAt)
-    : '-',
+  currentCategory.value?.createdAt ? formatDate(currentCategory.value.createdAt) : '-',
 )
 
 // 取服务端分类更新时间与客户端最新上传图片时间的较大者，确保与管理端一致或更“新”
@@ -191,9 +182,8 @@ const fetchCategoryAndPhotos = async (id: string) => {
   try {
     // 先尝试从列表中匹配（兼容 id 和 _id）
     currentCategory.value =
-      photoCategories.value.find(
-        (category) => category._id === id || category.id === id,
-      ) || currentCategory.value
+      photoCategories.value.find((category) => category._id === id || category.id === id) ||
+      currentCategory.value
 
     // 再请求详情，确保 photoCount / createdAt / updatedAt 为最新
     const detail = await getPhotoCategoryDetail(id)
@@ -209,8 +199,7 @@ const fetchCategoryAndPhotos = async (id: string) => {
     }
 
     // 计算用于查询照片列表的分类ID（优先 id，其余 _id）
-    const fetchCategoryId =
-      currentCategory.value?.id || currentCategory.value?._id || id
+    const fetchCategoryId = currentCategory.value?.id || currentCategory.value?._id || id
     await initPhotos({ categoryId: fetchCategoryId, isVisible: true })
 
     // 如果按 id 查询没有数据，回退用 _id 再查一次（兼容历史数据存储 categoryId 为 _id 的情况）

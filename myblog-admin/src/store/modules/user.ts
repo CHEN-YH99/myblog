@@ -43,20 +43,64 @@ export const useUserStore = defineStore(
 
     /**
      * 计算属性：是否只读用户
-     * 当仅包含普通用户角色（R_USER）且不包含管理员/超管角色时视为只读
+     * 当用户拥有管理员或超级管理员角色时，isReadOnly 为 false（可编辑）
+     * 当用户仅拥有普通用户角色时，isReadOnly 为 true（只读）
      */
     const isReadOnly = computed(() => {
-      const roles = (info.value as any)?.roles as string[] | undefined
-      let roleCodes: string[] = Array.isArray(roles) ? roles : []
+      // 归一化角色码，兼容多种返回
+      const normalize = (val: unknown): string[] => {
+        const codes = new Set<string>()
 
-      // 兼容后端返回 userRoles: { roleCode: string }[] 的情况
-      if (!roleCodes.length && Array.isArray((info.value as any)?.userRoles)) {
-        roleCodes = (info.value as any).userRoles.map((r: any) => r.roleCode)
+        // 1) roles: string[] 情况
+        const rolesArr = Array.isArray((val as any)?.roles) ? (val as any).roles : []
+        rolesArr.forEach((r: any) => {
+          if (typeof r === 'string') codes.add(String(r).trim().toUpperCase())
+          if (r && typeof r === 'object' && 'roleCode' in r) codes.add(String((r as any).roleCode).trim().toUpperCase())
+        })
+
+        // 2) userRoles: 对象数组或字符串数组
+        const userRoles = (val as any)?.userRoles
+        if (Array.isArray(userRoles)) {
+          userRoles.forEach((r: any) => {
+            if (typeof r === 'string') {
+              codes.add(r.trim().toUpperCase())
+            } else if (r && typeof r === 'object') {
+              if (r.roleCode) codes.add(String(r.roleCode).trim().toUpperCase())
+              if (r.roleName) {
+                const name = String(r.roleName).trim()
+                if (name === '超级管理员') codes.add('R_SUPER')
+                if (name === '管理员') codes.add('R_ADMIN')
+                if (name === '普通用户') codes.add('R_USER')
+              }
+            }
+          })
+        }
+
+        // 3) 从 info.value 中直接推断（某些后端仅有单个 roleCode/roleName）
+        const maybeCode = (val as any)?.roleCode
+        const maybeName = (val as any)?.roleName
+        if (maybeCode) codes.add(String(maybeCode).trim().toUpperCase())
+        if (maybeName) {
+          const name = String(maybeName).trim()
+          if (name === '超级管理员') codes.add('R_SUPER')
+          if (name === '管理员') codes.add('R_ADMIN')
+          if (name === '普通用户') codes.add('R_USER')
+        }
+
+        return Array.from(codes)
       }
 
-      const hasAdmin = roleCodes.includes('R_ADMIN') || roleCodes.includes('R_SUPER')
-      const isUserOnly = roleCodes.includes('R_USER') && !hasAdmin
-      return isUserOnly
+      const roleCodes = normalize(info.value)
+
+      // 如果拥有管理员或超级管理员角色，则不是只读（可以编辑）
+      const adminSet = new Set(['R_ADMIN', 'ADMIN', 'R_SUPER', 'SUPER', 'SUPER_ADMIN'])
+      const hasAdmin = roleCodes.some((c) => adminSet.has(c))
+      if (hasAdmin) return false
+
+      // 如果仅拥有普通用户角色，则是只读
+      const userSet = new Set(['R_USER', 'USER'])
+      const hasUser = roleCodes.some((c) => userSet.has(c))
+      return hasUser
     })
 
     /**
@@ -65,6 +109,37 @@ export const useUserStore = defineStore(
      */
     const setUserInfo = (newInfo: Api.Auth.UserInfo) => {
       info.value = newInfo
+    }
+
+    /**
+     * 刷新用户信息（用于权限变更后重新加载）
+     */
+    const refreshUserInfo = async () => {
+      try {
+        const { fetchGetUserInfo } = await import('@/api/auth')
+        const newInfo = await fetchGetUserInfo()
+        setUserInfo(newInfo)
+        console.log('[refreshUserInfo] 用户信息已刷新:', newInfo)
+        return true
+      } catch (error) {
+        console.error('[refreshUserInfo] 刷新用户信息失败:', error)
+        return false
+      }
+    }
+
+    /**
+     * 更新用户角色和权限
+     * @param newRoles 新的角色列表
+     * @param newPermissions 新的权限列表
+     */
+    const updateUserRoles = (newRoles: string[], newPermissions: string[] = []) => {
+      if (info.value) {
+        info.value.roles = newRoles
+        if (newPermissions.length > 0) {
+          info.value.permissions = newPermissions
+        }
+        console.log('[updateUserRoles] 用户角色已更新:', newRoles)
+      }
     }
 
     /**
@@ -163,6 +238,8 @@ export const useUserStore = defineStore(
       getWorktabState,
       isReadOnly,
       setUserInfo,
+      refreshUserInfo,
+      updateUserRoles,
       setLoginStatus,
       setLanguage,
       setSearchHistory,

@@ -531,10 +531,7 @@ const handleLogin = async () => {
     const talksStore = useTalksStore()
 
     // 并行初始化点赞状态
-    await Promise.all([
-      articlesStore.initializeLikeStatus(),
-      talksStore.initializeLikeStatus(),
-    ])
+    await Promise.all([articlesStore.initializeLikeStatus(), talksStore.initializeLikeStatus()])
 
     // 设置token过期时间
     if (loginForm.rememberMe) {
@@ -588,7 +585,7 @@ const handleRegister = async () => {
         role: '普通用户',
         status: 'active',
         createTime: new Date().toISOString(),
-        registerSource: 'frontend',
+        registerSource: 'client',
       })
     } catch (syncError) {
       console.warn('用户数据同步失败，但注册成功:', syncError)

@@ -47,12 +47,23 @@ const axiosInstance = axios.create({
 /** 请求拦截器 */
 axiosInstance.interceptors.request.use(
   (request: InternalAxiosRequestConfig) => {
-    const { accessToken, isReadOnly } = useUserStore()
+    const userStore = useUserStore()
+    const { accessToken, isReadOnly } = userStore
+    
+    console.log('[HTTP拦截器] 请求方法:', request.method?.toUpperCase())
+    console.log('[HTTP拦截器] isReadOnly:', isReadOnly)
+    console.log('[HTTP拦截器] userStore.info:', userStore.info)
+    
     // 只读用户拦截写操作
     const method = request.method?.toUpperCase() || ''
     const isWriteMethod = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)
+    
+    console.log('[HTTP拦截器] isWriteMethod:', isWriteMethod)
+    console.log('[HTTP拦截器] 是否应该拦截:', isWriteMethod && isReadOnly)
+    
     if (isWriteMethod && isReadOnly) {
       const err = createHttpError('当前账号为只读，禁止写操作', ApiStatus.forbidden)
+      console.error('[HTTP拦截器] 拦截写操作:', err)
       return Promise.reject(err)
     }
     if (accessToken) request.headers.set('Authorization', accessToken)

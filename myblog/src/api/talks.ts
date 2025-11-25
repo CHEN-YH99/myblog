@@ -164,8 +164,7 @@ export function getAllTalks(params?: Api.Talk.SearchParams) {
       if (Array.isArray(data)) {
         return data
       } else if (data && typeof data === 'object' && 'talks' in data) {
-        const talks = (data as Record<string, unknown>)
-          .talks as Api.Talk.TalkItem[]
+        const talks = (data as Record<string, unknown>).talks as Api.Talk.TalkItem[]
         return talks
       } else {
         return []

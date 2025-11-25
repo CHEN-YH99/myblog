@@ -14,7 +14,7 @@
       </div>
 
       <!-- 说说列表 -->
-      <div class="talk-container">
+      <div class="talk-container backtop animate__animated animate__slideInUp">
         <div class="talk-list" v-if="!loading && talkList.length > 0">
           <div
             class="talk-item"

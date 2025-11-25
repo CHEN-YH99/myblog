@@ -56,32 +56,41 @@
                 <div v-if="likedArticlesList.length === 0" class="empty-state">
                   <el-empty description="暂无点赞的文章" :image-size="100" />
                 </div>
-                <div v-else class="articles-grid">
-                  <div
-                    v-for="article in likedArticlesList"
-                    :key="article._id"
-                    class="article-item"
-                    @click="goToArticle(article)"
-                  >
-                    <div class="article-cover">
-                      <img
-                        :src="article.image || '/default-article.svg'"
-                        :alt="article.title"
-                      />
-                    </div>
-                    <div class="article-info">
-                      <h4 class="article-title">{{ article.title }}</h4>
-                      <p class="article-summary">{{ article.excerpt }}</p>
-                      <div class="article-meta">
-                        <span class="article-date">
-                          {{ formatDate(article.publishDate) }}
-                        </span>
-                        <span class="article-views">
-                          {{ article.views }} 阅读
-                        </span>
+                <div v-else>
+                  <div class="articles-grid">
+                    <div
+                      v-for="article in displayedLikedArticles"
+                      :key="article._id"
+                      class="article-item"
+                      @click="goToArticle(article)"
+                    >
+                      <div class="article-cover">
+                        <img
+                          :src="article.image || '/default-article.svg'"
+                          :alt="article.title"
+                        />
+                      </div>
+                      <div class="article-info">
+                        <h4 class="article-title">{{ article.title }}</h4>
+                        <p class="article-summary">{{ article.excerpt }}</p>
+                        <div class="article-meta">
+                          <span class="article-date">
+                            {{ formatDate(article.publishDate) }}
+                          </span>
+                          <span class="article-views">
+                            {{ article.views }} 阅读
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
+                  <!-- 加载动画 / 触发器 / 全部加载完成 -->
+                  <div v-if="isLoadingMore" class="load-more">
+                    <el-icon class="loading-icon"><Loading /></el-icon>
+                    正在加载...
+                  </div>
+                  <div v-else-if="hasMore" ref="loadMoreSentinel" class="load-more-sentinel"></div>
+                  <div v-else class="load-more done">已加载全部</div>
                 </div>
               </el-tab-pane>
 
@@ -236,14 +245,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Star, Setting } from '@element-plus/icons-vue'
+import { Star, Setting, Loading } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
 import { useArticlesStore } from '@/stores/getarticles'
 import { useTalksStore } from '@/stores/talks'
-import { getUserLikedArticles } from '@/api/articles'
+// import { getUserLikedArticles } from '@/api/articles'
 import { changePassword, type ChangePasswordParams } from '@/api/user'
 import WaveContainer from '@/components/WaveContainer.vue'
 import Footer from '@/components/Footer.vue'
@@ -281,13 +290,62 @@ const userInfo = computed(() => userStore.userInfo)
 
 // 用户统计数据（使用 getter/可枚举数组确保响应式更新）
 const userStats = computed(() => ({
-  articlesLiked: articlesStore.likedArticleIds.length,
+  // 和 Home.vue 的点赞状态保持一致，直接以列表数量为准，避免和服务器返回不一致
+  articlesLiked: likedArticlesList.value.length,
   talksLiked: talksStore.likedTalksCount,
   repliesCount: 0, // 暂时设为0，后续可以从API获取
 }))
 
 // 点赞的文章列表
 const likedArticlesList = ref<Api.Article.ArticleItem[]>([])
+
+// 懒加载相关
+const pageSizeLiked = 12
+const displayedCount = ref(pageSizeLiked)
+const isLoadingMore = ref(false)
+const loadMoreSentinel = ref<HTMLElement | null>(null)
+let io: IntersectionObserver | null = null
+
+const displayedLikedArticles = computed(() =>
+  likedArticlesList.value.slice(0, displayedCount.value),
+)
+
+const hasMore = computed(() =>
+  displayedCount.value < likedArticlesList.value.length,
+)
+
+const loadMore = async () => {
+  if (!hasMore.value || isLoadingMore.value) return
+  isLoadingMore.value = true
+  // 模拟短暂加载动画，提升体验
+  await new Promise((r) => setTimeout(r, 400))
+  displayedCount.value = Math.min(
+    likedArticlesList.value.length,
+    displayedCount.value + pageSizeLiked,
+  )
+  isLoadingMore.value = false
+}
+
+const setupIntersection = async () => {
+  await nextTick()
+  if (!loadMoreSentinel.value) return
+  if (io) {
+    io.disconnect()
+    io = null
+  }
+  io = new IntersectionObserver((entries) => {
+    const entry = entries[0]
+    if (entry && entry.isIntersecting) {
+      loadMore()
+    }
+  })
+  io.observe(loadMoreSentinel.value)
+}
+
+const resetLazy = async () => {
+  displayedCount.value = pageSizeLiked
+  await setupIntersection()
+}
 
 // 点赞的说说列表
 const likedTalksList = ref<Api.Talk.TalkItem[]>([])
@@ -543,45 +601,34 @@ watch(
   },
 )
 
-// 获取用户已点赞的文章列表
+// 获取用户已点赞的文章列表（严格以前端点赞状态为准，和 Home.vue 一致）
 const loadLikedArticles = async () => {
   if (!userStore.isLoggedIn) return
 
   loadingLikedArticles.value = true
   try {
-    // 优先从store中获取已点赞的文章ID
-    const likedArticleIds = Array.from(articlesStore.likedArticles)
+    // 以 store 的点赞状态为唯一来源，避免与服务端状态不一致
+    const likedArticleIds = articlesStore.likedArticleIds
 
-    if (likedArticleIds.length === 0) {
+    if (!likedArticleIds.length) {
       likedArticlesList.value = []
       return
     }
 
-    // 从所有文章中筛选出已点赞的文章
+    // 直接从已加载的文章中过滤
     const allArticles = articlesStore.articles
-    const localLikedArticles = allArticles.filter((article) =>
-      likedArticleIds.includes(article._id),
+    likedArticlesList.value = allArticles.filter((a) =>
+      likedArticleIds.includes(a._id),
     )
-
-    // 如果本地文章数据完整（找到了所有已点赞的文章），直接使用
-    if (localLikedArticles.length === likedArticleIds.length) {
-      likedArticlesList.value = localLikedArticles
-    } else {
-      // 否则从API获取完整的已点赞文章列表
-      try {
-        const response = await getUserLikedArticles()
-        likedArticlesList.value = response || []
-        console.log('从API获取已点赞文章:', response?.length || 0, '篇')
-      } catch (error) {
-        console.warn('从API获取已点赞文章失败，使用本地数据:', error)
-        likedArticlesList.value = localLikedArticles
-      }
-    }
   } catch (error) {
     console.error('获取已点赞文章失败:', error)
     ElMessage.error('获取已点赞文章失败')
   } finally {
     loadingLikedArticles.value = false
+    // 重新设置懒加载（仅在文章Tab下）
+    if (activeTab.value === 'articles') {
+      await resetLazy()
+    }
   }
 }
 
@@ -661,8 +708,12 @@ const initData = async () => {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   initData()
+  await nextTick()
+  if (activeTab.value === 'articles') {
+    await resetLazy()
+  }
 })
 
 // 监听用户登录状态变化
@@ -712,6 +763,13 @@ watch(activeTab, (newTab) => {
     loadLikedArticles()
   } else if (newTab === 'talks') {
     loadLikedTalks()
+  }
+})
+
+onBeforeUnmount(() => {
+  if (io) {
+    io.disconnect()
+    io = null
   }
 })
 </script>
@@ -1017,6 +1075,37 @@ watch(activeTab, (newTab) => {
 
 .tip-list li:last-child {
   margin-bottom: 0;
+}
+
+/* 懒加载样式 */
+.load-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 0;
+  color: var(--text-color-secondary);
+}
+
+.load-more.done {
+  color: var(--text-color-secondary);
+}
+
+.load-more-sentinel {
+  height: 1px;
+}
+
+.loading-icon {
+  animation: rotate 1s linear infinite;
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* 响应式设计 */

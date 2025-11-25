@@ -30,7 +30,7 @@
       <UserDialog
         v-model:visible="dialogVisible"
         :dialog-type="dialogType"
-        :user-data="currentUserData"
+        :user-data="(currentUserData as any)"
         :role-list="roleList"
         @confirm="handleDialogSubmit"
       />
@@ -80,14 +80,16 @@
   import AvatarUpload from '@/components/AvatarUpload.vue'
   import { ElMessageBox, ElMessage, ElTag, ElImage } from 'element-plus'
   import { useTable } from '@/composables/useTable'
-  import { fetchGetUserList, fetchDeleteUser, fetchUpdateUser, fetchGetRoleList } from '@/api/system-manage'
+  import { fetchGetUserList, fetchDeleteUser, fetchUpdateUser, fetchGetRoleList, fetchCreateUser } from '@/api/system-manage'
   import UserDialog from './modules/user-dialog.vue'
   import { useUserStore } from '@/store/modules/user'
+  import { useMenuStore } from '@/store/modules/menu'
   import { storeToRefs } from 'pinia'
   import { getDefaultAvatar, getUserStatusConfig, formatDate } from '@shared/utils/user'
+  import { router } from '@/router'
+  import { resetRouterState } from '@/router/guards/beforeEach'
 
-  // 用户头像数据 - 实际项目中应从API获取
-  const ACCOUNT_TABLE_DATA = ref([])
+
 
   defineOptions({ name: 'User' })
 
@@ -125,6 +127,7 @@
     admin: '管理端',
     backend: '管理端',
     'myblog-admin': '管理端',
+    'admin-register': '管理端',
     other: '其他'
   }
 
@@ -224,8 +227,10 @@
           label: '注册来源',
           width: 100,
           formatter: (row) => {
+            // 获取原始值并转换为小写进行匹配
             const sourceKey = row.registerSource ? String(row.registerSource).toLowerCase() : 'other'
-            return REGISTER_SOURCE_LABELS[sourceKey] || '其他'
+            // 优先使用精确匹配，如果没有则返回"其他"
+            return REGISTER_SOURCE_LABELS[sourceKey] || REGISTER_SOURCE_LABELS['other']
           }
         },
         {
@@ -275,8 +280,7 @@
                 type: 'delete',
                 disabled: isReadOnly.value,
                 onClick: () => {
-                  console.log('=== 删除按钮被点击 ===')
-                  console.log('点击事件触发，row:', row)
+                  
                   deleteUser(row)
                 }
               })
@@ -288,37 +292,31 @@
     transform: {
       // 数据转换器 - 替换头像并映射字段
       dataTransformer: (records: any) => {
-        console.log('数据转换器被调用，原始数据:', records)
         // 类型守卫检查
         if (!Array.isArray(records)) {
-          console.warn('数据转换器: 期望数组类型，实际收到:', typeof records)
           return []
         }
 
         // 映射后端数据字段到前端需要的格式
-        const transformedData = records.map((item: any, index: number) => {
+        const transformedData = records.map((item: any) => {
           const status = !item.enabled ? '4' : item.lastLoginTime ? '1' : '2'
-          const transformed = {
+          return {
             ...item,
-            id: item.userId, // 将后端的userId映射为前端需要的id
-            userName: item.username, // 将后端的username映射为前端需要的userName
-            nickName: item.nickname, // 将后端的nickname映射为前端需要的nickName
-            userEmail: item.email, // 将后端的email映射为前端需要的userEmail
-            userPhone: item.phone, // 将后端的phone映射为前端需要的userPhone
-            userGender: item.gender || 'male', // 设置默认性别
-            status, // 登录状态：有登录记录视为在线，否则离线
-            userRoles: [item.roleName], // 将角色名称包装为数组
+            id: item.userId,
+            userName: item.username,
+            nickName: item.nickname,
+            userEmail: item.email,
+            userPhone: item.phone,
+            userGender: item.gender || 'male',
+            status,
+            userRoles: [item.roleName],
             registerSource: item.registerSource || 'frontend',
             lastLoginTime: item.lastLoginTime,
-            createBy: 'system', // 设置默认创建者
-            updateBy: 'system', // 设置默认更新者
-            // 安全的头像回退：后端头像为空时根据用户名生成默认头像
+            createBy: 'system',
+            updateBy: 'system',
             avatar: item.avatar || getDefaultAvatar(item.username || String(item.userId))
           }
-          console.log('转换后的数据项:', { original: item.userId, transformed: transformed.id })
-          return transformed
         })
-        console.log('数据转换完成，转换后数据:', transformedData)
         return transformedData
       }
     }
@@ -328,7 +326,7 @@
    * 显示用户弹窗
    */
   const showDialog = async (type: Form.DialogType, row?: UserListItem): Promise<void> => {
-    console.log('打开弹窗:', { type, row })
+
     if (!roleList.value.length) {
       await loadRoleOptions()
     }
@@ -392,12 +390,122 @@
   /**
    * 处理弹窗提交事件
    */
-  const handleDialogSubmit = async () => {
+  const handleDialogSubmit = async (formData: any) => {
     try {
+      console.log('处理弹窗提交，数据:', formData)
+      
+      // 准备提交数据
+      // 注意：后端使用 enabled、roleId（单个）字段，前端 status、roleIds 是表单字段
+      const roleId = Array.isArray(formData.roleIds) && formData.roleIds.length > 0
+        ? Number(formData.roleIds[0])
+        : undefined
+      const submitData: any = {
+        username: formData.username,
+        email: formData.email,
+        nickname: formData.nickname,
+        enabled: formData.status === 1, // 将前端的 status 转换为后端的 enabled
+        roleId
+      }
+
+      const userStore = useUserStore()
+      const currentUserId = (userStore.info as any)?.id || (userStore.info as any)?.userId
+      let isCurrentUser = false
+
+      // 如果是编辑模式，需要包含用户ID
+      if (dialogType.value === 'edit' && formData.id) {
+        console.log('编辑用户，ID:', formData.id)
+        
+        // 检查是否修改的是当前登录用户
+        isCurrentUser = formData.id === currentUserId
+        console.log('是否为当前用户:', isCurrentUser, '当前用户ID:', currentUserId, '编辑用户ID:', formData.id)
+        
+        // 调用更新用户API
+        await fetchUpdateUser(formData.id, submitData)
+        ElMessage.success('用户信息更新成功')
+
+        // 1) 即时更新表格中的该行数据（无需等待重新拉取）
+        const idx = data.value.findIndex((u: any) => u.id === formData.id)
+        if (idx !== -1) {
+          const row = data.value[idx]
+          // 基础信息同步
+          row.userEmail = submitData.email
+          row.nickName = submitData.nickname
+          // enabled -> status: true: 按是否有 lastLoginTime 决定在线/离线；false: 禁用
+          row.status = submitData.enabled
+            ? (row.lastLoginTime ? '1' : '2')
+            : '4'
+          // 角色名同步（表格显示用）
+          const roleIdsArr: number[] = Array.isArray(formData.roleIds) && formData.roleIds.length
+            ? formData.roleIds
+            : (submitData.roleId ? [submitData.roleId] : [])
+          const idSet = new Set(roleIdsArr)
+          const names = roleList.value.filter((r) => idSet.has(r.roleId)).map((r) => r.roleName)
+          row.userRoles = names
+          // 同步便捷字段
+          row.roleId = roleIdsArr[0] ?? row.roleId
+          row.roleName = names[0] ?? row.roleName
+        }
+
+        // 如果修改的是当前用户且修改了角色，需要重新加载权限
+        if (isCurrentUser && formData.roleIds && formData.roleIds.length > 0) {
+          console.log('当前用户角色已修改，需要重新加载权限')
+          // 刷新用户信息以获取最新的角色和权限
+          const refreshSuccess = await userStore.refreshUserInfo()
+          if (refreshSuccess) {
+            console.log('用户信息已刷新，新的角色信息:', userStore.info.roles)
+            
+            // 重新加载菜单和路由权限
+            try {
+              const menuStore = useMenuStore()
+              
+              // 重置路由状态以清除缓存的路由
+              resetRouterState()
+              
+              // 清空菜单列表，触发路由守卫重新加载
+              menuStore.setMenuList([])
+              
+              // 重新触发路由守卫以加载新的菜单和权限
+              // 通过导航到当前路由来触发路由守卫
+              await router.push({
+                path: router.currentRoute.value.path,
+                query: router.currentRoute.value.query,
+                hash: router.currentRoute.value.hash,
+                replace: true
+              })
+              
+              ElMessage.success('您的角色权限已更新，菜单已刷新')
+              console.log('权限和菜单已成功刷新')
+            } catch (error) {
+              console.error('刷新权限失败:', error)
+              ElMessage.warning('您的角色权限已修改，建议刷新页面以获得最新权限')
+              // 延迟后刷新页面以重新加载菜单和权限
+              setTimeout(() => {
+                window.location.reload()
+              }, 1500)
+            }
+          } else {
+            ElMessage.warning('您的角色权限已修改，请重新登录以获得最新权限')
+          }
+        }
+      } else {
+        console.log('新增用户')
+        // 调用创建用户API
+        await fetchCreateUser({
+          ...submitData,
+          password: formData.password
+        })
+        ElMessage.success('用户创建成功')
+      }
+
+      // 关闭弹窗
       dialogVisible.value = false
       currentUserData.value = {}
+      
+      // 刷新表格数据
+      refreshData()
     } catch (error) {
       console.error('提交失败:', error)
+      ElMessage.error('操作失败，请稍后重试')
     }
   }
 

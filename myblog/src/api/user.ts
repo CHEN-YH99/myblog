@@ -21,10 +21,7 @@ export interface UserSyncData {
 
 // 缓存配置
 const CACHE_DURATION = 2 * 60 * 1000 // 2分钟（用户数据更新频繁，缓存时间较短）
-const cache = new Map<
-  string,
-  { data: Record<string, unknown>; timestamp: number }
->()
+const cache = new Map<string, { data: Record<string, unknown>; timestamp: number }>()
 
 // 缓存工具函数
 function getCacheKey(url: string, params?: Record<string, unknown>): string {
@@ -171,10 +168,7 @@ export const getUserListFromAdmin = (params?: {
  * @param status 用户状态
  * @returns 更新结果
  */
-export const updateUserStatus = (
-  userId: string,
-  status: UserSyncData['status'],
-): Promise<void> => {
+export const updateUserStatus = (userId: string, status: UserSyncData['status']): Promise<void> => {
   return withRetry(() =>
     api
       .put({
@@ -386,9 +380,7 @@ export const getCurrentUser = (): Promise<UserSyncData> => {
  * @param userData 用户数据
  * @returns 更新结果
  */
-export const updateUserInfo = (
-  userData: Partial<UserSyncData>,
-): Promise<UserSyncData> => {
+export const updateUserInfo = (userData: Partial<UserSyncData>): Promise<UserSyncData> => {
   return withRetry(() =>
     api
       .put<UserSyncData>({

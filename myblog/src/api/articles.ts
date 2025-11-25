@@ -2,10 +2,7 @@ import api from '@/utils/http'
 
 // 缓存配置
 const CACHE_DURATION = 5 * 60 * 1000 // 5分钟
-const cache = new Map<
-  string,
-  { data: Record<string, unknown>; timestamp: number }
->()
+const cache = new Map<string, { data: Record<string, unknown>; timestamp: number }>()
 
 // 缓存工具函数
 function getCacheKey(url: string, params?: Record<string, unknown>): string {
@@ -51,10 +48,7 @@ async function withRetry<T>(
  * @returns 文章列表
  */
 export function getAllArticles(params?: Api.Article.SearchParams) {
-  const cacheKey = getCacheKey(
-    '/api/articles',
-    params as Record<string, unknown>,
-  )
+  const cacheKey = getCacheKey('/api/articles', params as Record<string, unknown>)
   const cached = getFromCache<Api.Article.ArticleItem[]>(cacheKey)
 
   if (cached) {
@@ -71,8 +65,7 @@ export function getAllArticles(params?: Api.Article.SearchParams) {
         if (Array.isArray(data)) {
           articles = data
         } else if (data && typeof data === 'object' && 'articles' in data) {
-          articles = (data as Record<string, unknown>)
-            .articles as Api.Article.ArticleItem[]
+          articles = (data as Record<string, unknown>).articles as Api.Article.ArticleItem[]
         }
 
         // 缓存结果
@@ -376,13 +369,8 @@ export function getCategories(params?: Api.Article.CategorySearchParams) {
 
       if (Array.isArray(response)) {
         categories = response
-      } else if (
-        response &&
-        typeof response === 'object' &&
-        'categories' in response
-      ) {
-        categories = (response as Record<string, unknown>)
-          .categories as Api.Article.CategoryItem[]
+      } else if (response && typeof response === 'object' && 'categories' in response) {
+        categories = (response as Record<string, unknown>).categories as Api.Article.CategoryItem[]
       }
 
       setCache(cacheKey, categories as unknown as Record<string, unknown>)
@@ -420,10 +408,7 @@ export function getCategoryDetail(id: string) {
  * @param params 查询参数
  * @returns 文章列表
  */
-export function getArticlesByCategory(
-  categoryId: string,
-  params?: Api.Article.SearchParams,
-) {
+export function getArticlesByCategory(categoryId: string, params?: Api.Article.SearchParams) {
   const cacheKey = getCacheKey(
     `/api/categories/${categoryId}/articles`,
     params as Record<string, unknown>,
@@ -442,13 +427,8 @@ export function getArticlesByCategory(
 
       if (Array.isArray(response)) {
         articles = response
-      } else if (
-        response &&
-        typeof response === 'object' &&
-        'articles' in response
-      ) {
-        articles = (response as Record<string, unknown>)
-          .articles as Api.Article.ArticleItem[]
+      } else if (response && typeof response === 'object' && 'articles' in response) {
+        articles = (response as Record<string, unknown>).articles as Api.Article.ArticleItem[]
       }
 
       setCache(cacheKey, articles as unknown as Record<string, unknown>)
@@ -486,10 +466,7 @@ export function getTags() {
  * @param params 查询参数
  * @returns 文章列表
  */
-export function getArticlesByTag(
-  tag: string,
-  params?: Api.Article.SearchParams,
-) {
+export function getArticlesByTag(tag: string, params?: Api.Article.SearchParams) {
   const cacheKey = getCacheKey(`/api/tags/${tag}/articles`, params)
   const cached = getFromCache<Api.Article.ArticleItem[]>(cacheKey)
 
@@ -512,10 +489,7 @@ export function getArticlesByTag(
  * @param params 查询参数
  * @returns 搜索结果
  */
-export function searchArticles(
-  keyword: string,
-  params?: Api.Article.SearchParams,
-) {
+export function searchArticles(keyword: string, params?: Api.Article.SearchParams) {
   // 搜索结果不缓存，保证实时性
   return api
     .get<Api.Article.ArticleItem[]>({
@@ -539,10 +513,7 @@ export function getSearchSuggestions(keyword: string) {
     .catch(() => []) // 降级处理
 }
 
-export function getAllArticlesWithSignal(
-  signal?: AbortSignal,
-  params?: Api.Article.SearchParams,
-) {
+export function getAllArticlesWithSignal(signal?: AbortSignal, params?: Api.Article.SearchParams) {
   return api
     .get({
       url: '/api/articles',
@@ -555,8 +526,7 @@ export function getAllArticlesWithSignal(
       if (Array.isArray(data)) {
         return data
       } else if (data && typeof data === 'object' && 'articles' in data) {
-        const articles = (data as Record<string, unknown>)
-          .articles as Api.Article.ArticleItem[]
+        const articles = (data as Record<string, unknown>).articles as Api.Article.ArticleItem[]
         return articles
       } else {
         return []

@@ -313,113 +313,6 @@ const RoleSchema = new mongoose.Schema({
 
 const Role = mongoose.model('Role', RoleSchema);
 
-const ROLE_SERVER_TO_CLIENT_CODE: Record<string, string> = {
-  SUPER_ADMIN: 'R_SUPER',
-  ADMIN: 'R_ADMIN',
-  EDITOR: 'R_EDITOR',
-  USER: 'R_USER'
-}
-
-const ROLE_NAME_TO_CLIENT_CODE: Record<string, string> = {
-  超级管理员: 'R_SUPER',
-  管理员: 'R_ADMIN',
-  编辑: 'R_EDITOR',
-  普通用户: 'R_USER'
-}
-
-const CLIENT_ROLE_CODES = Object.values(ROLE_SERVER_TO_CLIENT_CODE)
-
-const ROLE_PERMISSION_PRESETS: Record<string, string[]> = {
-  SUPER_ADMIN: ['*'],
-  ADMIN: ['user:read', 'user:write', 'article:read', 'article:write', 'category:read', 'category:write'],
-  EDITOR: ['article:read', 'article:write', 'category:read'],
-  USER: ['article:read', 'category:read']
-}
-
-const FULL_ACCESS_BUTTONS = ['add', 'edit', 'delete']
-
-const normalizeClientRoleCode = (roleCode?: string, roleName?: string): string | undefined => {
-  if (roleCode) {
-    const upper = roleCode.toUpperCase()
-    if (CLIENT_ROLE_CODES.includes(upper)) {
-      return upper
-    }
-    if (ROLE_SERVER_TO_CLIENT_CODE[upper]) {
-      return ROLE_SERVER_TO_CLIENT_CODE[upper]
-    }
-  }
-
-  if (roleName && ROLE_NAME_TO_CLIENT_CODE[roleName]) {
-    return ROLE_NAME_TO_CLIENT_CODE[roleName]
-  }
-
-  return undefined
-}
-
-const pickRolePermissions = (roleDoc: any, rawRoleCode: string): string[] => {
-  if (Array.isArray(roleDoc?.permissions) && roleDoc.permissions.length > 0) {
-    return roleDoc.permissions
-  }
-
-  const presetKey = rawRoleCode.toUpperCase()
-  if (ROLE_PERMISSION_PRESETS[presetKey]) {
-    return ROLE_PERMISSION_PRESETS[presetKey]
-  }
-
-  return []
-}
-
-const deriveButtonsFromPermissions = (permissions: string[]): string[] => {
-  if (!Array.isArray(permissions) || permissions.length === 0) {
-    return []
-  }
-
-  if (permissions.includes('*')) {
-    return [...FULL_ACCESS_BUTTONS]
-  }
-
-  const buttonSet = new Set<string>()
-  if (permissions.some((perm) => perm.endsWith(':write'))) {
-    buttonSet.add('add')
-    buttonSet.add('edit')
-  }
-  if (permissions.includes('user:write')) {
-    buttonSet.add('delete')
-  }
-
-  return Array.from(buttonSet)
-}
-
-const resolveUserRoleAccess = async (user: any) => {
-  let roleDoc = null
-  if (typeof user?.roleId === 'number') {
-    roleDoc = await Role.findOne({ roleId: user.roleId })
-  }
-  if (!roleDoc && user?.roleName) {
-    roleDoc = await Role.findOne({ roleName: user.roleName })
-  }
-
-  const clientRoleCode =
-    normalizeClientRoleCode(roleDoc?.roleCode, user?.roleName) ||
-    normalizeClientRoleCode(undefined, user?.roleName) ||
-    'R_USER'
-
-  const rawRoleCode =
-    roleDoc?.roleCode ||
-    clientRoleCode.replace(/^R_/, '').toUpperCase()
-
-  const permissions = pickRolePermissions(roleDoc, rawRoleCode)
-  const buttons = deriveButtonsFromPermissions(permissions)
-
-  return {
-    roleDoc,
-    clientRoleCode,
-    rawRoleCode,
-    permissions,
-    buttons
-  }
-}
-
 // 用户模型
 const UserSchema = new mongoose.Schema({
   userId: { type: Number, required: true, unique: true },
@@ -868,7 +761,7 @@ app.post('/api/articles/:id/like', async (req: Request, res: Response) => {
       // 从token中提取用户标识符
       const tokenParts = authorization.split('-');
       if (tokenParts.length >= 5) {
-        const username = decodeURIComponent(tokenParts.slice(3, -1).join('-'));
+        const username = decodeURIComponent(tokenParts[3]);
         userIdentifier = `user_${username}`;
       }
     }
@@ -924,10 +817,10 @@ app.post('/api/articles/:id/unlike', async (req: Request, res: Response) => {
     // 获取用户标识符（优先使用token中的用户信息，开发环境下避免IP冲突）
     let userIdentifier = clientIP;
     if (authorization && authorization.startsWith('mock-jwt-token-')) {
-      // 从token中提取用户标识符（支持用户名中包含连字符）
+      // 从token中提取用户标识符
       const tokenParts = authorization.split('-');
       if (tokenParts.length >= 5) {
-        const username = decodeURIComponent(tokenParts.slice(3, -1).join('-'));
+        const username = decodeURIComponent(tokenParts[3]);
         userIdentifier = `user_${username}`;
       }
     }
@@ -982,10 +875,10 @@ app.get('/api/articles/:id/like-status', async (req: Request, res: Response) => 
     // 获取用户标识符（优先使用token中的用户信息，开发环境下避免IP冲突）
     let userIdentifier = clientIP;
     if (authorization && authorization.startsWith('mock-jwt-token-')) {
-      // 从token中提取用户标识符（支持用户名中包含连字符）
+      // 从token中提取用户标识符
       const tokenParts = authorization.split('-');
       if (tokenParts.length >= 5) {
-        const username = decodeURIComponent(tokenParts.slice(3, -1).join('-'));
+        const username = decodeURIComponent(tokenParts[3]);
         userIdentifier = `user_${username}`;
       }
     }
@@ -2180,12 +2073,13 @@ app.get('/api/talks/:id/like/status', async (req: Request, res: Response) => {
     const clientIP = normalizeIP(rawIP);
     const authorization = req.get('Authorization') || '';
 
-    // 获取用户标识符（优先使用token中的用户信息，支持用户名内含连字符；否则回退到IP）
+    // 获取用户标识符（优先使用token中的用户信息，开发环境下避免IP冲突）
     let userIdentifier = clientIP;
     if (authorization && authorization.startsWith('mock-jwt-token-')) {
+      // 从token中提取用户标识符
       const tokenParts = authorization.split('-');
       if (tokenParts.length >= 5) {
-        const username = decodeURIComponent(tokenParts.slice(3, -1).join('-'));
+        const username = decodeURIComponent(tokenParts[3]);
         userIdentifier = `user_${username}`;
       }
     }
@@ -2405,40 +2299,38 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
   console.log('请求体:', JSON.stringify(req.body, null, 2));
   console.log('请求头:', JSON.stringify(req.headers, null, 2));
   try {
-    const { username, userName, password, roleCode: requestedRoleCodeInput, roleName: requestedRoleNameInput } = req.body;
-
+    const { username, userName, password } = req.body;
+    
     // 支持前端发送的username字段或后台管理系统的userName字段
     const loginUsername = username || userName;
-    const requestedRoleCode = normalizeClientRoleCode(requestedRoleCodeInput, requestedRoleNameInput);
     console.log('解析的登录用户名:', loginUsername);
     console.log('解析的密码:', password);
-    console.log('所选角色编码:', requestedRoleCode);
-
+    
     if (!loginUsername || !password) {
       console.log('用户名或密码为空，返回400错误');
       return res.status(400).json(createErrorResponse('用户名和密码不能为空', 400));
     }
-
+    
     // 从数据库验证用户
     console.log('开始查找用户:', loginUsername);
     const user = await User.findOne({ username: loginUsername });
-    console.log('数据库查询结果:', user ? {
-      username: user.username,
-      enabled: user.enabled,
+    console.log('数据库查询结果:', user ? { 
+      username: user.username, 
+      enabled: user.enabled, 
       hasPassword: !!user.password,
-      passwordHash: user.password
+      passwordHash: user.password 
     } : '用户不存在');
-
+    
     if (!user) {
       console.log('用户不存在，返回401错误');
       return res.status(401).json(createErrorResponse('用户名或密码错误', 401));
     }
-
+    
     // 验证密码（临时使用明文密码比较进行调试）
     console.log('开始验证密码');
     console.log('输入密码:', password);
     console.log('数据库密码哈希:', user.password);
-
+    
     // 临时调试：检查是否是明文密码
     let isPasswordValid = false;
     if (user.password === password) {
@@ -2455,36 +2347,25 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
         isPasswordValid = user.password === password;
       }
     }
-
+    
     if (!isPasswordValid) {
       console.log('密码验证失败，返回401错误');
       return res.status(401).json(createErrorResponse('用户名或密码错误', 401));
     }
-
+    
     // 检查用户是否被禁用
     if (!user.enabled) {
       return res.status(401).json(createErrorResponse('账户已被禁用', 401));
     }
-
-    const accessPayload = await resolveUserRoleAccess(user);
-
-    if (requestedRoleCode && requestedRoleCode !== accessPayload.clientRoleCode) {
-      console.log('角色校验失败:', {
-        requestedRoleCode,
-        actualRoleCode: accessPayload.clientRoleCode,
-        username: user.username
-      });
-      return res.status(403).json(createErrorResponse('账号与所选角色不匹配，请确认后重试', 403));
-    }
-
+    
     // 更新最后登录时间和IP
     user.lastLoginTime = new Date();
     user.lastLoginIp = req.ip || '';
     await user.save();
-
+    
     const token = 'mock-jwt-token-' + user.username + '-' + Date.now();
     const refreshToken = 'mock-refresh-token-' + user.username + '-' + Date.now();
-
+    
     // 返回登录成功响应，包含用户信息
     res.json(createResponse({
       token,
@@ -2495,15 +2376,10 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
         email: user.email || '',
         avatar: user.avatar || '',
         nickname: user.nickname || user.username,
-        createTime: user.createTime,
-        roleId: user.roleId,
-        roleName: user.roleName,
-        roles: [accessPayload.clientRoleCode],
-        permissions: accessPayload.permissions,
-        buttons: accessPayload.buttons
+        createTime: user.createTime
       }
     }, '登录成功'));
-
+    
   } catch (error: any) {
     console.error('登录失败:', error);
     res.status(500).json(createErrorResponse('登录失败', 500));
@@ -2557,7 +2433,10 @@ app.get(['/api/auth/user-info', '/api/user/info'], async (req: Request, res: Res
       return res.status(404).json(createErrorResponse('用户不存在', 404));
     }
 
-    const accessPayload = await resolveUserRoleAccess(user);
+    // 从角色表获取角色代码和权限
+    const roleDoc = await Role.findOne({ roleId: user.roleId }).lean();
+    let roleCode = roleDoc?.roleCode || (user.roleName === '超级管理员' ? 'R_SUPER' : user.roleName === '管理员' ? 'R_ADMIN' : 'R_USER');
+    const permissions = Array.isArray(roleDoc?.permissions) ? roleDoc!.permissions : ['*'];
 
     const userInfo = {
       userId: user.userId,
@@ -2565,11 +2444,10 @@ app.get(['/api/auth/user-info', '/api/user/info'], async (req: Request, res: Res
       nickname: user.nickname || user.username,
       email: user.email || '',
       avatar: user.avatar || '',
-      roleId: user.roleId,
-      roleName: user.roleName,
-      roles: [accessPayload.clientRoleCode],
-      permissions: accessPayload.permissions,
-      buttons: accessPayload.buttons
+      roleName: roleDoc?.roleName || user.roleName || '',
+      roles: [roleCode],
+      permissions: permissions,
+      buttons: ['add', 'edit', 'delete']
     };
 
     res.json(createResponse(userInfo, '获取用户信息成功'));
@@ -2766,6 +2644,90 @@ app.get(['/api/roles', '/api/role/list'], async (req: Request, res: Response) =>
     res.status(500).json(createErrorResponse('获取角色列表失败', 500));
   }
 });
+
+/**
+ * 创建角色 - 支持多个路径
+ */
+app.post(['/api/roles', '/api/role/create'], async (req: Request, res: Response) => {
+  try {
+    const { roleName, roleCode, description = '', permissions = [], enabled = true } = req.body || {}
+
+    if (!roleName || !roleCode) {
+      return res.status(400).json(createErrorResponse('角色名称或编码不能为空', 400))
+    }
+
+    // 角色编码唯一
+    const existCode = await Role.findOne({ roleCode })
+    if (existCode) {
+      return res.status(400).json(createErrorResponse('角色编码已存在', 400))
+    }
+
+    // 生成新的 roleId
+    const lastRole = await Role.findOne().sort({ roleId: -1 })
+    const newRoleId = lastRole ? lastRole.roleId + 1 : 1
+
+    const now = new Date()
+    const newRole = new Role({
+      roleId: newRoleId,
+      roleName,
+      roleCode,
+      description,
+      permissions: Array.isArray(permissions) ? permissions : [],
+      enabled: Boolean(enabled),
+      createTime: now,
+      updateTime: now
+    })
+
+    await newRole.save()
+
+    res.json(createResponse(newRole, '创建角色成功'))
+  } catch (error: any) {
+    console.error('创建角色失败:', error)
+    res.status(500).json(createErrorResponse('创建角色失败', 500))
+  }
+})
+
+/**
+ * 更新角色 - 支持多个路径
+ */
+app.put(['/api/roles/:id', '/api/role/update/:id'], async (req: Request, res: Response) => {
+  try {
+    const roleId = parseInt(req.params.id)
+    if (isNaN(roleId)) {
+      return res.status(400).json(createErrorResponse('无效的角色ID', 400))
+    }
+
+    const role = await Role.findOne({ roleId })
+    if (!role) {
+      return res.status(404).json(createErrorResponse('角色不存在', 404))
+    }
+
+    const { roleName, roleCode, description, permissions, enabled } = req.body || {}
+
+    // 如果修改了 roleCode，需要校验唯一
+    if (roleCode && roleCode !== role.roleCode) {
+      const existCode = await Role.findOne({ roleCode })
+      if (existCode) {
+        return res.status(400).json(createErrorResponse('角色编码已存在', 400))
+      }
+    }
+
+    const updateData: any = { updateTime: new Date() }
+    if (typeof roleName !== 'undefined') updateData.roleName = roleName
+    if (typeof roleCode !== 'undefined') updateData.roleCode = roleCode
+    if (typeof description !== 'undefined') updateData.description = description
+    if (typeof permissions !== 'undefined') updateData.permissions = Array.isArray(permissions) ? permissions : []
+    if (typeof enabled !== 'undefined') updateData.enabled = Boolean(enabled)
+
+    await Role.updateOne({ roleId }, { $set: updateData })
+
+    const updated = await Role.findOne({ roleId })
+    res.json(createResponse(updated, '更新角色成功'))
+  } catch (error: any) {
+    console.error('更新角色失败:', error)
+    res.status(500).json(createErrorResponse('更新角色失败', 500))
+  }
+})
 
 /**
  * 删除角色 - 支持多个路径

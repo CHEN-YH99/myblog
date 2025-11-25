@@ -141,7 +141,7 @@
   import { useSettingStore } from '@/store/modules/setting'
   import type { FormInstance, FormRules } from 'element-plus'
 
-  type AccountKey = 'super' | 'admin' | 'editor' | 'user'
+  type AccountKey = string
   type RoleListItem = Api.SystemManage.RoleListItem
 
   export interface Account {
@@ -152,39 +152,36 @@
     roleCode: string
   }
 
-  const accounts = computed<Account[]>(() => [
-    {
-      key: 'super',
-      label: t('login.roles.super'),
-      userName: 'superadmin',
-      password: '123456',
-      roleCode: 'SUPER_ADMIN'
-    },
-    {
-      key: 'admin',
-      label: t('login.roles.admin'),
-      userName: 'admin',
-      password: 'Xanxus2979@',
-      roleCode: 'ADMIN'
-    },
-    {
-      key: 'editor',
-      label: t('login.roles.editor'),
-      userName: 'editor',
-      password: '123456',
-      roleCode: 'EDITOR'
-    },
-    {
-      key: 'user',
-      label: t('login.roles.user'),
-      userName: 'user1',
-      password: 'a123456',
-      roleCode: 'USER'
-    }
-  ])
-
+  // 基于后端角色动态生成账号选项，自动匹配预置演示账号
   const roleOptions = ref<RoleListItem[]>([])
   const roleLoading = ref(false)
+
+  const ACCOUNT_PRESETS = computed<Record<string, { label: string; userName: string; password: string }>>(() => ({
+    SUPER_ADMIN: { label: t('login.roles.super'), userName: 'superadmin', password: '123456' },
+    ADMIN: { label: t('login.roles.admin'), userName: 'admin', password: 'Xanxus2979@' },
+    EDITOR: { label: t('login.roles.editor'), userName: 'editor', password: '123456' },
+    USER: { label: t('login.roles.user'), userName: 'user1', password: 'a123456' }
+  }))
+
+  const accounts = computed<Account[]>(() => {
+    if (!roleOptions.value?.length) return []
+    const list: Account[] = []
+    for (const role of roleOptions.value) {
+      if (!role?.enabled) continue
+      const code = String(role.roleCode || '').toUpperCase()
+      const preset = ACCOUNT_PRESETS.value[code]
+      if (preset) {
+        list.push({
+          key: code,
+          label: preset.label || role.roleName,
+          userName: preset.userName,
+          password: preset.password,
+          roleCode: code
+        })
+      }
+    }
+    return list
+  })
 
   const loadRoleOptions = async () => {
     roleLoading.value = true
@@ -251,27 +248,27 @@
 
   onMounted(async () => {
     await loadRoleOptions()
-    // 默认选择普通用户
-    setupAccount('user')
+    // 基于后端角色数据，默认选择普通用户（USER），否则选第一个
+    const defaultItem = accounts.value.find((a) => a.roleCode === 'USER') || accounts.value[0]
+    if (defaultItem) setupAccount(defaultItem.key as AccountKey)
   })
 
-  // 设置账号
-  const setupAccount = (key: AccountKey) => {
-    const selectedAccount = accounts.value.find((account: Account) => account.key === key)
-    formData.account = key
-    formData.username = selectedAccount?.userName ?? ''
-    formData.password = selectedAccount?.password ?? ''
-
-    const preferredRoleCode = selectedAccount?.roleCode
-    if (roleOptions.value.length) {
-      if (preferredRoleCode && roleOptions.value.some((role) => role.roleCode === preferredRoleCode)) {
-        formData.roleCode = preferredRoleCode
-      } else {
-        formData.roleCode = roleOptions.value[0]?.roleCode ?? ''
-      }
-    } else {
-      formData.roleCode = preferredRoleCode ?? ''
+  // 监听角色选项变化，首次加载时自动选择
+  watch(accounts, (val) => {
+    if (!val?.length) return
+    if (!formData.account) {
+      const def = val.find((a) => a.roleCode === 'USER') || val[0]
+      setupAccount(def.key as AccountKey)
     }
+  })
+
+  // 设置账号：根据所选角色填充匹配该角色的账号与密码，并确保角色编码与后端一致
+  const setupAccount = (key: AccountKey) => {
+    const selectedAccount = accounts.value.find((account: Account) => String(account.key).toUpperCase() === String(key).toUpperCase())
+    formData.account = selectedAccount?.key || ''
+    formData.username = selectedAccount?.userName || ''
+    formData.password = selectedAccount?.password || ''
+    formData.roleCode = selectedAccount?.roleCode || ''
   }
 
   // 登录

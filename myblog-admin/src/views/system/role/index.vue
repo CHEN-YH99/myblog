@@ -214,12 +214,19 @@
   }
 
   const handleStatusChange = async (row: RoleListItem, value: boolean) => {
+    console.log('[handleStatusChange] 状态切换被调用')
+    console.log('[handleStatusChange] isReadOnly.value:', isReadOnly.value)
+    console.log('[handleStatusChange] row:', row)
+    console.log('[handleStatusChange] value:', value)
+    
     try {
       const roleId = row.roleId
+      console.log('[handleStatusChange] 调用 fetchUpdateRole，roleId:', roleId, 'enabled:', value)
       await fetchUpdateRole(roleId, { enabled: value })
       row.enabled = value
       ElMessage.success(`角色状态${value ? '启用' : '禁用'}成功`)
     } catch (error) {
+      console.error('[handleStatusChange] 错误:', error)
       ElMessage.error('状态更新失败')
       // 恢复原状态
       row.enabled = !value

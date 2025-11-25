@@ -187,6 +187,9 @@
       } catch (syncErr) {
         console.warn('用户同步到后台失败，但注册已成功：', syncErr)
       }
+      finally {
+        loading.value = false
+      }
 
       ElMessage.success('注册成功')
       toLogin()

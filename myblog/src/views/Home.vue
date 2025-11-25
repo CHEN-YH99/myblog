@@ -14,10 +14,7 @@
     <!-- 内容区域 -->
     <div class="main-content">
       <!-- 回到顶部控件 -->
-      <el-backtop
-        class="backtop animate__animated animate__slideInUp"
-        target="body"
-      />
+      <el-backtop class="backtop animate__animated animate__slideInUp" target="body" />
 
       <!-- 加载状态 -->
       <div v-if="loading" class="loading-container">
@@ -28,16 +25,8 @@
 
       <!-- 错误状态 -->
       <div v-else-if="error" class="error-container">
-        <el-alert
-          title="加载失败"
-          :description="error"
-          type="error"
-          show-icon
-          :closable="false"
-        />
-        <el-button type="primary" @click="retryLoadData" class="retry-btn">
-          重新加载
-        </el-button>
+        <el-alert title="加载失败" :description="error" type="error" show-icon :closable="false" />
+        <el-button type="primary" @click="retryLoadData" class="retry-btn">重新加载</el-button>
       </div>
 
       <!-- 正常内容 -->
@@ -83,22 +72,13 @@
 
                 <div class="article-meta">
                   <span v-if="article.isTop" class="meta-item">📌 置顶</span>
-                  <span class="meta-item"
-                    >📅 发表于 {{ formatDate(article.publishDate) }}</span
-                  >
-
-                  <span class="meta-item"
-                    >🔄 更新于 {{ formatDate(article.updateDate) }}</span
-                  >
+                  <span class="meta-item">📅 发表于 {{ formatDate(article.publishDate) }}</span>
+                  <span class="meta-item">🔄 更新于 {{ formatDate(article.updateDate) }}</span>
                 </div>
 
                 <div class="article-tags">
                   <template
-                    v-if="
-                      article.tags &&
-                      Array.isArray(article.tags) &&
-                      article.tags.length
-                    "
+                    v-if="article.tags && Array.isArray(article.tags) && article.tags.length"
                   >
                     <span
                       class="tag"
@@ -162,12 +142,7 @@
             <!-- 右侧个人信息栏 -->
             <div class="about-me">
               <el-image :src="url" :fit="fit" lazy />
-              <el-avatar
-                class="avatar"
-                shape="circle"
-                size="large"
-                :src="url"
-              />
+              <el-avatar class="avatar" shape="circle" size="large" :src="url" />
               <h5>小灰的个人博客</h5>
               <div class="pub about-me-content">
                 <p>👋 写出<i>HelloWord你就可以拿高薪了</i></p>
@@ -186,10 +161,7 @@
               <div class="my-tags">
                 <button class="custom-gitee-btn" @click="openGitee">
                   <el-icon class="icon" size="18">
-                    <svg
-                      viewBox="0 0 1024 1024"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
+                    <svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
                       <path
                         fill="currentColor"
                         d="M512 1024C229.222 1024 0 794.778 0 512S229.222 0 512 0s512 229.222 512 512-229.222 512-512 512z m259.149-568.883h-290.74a25.293 25.293 0 0 0-25.292 25.293l-0.026 63.206c0 13.952 11.315 25.293 25.267 25.293h177.024c13.978 0 25.293 11.315 25.293 25.267v12.646a75.853 75.853 0 0 1-75.853 75.853h-240.23a25.293 25.293 0 0 1-25.267-25.293V417.203a75.853 75.853 0 0 1 75.827-75.853h353.946a25.293 25.293 0 0 0 25.267-25.292l0.077-63.207a25.293 25.293 0 0 0-25.268-25.293H417.152a189.62 189.62 0 0 0-189.62 189.645V771.15c0 13.977 11.316 25.293 25.294 25.293h372.94a170.65 170.65 0 0 0 170.65-170.65V480.384a25.293 25.293 0 0 0-25.293-25.267z"
@@ -200,16 +172,8 @@
                 </button>
               </div>
               <div class="my-links">
-                <img
-                  src="../assets/images/csdn.svg"
-                  alt="CSDN"
-                  @click="openLink('csdn')"
-                />
-                <img
-                  src="../assets/images/github.svg"
-                  alt="GitHub"
-                  @click="openLink('github')"
-                />
+                <img src="../assets/images/csdn.svg" alt="CSDN" @click="openLink('csdn')" />
+                <img src="../assets/images/github.svg" alt="GitHub" @click="openLink('github')" />
                 <img
                   src="../assets/images/哔哩哔哩.svg"
                   alt="哔哩哔哩"
@@ -327,7 +291,19 @@ const onToggleLike = async (id: string) => {
       ElMessage.warning('请先登录后再进行点赞')
       return
     }
+
+    // 点赞前状态
+    const prevLiked = likedIds.value.includes(id)
+
     await articlesStore.toggleLike(id)
+
+    // 点赞后状态（与 Home 页面使用同一来源）
+    const nowLiked = likedIds.value.includes(id)
+
+    // 仅在状态发生变化时提示
+    if (nowLiked !== prevLiked) {
+      ElMessage.success(nowLiked ? '点赞成功' : '已取消点赞')
+    }
   } catch (error: any) {
     const msg = error?.message || '操作失败，请重试'
     ElMessage.error(msg)

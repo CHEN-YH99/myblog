@@ -45,8 +45,8 @@
       
       <ElFormItem label="状态" prop="status">
         <ElRadioGroup v-model="formData.status">
-          <ElRadio :label="1">启用</ElRadio>
-          <ElRadio :label="0">禁用</ElRadio>
+          <ElRadio :value="1">启用</ElRadio>
+          <ElRadio :value="0">禁用</ElRadio>
         </ElRadioGroup>
       </ElFormItem>
       
@@ -116,7 +116,7 @@ interface UserForm {
   email: string
   nickname: string
   password?: string
-  status: number
+  status: number // 1=启用, 0=禁用
   roleIds: number[]
 }
 
@@ -201,7 +201,48 @@ const dialogTitle = computed(() => {
 
 watch(() => props.visible, (val) => {
   if (val && props.userData) {
-    Object.assign(formData, props.userData)
+    // 编辑模式：统一将传入的 userData 映射为表单所需字段
+    const raw = props.userData as any
+    const mappedData: any = { ...raw }
+
+    // ID 映射：优先使用 id，否则使用 userId
+    mappedData.id = raw.id ?? raw.userId
+
+    // 基本信息映射：后端/表格字段 -> 表单字段
+    mappedData.username = raw.username ?? raw.userName ?? formData.username
+    mappedData.email = raw.email ?? raw.userEmail ?? formData.email
+    mappedData.nickname = raw.nickname ?? raw.nickName ?? formData.nickname
+
+    // 状态映射：
+    // - 后端 enabled:boolean -> 表单 status: 1/0
+    // - 表格 status:'1'|'2'|'4' -> 表单 status: 1(启用) / 0(禁用)
+    if (typeof raw.enabled === 'boolean') {
+      mappedData.status = raw.enabled ? 1 : 0
+    } else if (raw.status !== undefined) {
+      mappedData.status = String(raw.status) === '4' ? 0 : 1
+    } else {
+      mappedData.status = formData.status
+    }
+
+    // 角色映射：
+    // 1) 已有 roleIds 直接用
+    // 2) 有 roleId（单个） -> [roleId]
+    // 3) 表格 userRoles 为角色名数组 -> 通过 roleList 名称匹配出 roleId 数组
+    if (Array.isArray(raw.roleIds) && raw.roleIds.length) {
+      mappedData.roleIds = raw.roleIds
+    } else if (typeof raw.roleId === 'number') {
+      mappedData.roleIds = [raw.roleId]
+    } else if (Array.isArray(raw.userRoles) && raw.userRoles.length) {
+      const nameSet = new Set(raw.userRoles)
+      mappedData.roleIds = props.roleList
+        .filter((r) => nameSet.has(r.roleName))
+        .map((r) => r.roleId)
+    } else {
+      mappedData.roleIds = formData.roleIds
+    }
+
+    console.log('加载用户数据 -> 原始:', raw, ' 映射后:', mappedData)
+    Object.assign(formData, mappedData)
   } else if (val) {
     resetForm()
   }
@@ -232,8 +273,13 @@ const handleConfirm = async () => {
     const submitData = { ...formData }
     if (props.dialogType === 'edit') {
       delete submitData.password
+      // 编辑模式下，添加用户ID
+      if (props.userData?.id) {
+        submitData.id = props.userData.id
+      }
     }
     
+    console.log('表单提交数据:', submitData)
     emit('confirm', submitData)
   } catch (error) {
     console.error('表单验证失败:', error)

@@ -20,9 +20,7 @@ export const getPhotoCategories = (
  * @param id 分类ID
  * @returns 图片分类详情
  */
-export const getPhotoCategoryDetail = (
-  id: string,
-): Promise<Api.PhotoCategory.DetailResponse> => {
+export const getPhotoCategoryDetail = (id: string): Promise<Api.PhotoCategory.DetailResponse> => {
   return http.request<Api.PhotoCategory.DetailResponse>({
     url: `/api/photo-categories/${id}`,
     method: 'GET',

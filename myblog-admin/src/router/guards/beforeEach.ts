@@ -111,10 +111,15 @@ async function handleRouteGuard(
       return
     }
 
-    const userRoles = userStore.info.roles || []
-    const hasPermission = requiredRoles.some((role) => userRoles.includes(role))
+    const userRolesSet = getUserRoleTokens()
+    
+    // 超级管理员可以访问所有需要权限的路由
+    const isSuperAdmin = userRolesSet.has('R_SUPER') || userRolesSet.has('SUPER')
+    
+    // 检查权限：超级管理员或只读用户或拥有所需角色
+    const hasPermission = isSuperAdmin || userStore.isReadOnly || requiredRoles.some((role: string) => userRolesSet.has(role))
     if (!hasPermission) {
-      next(RoutesAlias.Exception403)
+      next('/exception/403')
       return
     }
   }
@@ -139,7 +144,7 @@ async function handleRouteGuard(
   }
 
   // 未匹配到路由，跳转到 404
-  next(RoutesAlias.Exception404)
+  next('/exception/404')
 }
 
 /**
@@ -225,13 +230,17 @@ async function getMenuData(router: Router): Promise<void> {
 async function processFrontendMenu(router: Router): Promise<void> {
   const menuList = asyncRoutes.map((route) => menuDataToRouter(route))
   const userStore = useUserStore()
-  const roles = userStore.info.roles
+  const userRolesSet = getUserRoleTokens()
 
-  if (!roles) {
+  if (!userRolesSet || userRolesSet.size === 0) {
     throw new Error('获取用户角色失败')
   }
 
-  const filteredMenuList = filterMenuByRoles(menuList, roles)
+  // 检查是否为超级管理员
+  const isSuperAdmin = userRolesSet.has('R_SUPER') || userRolesSet.has('SUPER')
+
+  // 只读用户（普通用户）放开菜单可见性，允许访问所有菜单；超级管理员也可以访问所有菜单；其余按角色过滤
+  const filteredMenuList = (userStore.isReadOnly || isSuperAdmin) ? menuList : filterMenuByRoles(menuList, Array.from(userRolesSet))
 
   // 添加延时以提升用户体验
   await new Promise((resolve) => setTimeout(resolve, LOADING_DELAY))
@@ -308,9 +317,22 @@ function handleMenuError(error: unknown): void {
  * 根据角色过滤菜单
  */
 const filterMenuByRoles = (menu: AppRouteRecord[], roles: string[]): AppRouteRecord[] => {
+  // 规范化角色列表，将角色名称转换为角色代码
+  const normalizedRoles = normalizeRoles(roles)
+  
+  // 检查是否为超级管理员
+  const isSuperAdmin = normalizedRoles.has('R_SUPER') || normalizedRoles.has('SUPER')
+  
   return menu.reduce((acc: AppRouteRecord[], item) => {
     const itemRoles = item.meta?.roles
-    const hasPermission = !itemRoles || itemRoles.some((role) => roles?.includes(role))
+    
+    // 超级管理员可以访问所有菜单
+    let hasPermission = isSuperAdmin
+    
+    // 如果不是超级管理员，则检查角色权限
+    if (!hasPermission) {
+      hasPermission = !itemRoles || itemRoles.some((role: string) => normalizedRoles.has(role))
+    }
 
     if (hasPermission) {
       const filteredItem = { ...item }
@@ -322,6 +344,75 @@ const filterMenuByRoles = (menu: AppRouteRecord[], roles: string[]): AppRouteRec
 
     return acc
   }, [])
+}
+
+/**
+ * 规范化角色列表
+ * 将角色名称转换为角色代码，支持多种格式
+ */
+type RoleInput = string | { roleCode?: string; code?: string; roleName?: string; name?: string }
+const normalizeRoles = (roles: RoleInput[]): Set<string> => {
+  const normalized = new Set<string>()
+
+  const pushByName = (name: string) => {
+    const n = name.trim()
+    const up = n.toUpperCase()
+    normalized.add(up)
+    // 映射常见别名与中文
+    if (up === '超级管理员' || up === 'SUPER_ADMIN' || up === 'SUPERADMIN' || up === 'SUPER') {
+      normalized.add('R_SUPER')
+      normalized.add('SUPER')
+      normalized.add('SUPER_ADMIN')
+    } else if (up === '管理员' || up === 'ADMIN') {
+      normalized.add('R_ADMIN')
+      normalized.add('ADMIN')
+    } else if (up === '普通用户' || up === 'USER') {
+      normalized.add('R_USER')
+      normalized.add('USER')
+    }
+  }
+
+  roles?.forEach((role) => {
+    if (!role) return
+    if (typeof role === 'string') {
+      pushByName(role)
+    } else if (typeof role === 'object') {
+      const code = (role as any).roleCode || (role as any).code
+      const name = (role as any).roleName || (role as any).name
+      if (code) pushByName(String(code))
+      if (name) pushByName(String(name))
+    } else {
+      pushByName(String(role))
+    }
+  })
+
+  return normalized
+}
+
+/**
+ * 从用户信息构建角色令牌集合
+ * 统一收敛不同来源（roles 字符串数组、userRoles 对象数组、roleCode/roleName 单字段）
+ */
+interface MaybeUserInfo {
+  roles?: string[]
+  userRoles?: Array<string | { roleCode?: string; roleName?: string }>
+  roleCode?: string
+  roleName?: string
+}
+function getUserRoleTokens(): Set<string> {
+  const userStore = useUserStore()
+  const info = (userStore.info || {}) as MaybeUserInfo
+
+  const raw: RoleInput[] = []
+  // 1) roles: string[]
+  if (Array.isArray(info.roles)) raw.push(...info.roles)
+  // 2) userRoles: [{ roleCode, roleName } | string]
+  if (Array.isArray(info.userRoles)) raw.push(...(info.userRoles as RoleInput[]))
+  // 3) 单字段
+  if (info.roleCode) raw.push(String(info.roleCode))
+  if (info.roleName) raw.push(String(info.roleName))
+
+  return normalizeRoles(raw)
 }
 
 /**
