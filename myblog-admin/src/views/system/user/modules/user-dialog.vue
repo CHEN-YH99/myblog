@@ -59,11 +59,41 @@
         >
           <ElOption
             v-for="role in roleList"
-            :key="role.id"
-            :label="role.name"
-            :value="role.id"
-          />
+            :key="role.roleId"
+            :label="role.roleName"
+            :value="role.roleId"
+          >
+            <div class="role-option">
+              <span class="role-option__name">{{ role.roleName }}</span>
+              <span class="role-option__desc">{{ role.description }}</span>
+            </div>
+          </ElOption>
         </ElSelect>
+      </ElFormItem>
+
+      <ElFormItem v-if="selectedRoles.length" label="角色权限">
+        <div class="role-permissions">
+          <div
+            v-for="role in selectedRoles"
+            :key="role.roleId"
+            class="role-permissions__item"
+          >
+            <div class="role-permissions__title">
+              {{ role.roleName }}
+              <span class="role-permissions__desc">{{ role.description }}</span>
+            </div>
+            <div class="role-permissions__tags">
+              <ElTag
+                v-for="permission in (role.permissions?.length ? role.permissions : ['*'])"
+                :key="permission"
+                size="small"
+                effect="light"
+              >
+                {{ formatPermissionLabel(permission) }}
+              </ElTag>
+            </div>
+          </div>
+        </div>
       </ElFormItem>
     </ElForm>
     
@@ -78,7 +108,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, watch } from 'vue'
-import { ElDialog, ElForm, ElFormItem, ElInput, ElRadioGroup, ElRadio, ElSelect, ElOption, ElButton, ElMessage } from 'element-plus'
+import { ElDialog, ElForm, ElFormItem, ElInput, ElRadioGroup, ElRadio, ElSelect, ElOption, ElButton, ElMessage, ElTag } from 'element-plus'
 
 interface UserForm {
   id?: number
@@ -91,8 +121,11 @@ interface UserForm {
 }
 
 interface Role {
-  id: number
-  name: string
+  roleId: number
+  roleName: string
+  roleCode: string
+  description: string
+  permissions: string[]
 }
 
 const props = defineProps<{
@@ -138,6 +171,28 @@ const rules = {
   status: [
     { required: true, message: '请选择状态', trigger: 'change' }
   ]
+}
+
+const permissionLabelMap: Record<string, string> = {
+  '*': '全部权限',
+  'user:read': '查看用户',
+  'user:write': '管理用户',
+  'article:read': '查看文章',
+  'article:write': '管理文章',
+  'category:read': '查看分类',
+  'category:write': '管理分类'
+}
+
+const selectedRoles = computed(() => {
+  if (!Array.isArray(formData.roleIds) || formData.roleIds.length === 0) {
+    return []
+  }
+  const idMap = new Set(formData.roleIds)
+  return props.roleList.filter((role) => idMap.has(role.roleId))
+})
+
+const formatPermissionLabel = (permission: string) => {
+  return permissionLabelMap[permission] || permission
 }
 
 const dialogTitle = computed(() => {
@@ -191,5 +246,52 @@ const handleConfirm = async () => {
 <style scoped>
 .el-form-item {
   margin-bottom: 20px;
+}
+
+.role-option {
+  display: flex;
+  flex-direction: column;
+}
+
+.role-option__name {
+  font-weight: 500;
+  color: var(--el-text-color-primary);
+}
+
+.role-option__desc {
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
+
+.role-permissions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.role-permissions__item {
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--el-fill-color-light);
+}
+
+.role-permissions__title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--el-text-color-primary);
+}
+
+.role-permissions__desc {
+  margin-left: 8px;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--el-text-color-secondary);
+}
+
+.role-permissions__tags {
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 </style>

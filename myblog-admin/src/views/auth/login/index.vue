@@ -119,7 +119,7 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, reactive, computed, nextTick } from 'vue'
+  import { ref, reactive, computed, onMounted, watch } from 'vue'
   import { storeToRefs } from 'pinia'
   import { useRouter } from 'vue-router'
   import AppConfig from '@/config'
@@ -133,6 +133,7 @@
   import { HttpError } from '@/utils/http/error'
   import { themeAnimation } from '@/utils/theme/animation'
   import { fetchLogin, fetchGetUserInfo } from '@/api/auth'
+  import { fetchGetRoleList } from '@/api/system-manage'
 
   defineOptions({ name: 'Login' })
 
@@ -140,14 +141,15 @@
   import { useSettingStore } from '@/store/modules/setting'
   import type { FormInstance, FormRules } from 'element-plus'
 
-  type AccountKey = 'super' | 'admin' | 'user'
+  type AccountKey = 'super' | 'admin' | 'editor' | 'user'
+  type RoleListItem = Api.SystemManage.RoleListItem
 
   export interface Account {
     key: AccountKey
     label: string
     userName: string
     password: string
-    roles: string[]
+    roleCode: string
   }
 
   const accounts = computed<Account[]>(() => [
@@ -156,23 +158,50 @@
       label: t('login.roles.super'),
       userName: 'superadmin',
       password: '123456',
-      roles: ['R_SUPER']
+      roleCode: 'SUPER_ADMIN'
     },
     {
       key: 'admin',
       label: t('login.roles.admin'),
       userName: 'admin',
       password: 'Xanxus2979@',
-      roles: ['R_ADMIN']
+      roleCode: 'ADMIN'
+    },
+    {
+      key: 'editor',
+      label: t('login.roles.editor'),
+      userName: 'editor',
+      password: '123456',
+      roleCode: 'EDITOR'
     },
     {
       key: 'user',
       label: t('login.roles.user'),
       userName: 'user1',
       password: 'a123456',
-      roles: ['R_USER']
+      roleCode: 'USER'
     }
   ])
+
+  const roleOptions = ref<RoleListItem[]>([])
+  const roleLoading = ref(false)
+
+  const loadRoleOptions = async () => {
+    roleLoading.value = true
+    try {
+      const res = await fetchGetRoleList({
+        current: 1,
+        size: 200,
+        enabled: true
+      })
+      roleOptions.value = (res?.records || []).filter((role) => role.enabled)
+    } catch (error) {
+      console.error('[Login] 获取角色列表失败', error)
+      ElMessage.error('获取角色列表失败，请稍后重试')
+    } finally {
+      roleLoading.value = false
+    }
+  }
 
   const settingStore = useSettingStore()
   const { isDark } = storeToRefs(settingStore)
@@ -191,17 +220,37 @@
     account: '',
     username: '',
     password: '',
+    roleCode: '',
     rememberPassword: true
+  })
+
+  const ensureRoleSelectionValid = () => {
+    if (!roleOptions.value.length) {
+      if (formData.roleCode) {
+        formData.roleCode = ''
+      }
+      return
+    }
+    const exists = roleOptions.value.some((role) => role.roleCode === formData.roleCode)
+    if (!exists) {
+      formData.roleCode = roleOptions.value[0].roleCode
+    }
+  }
+
+  watch(roleOptions, () => {
+    ensureRoleSelectionValid()
   })
 
   const rules = computed<FormRules>(() => ({
     username: [{ required: true, message: t('login.placeholder[0]'), trigger: 'blur' }],
-    password: [{ required: true, message: t('login.placeholder[1]'), trigger: 'blur' }]
+    password: [{ required: true, message: t('login.placeholder[1]'), trigger: 'blur' }],
+    roleCode: [{ required: true, message: '请选择登录角色', trigger: 'change' }]
   }))
 
   const loading = ref(false)
 
-  onMounted(() => {
+  onMounted(async () => {
+    await loadRoleOptions()
     // 默认选择普通用户
     setupAccount('user')
   })
@@ -212,6 +261,17 @@
     formData.account = key
     formData.username = selectedAccount?.userName ?? ''
     formData.password = selectedAccount?.password ?? ''
+
+    const preferredRoleCode = selectedAccount?.roleCode
+    if (roleOptions.value.length) {
+      if (preferredRoleCode && roleOptions.value.some((role) => role.roleCode === preferredRoleCode)) {
+        formData.roleCode = preferredRoleCode
+      } else {
+        formData.roleCode = roleOptions.value[0]?.roleCode ?? ''
+      }
+    } else {
+      formData.roleCode = preferredRoleCode ?? ''
+    }
   }
 
   // 登录
@@ -232,7 +292,15 @@
       loading.value = true
 
       // 登录请求
-      const { username, password } = formData
+      const { username, password, roleCode } = formData
+      if (!roleCode) {
+        ElMessage.warning('请选择登录角色')
+        loading.value = false
+        resetDragVerify()
+        return
+      }
+
+      const loginPayload = { username, password, roleCode }
 
       let token: string | undefined
       let refreshToken: string | undefined
@@ -240,7 +308,7 @@
 
       // 优先使用封装的请求
       try {
-        const res = await fetchLogin({ username, password })
+        const res = await fetchLogin(loginPayload)
         token = res.token
         refreshToken = res.refreshToken
       } catch (err) {
@@ -252,7 +320,7 @@
           const resp = await fetch('/api/auth/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, password })
+            body: JSON.stringify(loginPayload)
           })
           if (!resp.ok) {
             // 如果代理仍不可用，直接请求后端地址（已启用CORS）
@@ -260,7 +328,7 @@
             const directResp = await fetch(directUrl, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ username, password })
+              body: JSON.stringify(loginPayload)
             })
             if (!directResp.ok) throw new Error('登录失败')
             const directJson = await directResp.json()
@@ -337,7 +405,7 @@
     } catch (error) {
       // 处理 HttpError
       if (error instanceof HttpError) {
-        // console.log(error.code)
+        ElMessage.error(error.message || '登录失败，请稍后重试')
       } else {
         // 处理非 HttpError
         ElMessage.error('登录失败，请稍后重试')

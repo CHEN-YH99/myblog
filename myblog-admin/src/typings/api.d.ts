@@ -39,6 +39,7 @@ declare namespace Api {
     interface LoginParams {
       username: string
       password: string
+      roleCode?: string
     }
 
     /** 登录响应 */
@@ -49,12 +50,17 @@ declare namespace Api {
 
     /** 用户信息 */
     interface UserInfo {
-      buttons: string[]
-      roles: string[]
       userId: number
       userName: string
+      nickname?: string
       email: string
       avatar?: string
+      roleId?: number
+      roleName?: string
+      roles: string[]
+      permissions: string[]
+      buttons: string[]
+      createTime?: string
     }
   }
 
@@ -100,6 +106,7 @@ declare namespace Api {
       roleName: string
       roleCode: string
       description: string
+      permissions: string[]
       enabled: boolean
       createTime: string
     }

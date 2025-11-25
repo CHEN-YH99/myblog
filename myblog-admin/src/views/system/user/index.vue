@@ -4,9 +4,6 @@
 <!-- 更多 useTable 使用示例请移步至 功能示例 下面的 高级表格示例 -->
 <template>
   <div class="user-page art-full-height">
-    <!-- 搜索栏 -->
-    <UserSearch v-model="searchForm" @search="handleSearch" @reset="resetSearchParams"></UserSearch>
-
     <ElCard class="art-table-card" shadow="never">
       <!-- 表格头部 -->
   <ArtTableHeader v-model:columns="columnChecks" :loading="loading" @refresh="refreshData">
@@ -83,12 +80,11 @@
   import AvatarUpload from '@/components/AvatarUpload.vue'
   import { ElMessageBox, ElMessage, ElTag, ElImage } from 'element-plus'
   import { useTable } from '@/composables/useTable'
-  import { fetchGetUserList, fetchDeleteUser, fetchUpdateUser } from '@/api/system-manage'
-  import UserSearch from './modules/user-search.vue'
+  import { fetchGetUserList, fetchDeleteUser, fetchUpdateUser, fetchGetRoleList } from '@/api/system-manage'
   import UserDialog from './modules/user-dialog.vue'
   import { useUserStore } from '@/store/modules/user'
   import { storeToRefs } from 'pinia'
-  import { getDefaultAvatar, getUserStatusConfig, GENDER_MAP, formatDate } from '@shared/utils/user'
+  import { getDefaultAvatar, getUserStatusConfig, formatDate } from '@shared/utils/user'
 
   // 用户头像数据 - 实际项目中应从API获取
   const ACCOUNT_TABLE_DATA = ref([])
@@ -96,6 +92,13 @@
   defineOptions({ name: 'User' })
 
   type UserListItem = Api.SystemManage.UserListItem
+  interface RoleOption {
+    roleId: number
+    roleName: string
+    roleCode: string
+    description: string
+    permissions: string[]
+  }
 
   // 只读状态
   const { isReadOnly } = storeToRefs(useUserStore())
@@ -113,24 +116,40 @@
   const selectedRows = ref<UserListItem[]>([])
 
   // 角色列表
-  const roleList = ref([])
+  const roleList = ref<RoleOption[]>([])
 
-  // 搜索表单
-  const searchForm = ref({
-    name: undefined,
-    level: 'vip',
-    date: undefined,
-    daterange: undefined,
-    status: undefined
+  const REGISTER_SOURCE_LABELS: Record<string, string> = {
+    frontend: '客户端',
+    myblog: '客户端',
+    client: '客户端',
+    admin: '管理端',
+    backend: '管理端',
+    'myblog-admin': '管理端',
+    other: '其他'
+  }
+
+  const loadRoleOptions = async () => {
+    try {
+      const res = await fetchGetRoleList({
+        current: 1,
+        size: 1000
+      })
+      roleList.value = (res?.records || []).map((role) => ({
+        roleId: role.roleId,
+        roleName: role.roleName,
+        roleCode: role.roleCode,
+        description: role.description,
+        permissions: Array.isArray(role.permissions) ? role.permissions : []
+      }))
+    } catch (error) {
+      console.error('获取角色列表失败:', error)
+      ElMessage.error('获取角色列表失败，请稍后重试')
+    }
+  }
+
+  onMounted(() => {
+    loadRoleOptions()
   })
-
-  // 用户状态配置
-  const USER_STATUS_CONFIG = {
-    '1': { type: 'success' as const, text: '在线' },
-    '2': { type: 'info' as const, text: '离线' },
-    '3': { type: 'warning' as const, text: '异常' },
-    '4': { type: 'danger' as const, text: '注销' }
-  } as const
 
   // 生成默认头像（用户名首字母头像）
   // 使用共享的用户工具函数
@@ -141,9 +160,6 @@
     data,
     loading,
     pagination,
-    getData,
-    searchParams,
-    resetSearchParams,
     handleSizeChange,
     handleCurrentChange,
     refreshData
@@ -153,11 +169,8 @@
       apiFn: fetchGetUserList,
       apiParams: {
         current: 1,
-        size: 20,
-        ...searchForm.value
+        size: 20
       },
-      // 排除 apiParams 中的属性
-      excludeParams: ['daterange'],
       columnsFactory: () => [
         { type: 'selection' }, // 勾选列
         { type: 'index', width: 60, label: '序号' }, // 序号
@@ -211,8 +224,8 @@
           label: '注册来源',
           width: 100,
           formatter: (row) => {
-            const map: Record<string, string> = { frontend: '客户端', admin: '管理端', other: '其他' }
-            return map[row.registerSource as string] || '未知'
+            const sourceKey = row.registerSource ? String(row.registerSource).toLowerCase() : 'other'
+            return REGISTER_SOURCE_LABELS[sourceKey] || '其他'
           }
         },
         {
@@ -284,6 +297,7 @@
 
         // 映射后端数据字段到前端需要的格式
         const transformedData = records.map((item: any, index: number) => {
+          const status = !item.enabled ? '4' : item.lastLoginTime ? '1' : '2'
           const transformed = {
             ...item,
             id: item.userId, // 将后端的userId映射为前端需要的id
@@ -292,9 +306,10 @@
             userEmail: item.email, // 将后端的email映射为前端需要的userEmail
             userPhone: item.phone, // 将后端的phone映射为前端需要的userPhone
             userGender: item.gender || 'male', // 设置默认性别
-            status: item.enabled ? '1' : '2', // 将enabled状态映射为前端的status格式
+            status, // 登录状态：有登录记录视为在线，否则离线
             userRoles: [item.roleName], // 将角色名称包装为数组
-            registerSource: item.registerSource || 'other',
+            registerSource: item.registerSource || 'frontend',
+            lastLoginTime: item.lastLoginTime,
             createBy: 'system', // 设置默认创建者
             updateBy: 'system', // 设置默认更新者
             // 安全的头像回退：后端头像为空时根据用户名生成默认头像
@@ -310,24 +325,13 @@
   })
 
   /**
-   * 搜索处理
-   * @param params 参数
-   */
-  const handleSearch = (params: Record<string, any>) => {
-    // 处理日期区间参数，把 daterange 转换为 startTime 和 endTime
-    const { daterange, ...filtersParams } = params
-    const [startTime, endTime] = Array.isArray(daterange) ? daterange : [null, null]
-
-    // 搜索参数赋值
-    Object.assign(searchParams, { ...filtersParams, startTime, endTime })
-    getData()
-  }
-
-  /**
    * 显示用户弹窗
    */
-  const showDialog = (type: Form.DialogType, row?: UserListItem): void => {
+  const showDialog = async (type: Form.DialogType, row?: UserListItem): Promise<void> => {
     console.log('打开弹窗:', { type, row })
+    if (!roleList.value.length) {
+      await loadRoleOptions()
+    }
     dialogType.value = type
     currentUserData.value = row || {}
     nextTick(() => {
