@@ -2,10 +2,10 @@
   <el-row :gutter="20" class="card-list">
     <el-col v-for="(item, index) in dataList" :key="index" :sm="12" :md="6" :lg="6">
       <div class="card art-custom-card">
-        <span class="des subtitle">{{ item.des }}</span>
+        <span class="des subtitle">{{ $t(item.desKey) }}</span>
         <ArtCountTo class="number box-title" :target="item.num" :duration="1300" />
         <div class="change-box">
-          <span class="change-text">较上周</span>
+          <span class="change-text">{{$t('dashboard.cardList.weekCompared')}}</span>
           <span
             class="change"
             :class="[item.change.indexOf('+') === -1 ? 'text-danger' : 'text-success']"
@@ -29,7 +29,7 @@
 
   const dataList = reactive([
     {
-      des: '总访问次数',
+      desKey: 'dashboard.cardList.totalVisits',
       icon: '&#xe7aa;',
       startVal: 0,
       duration: 1000,
@@ -37,7 +37,7 @@
       change: '+0%'
     },
     {
-      des: '文章总数',
+      desKey: 'dashboard.cardList.totalArticles',
       icon: '&#xe82a;',
       startVal: 0,
       duration: 1000,
@@ -45,7 +45,7 @@
       change: '+0%'
     },
     {
-      des: '文章分类',
+      desKey: 'dashboard.cardList.totalCategories',
       icon: '&#xe721;',
       startVal: 0,
       duration: 1000,
@@ -53,7 +53,7 @@
       change: '+0%'
     },
     {
-      des: '用户总数',
+      desKey: 'dashboard.cardList.totalUsers',
       icon: '&#xe724;',
       startVal: 0,
       duration: 1000,

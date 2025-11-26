@@ -8,13 +8,13 @@
             v-model="searchVal"
             :prefix-icon="Search"
             clearable
-            placeholder="输入说说内容查询"
+            :placeholder="$t('talk.searchPlaceholder')"
             @keyup.enter="searchTalk"
             @clear="onSearchClear"
             @input="onSearchInput"
             style="flex: 1"
           />
-          <ElButton @click="searchTalk" :disabled="isLoading">搜索</ElButton>
+          <ElButton @click="searchTalk" :disabled="isLoading">{{$t('talk.actions.search')}}</ElButton>
         </div>
       </ElCol>
       <ElCol :lg="8" :md="8" :sm="0" :xs="0">
@@ -27,10 +27,10 @@
         </div>
       </ElCol>
       <ElCol :lg="8" :md="8" :sm="10" :xs="8" style="display: flex; justify-content: end; gap: 8px">
-        <ElButton @click="resetFilters" :disabled="isLoading">重置</ElButton>
+        <ElButton @click="resetFilters" :disabled="isLoading">{{$t('talk.actions.reset')}}</ElButton>
         <ElButton type="primary" @click="toPublishTalk">
           <ElIcon><Plus /></ElIcon>
-          发表说说
+          {{$t('talk.actions.publish')}}
         </ElButton>
       </ElCol>
     </ElRow>
@@ -38,7 +38,7 @@
     <!-- 批量操作栏 -->
     <transition name="slide-down">
       <div v-if="selectedTalks.length > 0" class="batch-operation-bar">
-        <div class="batch-info">已选择 {{ selectedTalks.length }} 条说说</div>
+        <div class="batch-info">{{ $t('talk.batch.selectedInfo', { count: selectedTalks.length }) }}</div>
         <div class="batch-actions">
           <ElButton 
             v-if="currentStatus !== 'deleted'" 
@@ -46,7 +46,7 @@
             @click="batchDelete" 
             :loading="batchLoading"
           >
-            批量删除
+            {{$t('talk.actions.batchDelete')}}
           </ElButton>
           <ElButton 
             v-if="currentStatus === 'deleted'" 
@@ -54,7 +54,7 @@
             @click="batchRestore" 
             :loading="batchLoading"
           >
-            批量恢复
+            {{$t('talk.actions.batchRestore')}}
           </ElButton>
           <ElButton 
             v-if="currentStatus === 'deleted'" 
@@ -62,21 +62,21 @@
             @click="batchPermanentDelete" 
             :loading="batchLoading"
           >
-            永久删除
+            {{$t('talk.actions.batchPermanentDelete')}}
           </ElButton>
           <ElButton 
             v-if="currentStatus !== 'deleted'" 
             @click="batchToggleTop" 
             :loading="batchLoading"
           >
-            批量置顶/取消置顶
+            {{$t('talk.actions.batchToggleTop')}}
           </ElButton>
           <ElButton 
             v-if="currentStatus === 'public'" 
             @click="batchToggleHide" 
             :loading="batchLoading"
           >
-            批量隐藏/显示
+            {{$t('talk.actions.batchToggleHide')}}
           </ElButton>
         </div>
       </div>
@@ -93,7 +93,7 @@
       >
         <ElTableColumn type="selection" width="55" />
         
-        <ElTableColumn label="内容" min-width="300">
+        <ElTableColumn :label="$t('talk.table.content')" min-width="300">
           <template #default="{ row }">
             <div class="talk-content">
               <div class="content-text" v-html="formatContent(row.content)"></div>
@@ -126,10 +126,10 @@
           </template>
         </ElTableColumn>
 
-        <ElTableColumn label="状态" width="100">
+        <ElTableColumn :label="$t('talk.table.status')" width="100">
           <template #default="{ row }">
             <div class="status-badges">
-              <ElTag v-if="row.isTop" type="warning" size="small">置顶</ElTag>
+              <ElTag v-if="row.isTop" type="warning" size="small">{{$t('talk.table.top')}}</ElTag>
               <ElTag 
                 :type="getStatusType(row.status)" 
                 size="small"
@@ -137,13 +137,13 @@
                 {{ getStatusText(row.status) }}
               </ElTag>
               <ElTag v-if="row.isHidden && row.status === 'public'" type="info" size="small">
-                隐藏
+                {{$t('talk.table.hidden')}}
               </ElTag>
             </div>
           </template>
         </ElTableColumn>
 
-        <ElTableColumn label="互动数据" width="120">
+        <ElTableColumn :label="$t('talk.table.metrics')" width="120">
           <template #default="{ row }">
             <div class="interaction-data">
               <div class="data-item">
@@ -158,18 +158,18 @@
           </template>
         </ElTableColumn>
 
-        <ElTableColumn label="发布时间" width="180">
+        <ElTableColumn :label="$t('talk.table.publishTime')" width="180">
           <template #default="{ row }">
             <div class="time-info">
               <div>{{ formatDate(row.publishDate) }}</div>
               <div v-if="row.updateDate !== row.publishDate" class="update-time">
-                更新: {{ formatDate(row.updateDate) }}
+                {{$t('talk.table.updatePrefix')}}{{ formatDate(row.updateDate) }}
               </div>
             </div>
           </template>
         </ElTableColumn>
 
-        <ElTableColumn label="操作" width="200" fixed="right">
+        <ElTableColumn :label="$t('talk.table.actions')" width="200" fixed="right">
           <template #default="{ row }">
             <div class="action-buttons">
               <ElButton 
@@ -178,12 +178,12 @@
                 @click="editTalk(row)"
                 :disabled="row.status === 'deleted'"
               >
-                编辑
+                {{$t('talk.actions.edit')}}
               </ElButton>
               
               <ElDropdown @command="(command) => handleAction(command, row)">
                 <ElButton size="small">
-                  更多<ElIcon class="el-icon--right"><ArrowDown /></ElIcon>
+                  {{$t('talk.actions.more')}}<ElIcon class="el-icon--right"><ArrowDown /></ElIcon>
                 </ElButton>
                 <template #dropdown>
                   <ElDropdownMenu>
@@ -191,33 +191,33 @@
                       v-if="row.status !== 'deleted'" 
                       :command="`top-${row._id}`"
                     >
-                      {{ row.isTop ? '取消置顶' : '置顶' }}
+                      {{ row.isTop ? $t('talk.actions.cancelTop') : $t('talk.actions.top') }}
                     </ElDropdownItem>
                     <ElDropdownItem 
                       v-if="row.status === 'public'" 
                       :command="`hide-${row._id}`"
                     >
-                      {{ row.isHidden ? '显示' : '隐藏' }}
+                      {{ row.isHidden ? $t('talk.actions.show') : $t('talk.actions.hide') }}
                     </ElDropdownItem>
                     <ElDropdownItem 
                       v-if="row.status !== 'deleted'" 
                       :command="`delete-${row._id}`"
                       divided
                     >
-                      删除
+                      {{$t('talk.actions.delete')}}
                     </ElDropdownItem>
                     <ElDropdownItem 
                       v-if="row.status === 'deleted'" 
                       :command="`restore-${row._id}`"
                     >
-                      恢复
+                      {{$t('talk.actions.restore')}}
                     </ElDropdownItem>
                     <ElDropdownItem 
                       v-if="row.status === 'deleted'" 
                       :command="`permanent-delete-${row._id}`"
                       divided
                     >
-                      永久删除
+                      {{$t('talk.actions.permanentDelete')}}
                     </ElDropdownItem>
                   </ElDropdownMenu>
                 </template>
@@ -246,6 +246,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { 
   Search, 
@@ -265,12 +266,15 @@ const router = useRouter()
 const searchVal = ref('')
 const currentStatus = ref('all')
 
-// 状态选项
+// i18n
+const { t } = useI18n()
+
+// 状态选项（国际化）
 const statusOptions = [
-  { label: '全部说说', value: 'all' },
-  { label: '公开说说', value: 'public' },
-  { label: '私密说说', value: 'private' },
-  { label: '回收站', value: 'deleted' }
+  { label: t('talk.statusOptions.all'), value: 'all' },
+  { label: t('talk.statusOptions.public'), value: 'public' },
+  { label: t('talk.statusOptions.private'), value: 'private' },
+  { label: t('talk.statusOptions.deleted'), value: 'deleted' }
 ]
 
 // 批量操作
@@ -403,9 +407,9 @@ const getStatusType = (status: string): 'primary' | 'success' | 'info' | 'warnin
 // 获取状态文本
 const getStatusText = (status: string) => {
   const textMap: Record<string, string> = {
-    public: '公开',
-    private: '私密',
-    deleted: '已删除'
+    public: t('talk.status.public'),
+    private: t('talk.status.private'),
+    deleted: t('talk.status.deleted')
   }
   return textMap[status] || status
 }
@@ -523,7 +527,7 @@ const handleAction = async (command: string, row: any) => {
     }
   } catch (error) {
     console.error('操作失败:', error)
-    ElMessage.error('操作失败')
+    ElMessage.error(t('talk.messages.operationFailed'))
   }
 }
 
@@ -531,7 +535,7 @@ const handleAction = async (command: string, row: any) => {
 const toggleTop = async (talk: any) => {
   const newTopStatus = !talk.isTop
   await updateTalk(talk._id, { isTop: newTopStatus })
-  ElMessage.success(newTopStatus ? '置顶成功' : '取消置顶成功')
+  ElMessage.success(newTopStatus ? t('talk.messages.topSuccess') : t('talk.messages.cancelTopSuccess'))
   updateSearchParams()
   refreshUpdate()
 }
@@ -540,7 +544,7 @@ const toggleTop = async (talk: any) => {
 const toggleHide = async (talk: any) => {
   const newHideStatus = !talk.isHidden
   await updateTalk(talk._id, { isHidden: newHideStatus })
-  ElMessage.success(newHideStatus ? '隐藏成功' : '显示成功')
+  ElMessage.success(newHideStatus ? t('talk.messages.hideSuccess') : t('talk.messages.showSuccess'))
   updateSearchParams()
   refreshUpdate()
 }
@@ -548,11 +552,11 @@ const toggleHide = async (talk: any) => {
 // 删除说说（软删除，移动到回收站）
 const deleteTalkItem = async (talk: any) => {
   await ElMessageBox.confirm(
-    '确定要删除这条说说吗？删除后将移动到回收站，可以恢复。',
-    '确认删除',
+    t('talk.messages.deleteConfirmMessage'),
+    t('talk.messages.deleteConfirmTitle'),
     {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
+      confirmButtonText: t('talk.actions.confirm'),
+      cancelButtonText: t('talk.actions.cancel'),
       type: 'warning'
     }
   )
@@ -564,12 +568,12 @@ const deleteTalkItem = async (talk: any) => {
       deleteDate: new Date(),
       updateDate: new Date()
     })
-    ElMessage.success('删除成功，已移动到回收站')
+    ElMessage.success(t('talk.messages.deleteSuccess'))
     updateSearchParams()
     refreshRemove()
   } catch (error) {
     console.error('软删除失败:', error)
-    ElMessage.error('删除失败，请重试')
+    ElMessage.error(t('talk.messages.deleteFailed'))
   }
 }
 
@@ -577,23 +581,23 @@ const deleteTalkItem = async (talk: any) => {
 const restoreTalk = async (talk: any) => {
   try {
     await restoreTalkAPI(talk._id)
-    ElMessage.success('恢复成功')
+    ElMessage.success(t('talk.messages.restoreSuccess'))
     updateSearchParams()
     refreshRemove()
   } catch (error) {
     console.error('恢复失败:', error)
-    ElMessage.error('恢复失败，请重试')
+    ElMessage.error(t('talk.messages.restoreFailed'))
   }
 }
 
 // 永久删除（从回收站彻底删除）
 const permanentDeleteTalk = async (talk: any) => {
   await ElMessageBox.confirm(
-    '确定要永久删除这条说说吗？此操作不可恢复！',
-    '确认永久删除',
+    t('talk.messages.permanentDeleteConfirmMessage'),
+    t('talk.messages.permanentDeleteConfirmTitle'),
     {
-      confirmButtonText: '永久删除',
-      cancelButtonText: '取消',
+      confirmButtonText: t('talk.messages.permanentDeleteButton'),
+      cancelButtonText: t('talk.actions.cancel'),
       type: 'error'
     }
   )
@@ -601,29 +605,29 @@ const permanentDeleteTalk = async (talk: any) => {
   try {
     // 物理删除：使用permanent=true参数
     await deleteTalk(talk._id, true)
-    ElMessage.success('永久删除成功')
+    ElMessage.success(t('talk.messages.permanentDeleteSuccess'))
     updateSearchParams()
     refreshRemove()
   } catch (error) {
     console.error('永久删除失败:', error)
-    ElMessage.error('永久删除失败，请重试')
+    ElMessage.error(t('talk.messages.permanentDeleteFailed'))
   }
 }
 
 // 批量软删除（移动到回收站）
 const batchDelete = async () => {
   if (selectedTalks.value.length === 0) {
-    ElMessage.warning('请选择要删除的说说')
+    ElMessage.warning(t('talk.messages.selectToDelete'))
     return
   }
 
   try {
     await ElMessageBox.confirm(
-      `确定要删除选中的 ${selectedTalks.value.length} 条说说吗？删除后将移动到回收站，可以恢复。`,
-      '批量删除',
+      t('talk.messages.batchDeleteConfirmMessage', { count: selectedTalks.value.length }),
+      t('talk.messages.batchDeleteConfirmTitle'),
       {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
+        confirmButtonText: t('talk.actions.confirm'),
+        cancelButtonText: t('talk.actions.cancel'),
         type: 'warning'
       }
     )
@@ -635,14 +639,14 @@ const batchDelete = async () => {
       ids, 
       operation: 'delete'
     })
-    ElMessage.success(`成功删除 ${selectedTalks.value.length} 条说说，已移动到回收站`)
+    ElMessage.success(t('talk.messages.batchDeleteSuccess', { count: selectedTalks.value.length }))
     selectedTalks.value = []
     updateSearchParams()
     refreshRemove()
   } catch (error: any) {
     if (error !== 'cancel') {
       console.error('批量删除失败:', error)
-      ElMessage.error('批量删除失败，请重试')
+      ElMessage.error(t('talk.messages.batchDeleteFailed'))
     }
   } finally {
     batchLoading.value = false
@@ -652,7 +656,7 @@ const batchDelete = async () => {
 // 批量恢复（从回收站恢复）
 const batchRestore = async () => {
   if (selectedTalks.value.length === 0) {
-    ElMessage.warning('请选择要恢复的说说')
+    ElMessage.warning(t('talk.messages.selectToRestore'))
     return
   }
 
@@ -663,13 +667,13 @@ const batchRestore = async () => {
       ids, 
       operation: 'restore'
     })
-    ElMessage.success(`成功恢复 ${selectedTalks.value.length} 条说说`)
+    ElMessage.success(t('talk.messages.batchRestoreSuccess', { count: selectedTalks.value.length }))
     selectedTalks.value = []
     updateSearchParams()
     refreshRemove()
   } catch (error) {
     console.error('批量恢复失败:', error)
-    ElMessage.error('批量恢复失败，请重试')
+    ElMessage.error(t('talk.messages.batchRestoreFailed'))
   } finally {
     batchLoading.value = false
   }
@@ -678,17 +682,17 @@ const batchRestore = async () => {
 // 批量永久删除（从回收站彻底删除）
 const batchPermanentDelete = async () => {
   if (selectedTalks.value.length === 0) {
-    ElMessage.warning('请选择要永久删除的说说')
+    ElMessage.warning(t('talk.messages.selectToPermanentDelete'))
     return
   }
 
   try {
     await ElMessageBox.confirm(
-      `确定要永久删除选中的 ${selectedTalks.value.length} 条说说吗？此操作不可恢复！`,
-      '批量永久删除',
+      t('talk.messages.batchPermanentDeleteConfirmMessage', { count: selectedTalks.value.length }),
+      t('talk.messages.batchPermanentDeleteConfirmTitle'),
       {
-        confirmButtonText: '永久删除',
-        cancelButtonText: '取消',
+        confirmButtonText: t('talk.messages.permanentDeleteButton'),
+        cancelButtonText: t('talk.actions.cancel'),
         type: 'error'
       }
     )
@@ -699,14 +703,14 @@ const batchPermanentDelete = async () => {
       ids, 
       operation: 'permanentDelete'
     })
-    ElMessage.success(`成功永久删除 ${selectedTalks.value.length} 条说说`)
+    ElMessage.success(t('talk.messages.batchPermanentDeleteSuccess', { count: selectedTalks.value.length }))
     selectedTalks.value = []
     updateSearchParams()
     refreshRemove()
   } catch (error: any) {
     if (error !== 'cancel') {
       console.error('批量永久删除失败:', error)
-      ElMessage.error('批量永久删除失败，请重试')
+      ElMessage.error(t('talk.messages.batchPermanentDeleteFailed'))
     }
   } finally {
     batchLoading.value = false
@@ -715,7 +719,7 @@ const batchPermanentDelete = async () => {
 
 const batchToggleTop = async () => {
   if (selectedTalks.value.length === 0) {
-    ElMessage.warning('请选择要操作的说说')
+    ElMessage.warning(t('talk.messages.selectToOperate'))
     return
   }
 
@@ -726,13 +730,13 @@ const batchToggleTop = async () => {
       ids, 
       operation: 'toggleTop'
     })
-    ElMessage.success('批量置顶操作成功')
+    ElMessage.success(t('talk.messages.batchToggleTopSuccess'))
     selectedTalks.value = []
     updateSearchParams()
     refreshUpdate()
   } catch (error) {
     console.error('批量置顶操作失败:', error)
-    ElMessage.error('批量置顶操作失败')
+    ElMessage.error(t('talk.messages.batchToggleTopFailed'))
   } finally {
     batchLoading.value = false
   }
@@ -740,7 +744,7 @@ const batchToggleTop = async () => {
 
 const batchToggleHide = async () => {
   if (selectedTalks.value.length === 0) {
-    ElMessage.warning('请选择要操作的说说')
+    ElMessage.warning(t('talk.messages.selectToOperate'))
     return
   }
 
@@ -751,13 +755,13 @@ const batchToggleHide = async () => {
       ids, 
       operation: 'toggleHide'
     })
-    ElMessage.success('批量隐藏操作成功')
+    ElMessage.success(t('talk.messages.batchToggleHideSuccess'))
     selectedTalks.value = []
     updateSearchParams()
     refreshUpdate()
   } catch (error) {
     console.error('批量隐藏操作失败:', error)
-    ElMessage.error('批量隐藏操作失败')
+    ElMessage.error(t('talk.messages.batchToggleHideFailed'))
   } finally {
     batchLoading.value = false
   }

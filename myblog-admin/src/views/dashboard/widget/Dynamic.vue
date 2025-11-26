@@ -2,15 +2,15 @@
   <div class="card art-custom-card">
     <div class="card-header">
       <div class="title">
-        <h4 class="box-title">动态</h4>
-        <p class="subtitle">新增<span class="text-success">+6</span></p>
+        <h4 class="box-title">{{ $t('dashboard.dynamic.title') }}</h4>
+        <p class="subtitle">{{ $t('dashboard.dynamic.added') }}<span class="text-success">+6</span></p>
       </div>
     </div>
 
     <div class="list">
       <div v-for="(item, index) in list" :key="index">
         <span class="user">{{ item.username }}</span>
-        <span class="type">{{ item.type }}</span>
+        <span class="type">{{ $t(item.typeKey) }}</span>
         <span class="target">{{ item.target }}</span>
       </div>
     </div>
@@ -23,32 +23,32 @@
   const list = reactive([
     {
       username: '中小鱼',
-      type: '关注了',
+      typeKey: 'dashboard.dynamic.types.followed',
       target: '誶誶淰'
     },
     {
       username: '何小荷',
-      type: '发表文章',
+      typeKey: 'dashboard.dynamic.types.publishedArticle',
       target: 'Vue3 + Typescript + Vite 项目实战笔记'
     },
     {
       username: '誶誶淰',
-      type: '提出问题',
+      typeKey: 'dashboard.dynamic.types.askedQuestion',
       target: '主题可以配置吗'
     },
     {
       username: '发呆草',
-      type: '兑换了物品',
+      typeKey: 'dashboard.dynamic.types.redeemedItem',
       target: '《奇特的一生》'
     },
     {
       username: '甜筒',
-      type: '关闭了问题',
+      typeKey: 'dashboard.dynamic.types.closedQuestion',
       target: '发呆草'
     },
     {
       username: '冷月呆呆',
-      type: '兑换了物品',
+      typeKey: 'dashboard.dynamic.types.redeemedItem',
       target: '《高效人士的七个习惯》'
     }
   ])

@@ -13,14 +13,39 @@
         <WaveContainer />
       </div>
 
-      <!-- 说说列表 -->
+      <!-- 说说容器 -->
       <div class="talk-container backtop animate__animated animate__slideInUp">
-        <div class="talk-list" v-if="!loading && talkList.length > 0">
+        <!-- 加载状态 -->
+        <div class="loading-container" v-if="loading">
+          <div class="loading-spinner">
+            <div class="spinner"></div>
+            <p>加载中...</p>
+          </div>
+        </div>
+
+        <!-- 空状态 -->
+        <div class="empty-container" v-else-if="talkList.length === 0">
+          <div class="empty-content">
+            <i class="icon-empty">📝</i>
+            <h3>暂无说说</h3>
+            <p>还没有发布任何说说哦~</p>
+          </div>
+        </div>
+
+        <!-- 说说列表 -->
+        <transition-group
+          v-else
+          name="stagger"
+          tag="div"
+          class="talk-list"
+          appear
+        >
           <div
             class="talk-item"
-            v-for="talk in talkList"
+            v-for="(talk, index) in talkList"
             :key="talk._id"
             :class="{ 'is-top': talk.isTop }"
+            :style="{ '--delay': (index % 12) * 40 + 'ms' }"
           >
             <!-- 置顶标识 -->
             <div class="top-badge" v-if="talk.isTop">
@@ -134,288 +159,228 @@
             </div>
 
             <!-- 回复区域 -->
-            <div
-              class="reply-section"
-              v-if="activeReplyTalkId === talk._id"
-              :key="`reply-${talk._id}`"
-            >
-              <!-- 回复表单 -->
-              <div class="reply-form">
-                <div class="form-header">
-                  <h4>发表回复</h4>
-                  <button
-                    class="close-btn"
-                    @click="closeReplySection"
-                    title="关闭回复"
-                  >
-                    ✕
-                  </button>
-                </div>
+            <transition name="expand">
+              <div
+                class="reply-section"
+                v-if="activeReplyTalkId === talk._id"
+                :key="`reply-${talk._id}`"
+              >
+                <!-- 回复表单 -->
+                <div class="reply-form">
+                  <div class="form-header">
+                    <h4>发表回复</h4>
+                    <button
+                      class="close-btn"
+                      @click="closeReplySection"
+                      title="关闭回复"
+                    >
+                      ✕
+                    </button>
+                  </div>
 
-                <div class="form-body">
-                  <!-- 简化回复表单，只保留回复内容 -->
-                  <div class="form-group">
-                    <label for="reply-content">回复内容 *</label>
-                    <textarea
-                      id="reply-content"
-                      v-model="replyForm.content"
-                      placeholder="说点什么吧..."
-                      rows="4"
-                      maxlength="500"
-                      required
-                    ></textarea>
-                    <div class="char-count">
-                      {{ replyForm.content.length }}/500
+                  <div class="form-body">
+                    <!-- 简化回复表单，只保留回复内容 -->
+                    <div class="form-group">
+                      <label for="reply-content">回复内容 *</label>
+                      <textarea
+                        id="reply-content"
+                        v-model="replyForm.content"
+                        placeholder="说点什么吧..."
+                        rows="4"
+                        maxlength="500"
+                        required
+                      ></textarea>
+                      <div class="char-count">
+                        {{ replyForm.content.length }}/500
+                      </div>
+                    </div>
+
+                    <div class="form-actions">
+                      <button
+                        class="submit-btn"
+                        @click="submitReply(talk._id)"
+                        :disabled="!canSubmitReply || submittingReply"
+                      >
+                        {{ submittingReply ? '发布中...' : '发布回复' }}
+                      </button>
+                      <button
+                        class="cancel-btn"
+                        @click="closeReplySection"
+                        :disabled="submittingReply"
+                      >
+                        取消
+                      </button>
                     </div>
                   </div>
+                </div>
 
-                  <div class="form-actions">
+                <!-- 回复列表 -->
+                <div
+                  class="replies-list"
+                  v-if="talkReplies[talk._id]?.length > 0"
+                >
+                  <div class="replies-header">
+                    <h4 class="replies-title">
+                      回复 ({{ talkReplies[talk._id]?.length || 0 }})
+                    </h4>
                     <button
-                      class="submit-btn"
-                      @click="submitReply(talk._id)"
-                      :disabled="!canSubmitReply || submittingReply"
+                      class="toggle-replies-btn"
+                      @click="toggleRepliesExpanded(talk._id)"
+                      :class="{ expanded: repliesExpanded[talk._id] }"
                     >
-                      {{ submittingReply ? '发布中...' : '发布回复' }}
-                    </button>
-                    <button
-                      class="cancel-btn"
-                      @click="closeReplySection"
-                      :disabled="submittingReply"
-                    >
-                      取消
+                      <i class="icon-toggle">
+                        {{ repliesExpanded[talk._id] ? '🔽' : '▶️' }}
+                      </i>
+                      <span>
+                        {{ repliesExpanded[talk._id] ? '收起' : '展开' }}
+                      </span>
                     </button>
                   </div>
-                </div>
-              </div>
 
-              <!-- 回复列表 -->
-              <div
-                class="replies-list"
-                v-if="talkReplies[talk._id]?.length > 0"
-              >
-                <div class="replies-header">
-                  <h4 class="replies-title">
-                    回复 ({{ talkReplies[talk._id]?.length || 0 }})
-                  </h4>
-                  <button
-                    class="toggle-replies-btn"
-                    @click="toggleRepliesExpanded(talk._id)"
+                  <div
+                    class="replies-content"
+                    v-show="repliesExpanded[talk._id]"
                     :class="{ expanded: repliesExpanded[talk._id] }"
                   >
-                    <i class="icon-toggle">
-                      {{ repliesExpanded[talk._id] ? '🔽' : '▶️' }}
-                    </i>
-                    <span>
-                      {{ repliesExpanded[talk._id] ? '收起' : '展开' }}
-                    </span>
-                  </button>
-                </div>
-
-                <div
-                  class="replies-content"
-                  v-show="repliesExpanded[talk._id]"
-                  :class="{ expanded: repliesExpanded[talk._id] }"
-                >
-                  <div
-                    class="reply-item"
-                    v-for="reply in talkReplies[talk._id]"
-                    :key="reply._id"
-                  >
-                    <div class="reply-header">
-                      <div class="reply-author">
-                        <span class="author-name">{{ reply.author }}</span>
-                        <span class="reply-time">{{
-                          getCachedFormattedTime(reply.publishDate)
-                        }}</span>
-                      </div>
-                      <div class="reply-actions">
-                        <button
-                          class="reply-like-btn"
-                          :class="{ liked: replyLikeStatus[reply._id] }"
-                          @click="debouncedLikeReply(reply)"
-                          :disabled="likingReplies.has(reply._id)"
-                        >
-                          <i class="icon-like">
-                            {{ replyLikeStatus[reply._id] ? '❤️' : '🤍' }}
-                          </i>
-                          <span>{{ reply.likes || 0 }}</span>
-                        </button>
-                      </div>
-                    </div>
-
-                    <div class="reply-content">
-                      <div v-if="reply.replyTo" class="reply-to">
-                        回复 @{{ reply.replyTo }}:
-                      </div>
-                      <div
-                        class="reply-text"
-                        v-html="getCachedFormattedContent(reply.content)"
-                      ></div>
-                    </div>
-
-                    <!-- 子回复 -->
                     <div
-                      class="sub-replies"
-                      v-if="Array.isArray(reply.children) && reply.children.length > 0"
+                      class="reply-item"
+                      v-for="reply in talkReplies[talk._id]"
+                      :key="reply._id"
                     >
-                      <div
-                        class="sub-reply-item"
-                        v-for="subReply in reply.children"
-                        :key="subReply._id"
-                      >
-                        <div class="sub-reply-header">
-                          <span class="sub-reply-author">
-                            {{ subReply.author }}
-                          </span>
-                          <span class="sub-reply-time">{{
-                            getCachedFormattedTime(subReply.publishDate)
+                      <div class="reply-header">
+                        <div class="reply-author">
+                          <span class="author-name">{{ reply.author }}</span>
+                          <span class="reply-time">{{
+                            getCachedFormattedTime(reply.publishDate)
                           }}</span>
                         </div>
-                        <div class="sub-reply-content">
-                          <div v-if="subReply.replyTo" class="reply-to">
-                            回复 @{{ subReply.replyTo }}:
+                        <div class="reply-actions">
+                          <button
+                            class="reply-like-btn"
+                            :class="{ liked: replyLikeStatus[reply._id] }"
+                            @click="debouncedLikeReply(reply)"
+                            :disabled="likingReplies.has(reply._id)"
+                          >
+                            <i class="icon-like">
+                              {{ replyLikeStatus[reply._id] ? '❤️' : '🤍' }}
+                            </i>
+                            <span>{{ reply.likes || 0 }}</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      <div class="reply-content">
+                        <div v-if="reply.replyTo" class="reply-to">
+                          回复 @{{ reply.replyTo }}:
+                        </div>
+                        <div
+                          class="reply-text"
+                          v-html="getCachedFormattedContent(reply.content)"
+                        ></div>
+                      </div>
+
+                      <!-- 子回复 -->
+                      <div
+                        class="sub-replies"
+                        v-if="Array.isArray(reply.children) && reply.children.length > 0"
+                      >
+                        <div
+                          class="sub-reply-item"
+                          v-for="subReply in reply.children"
+                          :key="subReply._id"
+                        >
+                          <div class="sub-reply-header">
+                            <span class="sub-reply-author">
+                              {{ subReply.author }}
+                            </span>
+                            <span class="sub-reply-time">{{
+                              getCachedFormattedTime(subReply.publishDate)
+                            }}</span>
                           </div>
-                          <div
-                            class="sub-reply-text"
-                            v-html="getCachedFormattedContent(subReply.content)"
-                          ></div>
+                          <div class="sub-reply-content">
+                            <div v-if="subReply.replyTo" class="reply-to">
+                              回复 @{{ subReply.replyTo }}:
+                            </div>
+                            <div
+                              class="sub-reply-text"
+                              v-html="getCachedFormattedContent(subReply.content)"
+                            ></div>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
 
-                  <!-- 加载更多回复 -->
-                  <div
-                    class="load-more-replies"
-                    v-if="hasMoreReplies[talk._id] && repliesExpanded[talk._id]"
-                  >
-                    <button
-                      class="load-more-btn"
-                      @click="loadAllReplies(talk._id)"
-                      :disabled="loadingReplies.has(talk._id)"
+                    <!-- 加载更多回复 -->
+                    <div
+                      class="load-more-replies"
+                      v-if="hasMoreReplies[talk._id] && repliesExpanded[talk._id]"
                     >
-                      {{
-                        loadingReplies.has(talk._id)
-                          ? '加载中...'
-                          : '加载全部回复'
-                      }}
-                    </button>
+                      <button
+                        class="load-more-btn"
+                        @click="loadAllReplies(talk._id)"
+                        :disabled="loadingReplies.has(talk._id)"
+                      >
+                        {{
+                          loadingReplies.has(talk._id)
+                            ? '加载中...'
+                            : '加载全部回复'
+                        }}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            </transition>
           </div>
+        </transition-group>
 
-          <!-- 加载状态 -->
-          <div class="loading-container" v-if="loading">
-            <div class="loading-spinner">
-              <div class="spinner"></div>
-              <p>加载中...</p>
-            </div>
-          </div>
-
-          <!-- 空状态 -->
-          <div class="empty-container" v-if="!loading && talkList.length === 0">
-            <div class="empty-content">
-              <i class="icon-empty">📝</i>
-              <h3>暂无说说</h3>
-              <p>还没有发布任何说说哦~</p>
-            </div>
-          </div>
-
-          <!-- 分页：已隐藏，使用无限滚动替代 -->
-          <div class="pagination-container" v-if="false">
-            <div class="pagination">
-              <button
-                class="page-btn prev-btn"
-                :disabled="pagination.current <= 1"
-                @click="changePage(pagination.current - 1)"
-              >
-                <i class="icon-prev">‹</i>
-                上一页
-              </button>
-              <div class="page-numbers">
-                <button
-                  v-for="page in getPageNumbers()"
-                  :key="page"
-                  class="page-number"
-                  :class="{
-                    active: page === pagination.current,
-                    ellipsis: page === '...',
-                  }"
-                  :disabled="page === '...'"
-                  @click="page !== '...' && changePage(Number(page))"
+        <!-- 加载更多按钮 -->
+        <div
+          class="load-more-section"
+          v-if="!loading && talkList.length > 0 && !isEnd"
+        >
+          <button class="load-more-btn" @click="loadMore" :disabled="loadingMore">
+            <div class="btn-content">
+              <div class="loading-spinner" v-if="loadingMore">
+                <div class="spinner-dots">
+                  <div class="dot dot-1"></div>
+                  <div class="dot dot-2"></div>
+                  <div class="dot dot-3"></div>
+                </div>
+              </div>
+              <div class="btn-icon" v-else>
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
                 >
-                  {{ page }}
-                </button>
+                  <path
+                    d="M12 4V20M20 12H4"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                  />
+                </svg>
               </div>
-              <button
-                class="page-btn next-btn"
-                :disabled="pagination.current >= Math.ceil(pagination.total / pagination.size)"
-                @click="changePage(pagination.current + 1)"
-              >
-                下一页
-                <i class="icon-next">›</i>
-              </button>
+              <span class="btn-text">
+                {{ loadingMore ? '加载中...' : '加载更多' }}
+              </span>
             </div>
-          </div>
+          </button>
+        </div>
 
-          <!-- 加载更多按钮 -->
-          <div
-            class="load-more-section"
-            v-if="!loading && talkList.length > 0 && !isEnd"
-          >
-            <button
-              class="load-more-btn"
-              @click="loadMore"
-              :disabled="loadingMore"
-            >
-              <div class="btn-content">
-                <div class="loading-spinner" v-if="loadingMore">
-                  <div class="spinner-dots">
-                    <div class="dot dot-1"></div>
-                    <div class="dot dot-2"></div>
-                    <div class="dot dot-3"></div>
-                  </div>
-                </div>
-                <div class="btn-icon" v-else>
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      d="M12 4V20M20 12H4"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                    />
-                  </svg>
-                </div>
-                <span class="btn-text">
-                  {{ loadingMore ? '加载中...' : '加载更多' }}
-                </span>
-              </div>
-            </button>
-          </div>
-
-          <!-- 结束提示 -->
-          <div class="end-tip" v-if="!loading && isEnd && talkList.length > 0">
-            <div class="end-content">
-              <i class="end-icon">🎉</i>
-              <span>已经到底啦，没有更多内容了</span>
-            </div>
+        <!-- 结束提示 -->
+        <div class="end-tip" v-if="!loading && isEnd && talkList.length > 0">
+          <div class="end-content">
+            <i class="end-icon">🎉</i>
+            <span>已经到底啦，没有更多内容了</span>
           </div>
         </div>
 
         <!-- 图片预览模态框 -->
-        <div
-          class="image-preview-modal"
-          v-if="showPreview"
-          @click="closePreview"
-        >
+        <div class="image-preview-modal" v-if="showPreview" @click="closePreview">
           <div class="modal-content" @click.stop>
             <button class="close-btn" @click="closePreview">
               <i class="icon-close">✕</i>
@@ -462,19 +427,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed, nextTick, watch } from 'vue'
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import {
-  getTalkList,
-  likeTalk,
-  unlikeTalk,
-  getTalkLikeStatus,
-  getTalkReplies,
-  addTalkReply,
-  likeReply,
-  unlikeReply,
-} from '@/api/talks'
+import { getTalkList, getTalkReplies, addTalkReply, likeReply, unlikeReply } from '@/api/talks'
 import { useUserStore } from '@/stores/user'
 import { useTalkLikes } from '@/composables/useTalkLikes'
 import { useTalksStore } from '@/stores/talks'
@@ -966,6 +922,10 @@ const onVisibilityChange = () => {
   }
 }
 
+const handleWindowFocus = () => {
+  fetchTalkList()
+}
+
 // ==================== 点赞相关方法 ====================
 /**
  * 处理说说点赞
@@ -1266,7 +1226,7 @@ onMounted(async () => {
 
   document.addEventListener('keydown', handleKeydown)
   // 页面可见性或窗口获取焦点时自动刷新，确保与后台同步
-  window.addEventListener('focus', fetchTalkList as EventListener)
+  window.addEventListener('focus', handleWindowFocus)
   document.addEventListener('visibilitychange', onVisibilityChange)
 })
 
@@ -1302,7 +1262,7 @@ watch(
 onUnmounted(() => {
   document.removeEventListener('keydown', handleKeydown)
   document.body.style.overflow = ''
-  window.removeEventListener('focus', fetchTalkList as EventListener)
+  window.removeEventListener('focus', handleWindowFocus)
   document.removeEventListener('visibilitychange', onVisibilityChange)
 
   // 清理缓存
@@ -1316,1463 +1276,305 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+/* 主题变量（局部作用于本页面） */
+.talk-page-wrapper {
+  --bg-start: #0f172a; /* slate-900 */
+  --bg-end: #1e293b;   /* slate-800 */
+  --card-bg: rgba(255, 255, 255, 0.7);
+  --card-border: rgba(255, 255, 255, 0.35);
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --muted: #94a3b8;
+  --pill-bg: rgba(15, 23, 42, 0.06);
+  --pill-text: #0f172a;
+  --accent-1: #6366f1; /* indigo-500 */
+  --accent-2: #8b5cf6; /* violet-500 */
+  --shadow: 0 10px 30px rgba(2, 6, 23, 0.15);
+}
+
+@media (prefers-color-scheme: dark) {
+  .talk-page-wrapper {
+    --bg-start: #0b1020;
+    --bg-end: #0f172a;
+    --card-bg: rgba(15, 23, 42, 0.55);
+    --card-border: rgba(148, 163, 184, 0.15);
+    --text-primary: #e2e8f0;
+    --text-secondary: #cbd5e1;
+    --muted: #94a3b8;
+    --pill-bg: rgba(226, 232, 240, 0.08);
+    --pill-text: #e2e8f0;
+    --shadow: 0 10px 30px rgba(15, 23, 42, 0.4);
+  }
+}
+
 .talk-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  /* 使用全局主题背景，避免覆盖主题切换动画 */
+  background: transparent;
 }
 
 .talk-container {
-  max-width: 800px;
+  max-width: 1100px;
   margin: 0 auto;
-  padding: 2rem 1rem;
+  padding: 2rem 1rem 3rem;
 }
 
+/* 现代响应式网格卡片布局 */
 .talk-list {
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.25rem;
 }
 
 .talk-item {
-  background: white;
-  border-radius: 16px;
-  padding: 2rem;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
   position: relative;
-  transition: all 0.3s ease;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  padding: 1.25rem 1.25rem 1rem;
+  box-shadow: var(--shadow);
+  backdrop-filter: saturate(140%) blur(12px);
+  -webkit-backdrop-filter: saturate(140%) blur(12px);
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+  color: var(--text-primary);
+  will-change: transform;
 }
 
 .talk-item:hover {
   transform: translateY(-4px);
-  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 16px 40px rgba(2, 6, 23, 0.25);
 }
 
 .talk-item.is-top {
-  border: 2px solid #ff6b6b;
+  border-color: #fb7185; /* rose-400 */
 }
 
+/* 置顶徽章 */
 .top-badge {
   position: absolute;
-  top: -8px;
-  right: 2rem;
-  background: #ff6b6b;
-  color: white;
-  padding: 0.25rem 0.75rem;
-  border-radius: 12px;
+  top: -10px;
+  right: 1rem;
+  background: linear-gradient(135deg, #fb7185, #f59e0b);
+  color: #fff;
+  padding: 0.25rem 0.6rem;
+  border-radius: 9999px;
   font-size: 0.75rem;
-  font-weight: 600;
-  display: flex;
+  font-weight: 700;
+  display: inline-flex;
   align-items: center;
   gap: 0.25rem;
+  box-shadow: 0 6px 16px rgba(251, 113, 133, 0.35);
 }
 
-.top-badge .icon-pin::before {
-  content: '📌';
-}
-
-.talk-content {
-  margin-bottom: 1.5rem;
-}
+/* 内容 */
+.talk-content { margin-bottom: 0.75rem; }
 
 .content-text {
-  font-size: 1.1rem;
+  font-size: 1rem;
   line-height: 1.8;
-  color: #333;
-  margin-bottom: 1rem;
+  color: var(--text-primary);
+  letter-spacing: 0.2px;
 }
 
-.content-text :deep(p) {
-  margin-bottom: 1rem;
-}
+.content-text :deep(p) { margin: 0 0 0.75rem; }
+.content-text :deep(p:last-child) { margin-bottom: 0; }
 
-.content-text :deep(p:last-child) {
-  margin-bottom: 0;
-}
+/* 图片网格 - 微信朋友圈风格微调 */
+.content-images { margin-top: 0.75rem; }
 
-.content-images {
-  margin-top: 1rem;
-}
-
-/* 图片网格样式 - 微信朋友圈风格 */
 .image-grid {
   display: grid;
-  gap: 0.25rem;
+  gap: 3px;
   border-radius: 12px;
   overflow: hidden;
   width: 100%;
-  max-width: 270px; /* 固定最大宽度，类似微信朋友圈 */
+  max-width: 280px;
 }
 
-/* 统一使用3x3网格布局 */
-.image-grid.grid-1 {
-  grid-template-columns: 1fr;
-  max-width: 90px; /* 单张图片小尺寸 */
-}
-
-.image-grid.grid-2 {
-  grid-template-columns: 1fr 1fr;
-  max-width: 180px; /* 两张图片 */
-}
-
-.image-grid.grid-3 {
-  grid-template-columns: 1fr 1fr 1fr;
-  max-width: 270px; /* 三张图片 */
-}
-
-.image-grid.grid-4 {
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: 1fr 1fr;
-  max-width: 180px; /* 四张图片2x2 */
-}
-
+.image-grid.grid-1 { grid-template-columns: 1fr; max-width: 90px; }
+.image-grid.grid-2 { grid-template-columns: 1fr 1fr; max-width: 180px; }
+.image-grid.grid-3 { grid-template-columns: 1fr 1fr 1fr; max-width: 270px; }
+.image-grid.grid-4 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; max-width: 180px; }
 .image-grid.grid-5,
-.image-grid.grid-6 {
-  grid-template-columns: 1fr 1fr 1fr;
-  grid-template-rows: 1fr 1fr;
-  max-width: 270px; /* 5-6张图片3x2 */
-}
-
+.image-grid.grid-6 { grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr); max-width: 270px; }
 .image-grid.grid-7,
 .image-grid.grid-8,
-.image-grid.grid-9 {
-  grid-template-columns: 1fr 1fr 1fr;
-  grid-template-rows: 1fr 1fr 1fr;
-  max-width: 270px; /* 7-9张图片3x3 */
-}
+.image-grid.grid-9 { grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); max-width: 270px; }
 
 .image-item {
   position: relative;
   aspect-ratio: 1;
   overflow: hidden;
   cursor: pointer;
-  border-radius: 4px; /* 减小圆角，更像微信朋友圈 */
+  border-radius: 6px;
   transition: transform 0.2s ease;
 }
-
-.image-item:hover {
-  transform: scale(1.02); /* 减小悬停效果 */
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.image-item img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.3s ease;
-}
-
-.image-item:hover img {
-  transform: scale(1.03); /* 减小悬停缩放效果 */
-}
+.image-item:hover { transform: scale(1.02); }
+.image-item img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s ease; }
+.image-item:hover img { transform: scale(1.04); }
 
 .more-images-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.6); /* 简化背景色 */
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.9rem; /* 减小字体 */
-  font-weight: 600;
-  backdrop-filter: blur(2px);
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,0.55);
+  color: #fff; display:flex; align-items:center; justify-content:center;
+  font-size: 0.9rem; font-weight: 700; backdrop-filter: blur(2px);
 }
 
-/* 响应式优化 - 微信朋友圈风格 */
 @media (max-width: 768px) {
-  .image-grid {
-    max-width: 240px; /* 移动端稍小 */
-    gap: 0.2rem;
-  }
-
-  .image-grid.grid-1 {
-    grid-template-columns: 1fr;
-    max-width: 80px;
-  }
-
-  .image-grid.grid-2 {
-    grid-template-columns: 1fr 1fr;
-    max-width: 160px;
-  }
-
-  .image-grid.grid-3 {
-    grid-template-columns: 1fr 1fr 1fr;
-    max-width: 240px;
-  }
-
-  .image-grid.grid-4 {
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: 1fr 1fr;
-    max-width: 160px;
-  }
-
-  .image-grid.grid-5,
-  .image-grid.grid-6 {
-    grid-template-columns: 1fr 1fr 1fr;
-    grid-template-rows: 1fr 1fr;
-    max-width: 240px;
-  }
-
-  .image-grid.grid-7,
-  .image-grid.grid-8,
-  .image-grid.grid-9 {
-    grid-template-columns: 1fr 1fr 1fr;
-    grid-template-rows: 1fr 1fr 1fr;
-    max-width: 240px;
-  }
-
-  .image-item {
-    border-radius: 3px;
-  }
-
-  .more-images-overlay {
-    font-size: 0.8rem;
-  }
+  .talk-list { grid-template-columns: 1fr; gap: 1rem; }
+  .image-grid { max-width: 240px; gap: 2px; }
+  .image-grid.grid-1 { max-width: 88px; }
+  .image-grid.grid-2 { max-width: 160px; }
+  .image-grid.grid-3 { max-width: 240px; }
+  .image-grid.grid-4 { max-width: 160px; }
 }
 
-/* 元信息区域重新设计 */
+/* 元信息 */
 .talk-meta {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-top: 1rem;
-  border-top: 1px solid rgba(0, 0, 0, 0.05);
-  font-size: 0.9rem;
-  color: #666;
+  display: flex; justify-content: space-between; align-items: center;
+  padding-top: 0.75rem; border-top: 1px solid rgba(148,163,184,0.2);
+  font-size: 0.9rem; color: var(--text-secondary);
 }
-
-.meta-left {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-}
+.meta-left { display:flex; align-items:center; gap: 0.5rem; flex-wrap: wrap; }
 
 .publish-time,
 .location-info,
 .mood-info,
 .weather-info {
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-  font-size: 0.8rem;
-  padding: 0.3rem 0.6rem;
-  border-radius: 20px;
-  font-weight: 500;
-  transition: all 0.2s ease;
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  padding: 0.3rem 0.6rem; border-radius: 9999px;
+  background: var(--pill-bg); color: var(--pill-text);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
-
-.publish-time {
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-  color: white;
-}
-
-.location-info {
-  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-  color: white;
-}
-
-.mood-info {
-  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
-  color: white;
-}
-
-.weather-info {
-  background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
-  color: white;
-}
-
 .publish-time:hover,
 .location-info:hover,
 .mood-info:hover,
-.weather-info:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-}
+.weather-info:hover { transform: translateY(-1px); box-shadow: 0 4px 10px rgba(2,6,23,0.12); }
 
-.status-badge {
-  padding: 0.25rem 0.75rem;
-  border-radius: 12px;
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-
-.status-badge.status-1 {
-  background: #e8f5e8;
-  color: #2d8f2d;
-}
-
-.status-badge.status-2 {
-  background: #fff3cd;
-  color: #856404;
-}
-
-.loading-container,
-.empty-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 300px;
-  color: white;
-}
-
-.loading-spinner {
-  text-align: center;
-}
-
-.spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid rgba(255, 255, 255, 0.3);
-  border-top: 4px solid white;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin: 0 auto 1rem;
-}
-
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-.empty-content {
-  text-align: center;
-}
-
-.empty-content .icon-empty::before {
-  content: '📝';
-  font-size: 4rem;
-  display: block;
-  margin-bottom: 1rem;
-}
-
-.empty-content h3 {
-  font-size: 1.5rem;
-  margin-bottom: 0.5rem;
-}
-
-.pagination-container {
-  margin-top: 3rem;
-  display: flex;
-  justify-content: center;
-}
-
-.pagination {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  background: white;
-  padding: 1rem 2rem;
-  border-radius: 50px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-}
-
-.page-btn {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  border: none;
-  background: #667eea;
-  color: white;
-  border-radius: 25px;
-  cursor: pointer;
-  font-weight: 600;
-  transition: all 0.2s ease;
-}
-
-.page-btn:hover:not(:disabled) {
-  background: #5a67d8;
-  transform: translateY(-2px);
-}
-
-.page-btn:disabled {
-  background: #ccc;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.page-btn .icon-arrow-left::before {
-  content: '←';
-}
-
-.page-btn .icon-arrow-right::before {
-  content: '→';
-}
-
-.page-info {
-  color: #666;
-  font-weight: 500;
-}
-
-/* 图片预览模态框 */
-.image-preview-modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.9);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 2rem;
-}
-
-.modal-content {
-  position: relative;
-  max-width: 90vw;
-  max-height: 90vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.close-btn {
-  position: absolute;
-  top: -3rem;
-  right: 0;
-  background: none;
-  border: none;
-  color: white;
-  font-size: 2rem;
-  cursor: pointer;
-  z-index: 1001;
-  padding: 0.5rem;
-  border-radius: 50%;
-  transition: background 0.2s ease;
-}
-
-.close-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.close-btn .icon-close::before {
-  content: '✕';
-}
-
-.preview-container {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.preview-image {
-  max-width: 100%;
-  max-height: 80vh;
-  object-fit: contain;
-  border-radius: 8px;
-}
-
-.nav-btn {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  background: rgba(0, 0, 0, 0.5);
-  border: none;
-  color: white;
-  font-size: 2rem;
-  padding: 1rem;
-  border-radius: 50%;
-  cursor: pointer;
-  transition: background 0.2s ease;
-  z-index: 1001;
-}
-
-.nav-btn:hover {
-  background: rgba(0, 0, 0, 0.7);
-}
-
-.nav-btn.prev-btn {
-  left: -4rem;
-}
-
-.nav-btn.next-btn {
-  right: -4rem;
-}
-
-.preview-info {
-  color: white;
-  margin-top: 1rem;
-  font-size: 1rem;
-}
-
-/* 响应式设计 */
-@media (max-width: 768px) {
-  .talk-page {
-    padding: 1rem 0;
-  }
-
-  .page-title {
-    font-size: 2rem;
-  }
-
-  .page-subtitle {
-    font-size: 1rem;
-  }
-
-  .talk-card {
-    padding: 1.5rem;
-    margin: 0 0.5rem;
-    border-radius: 16px;
-  }
-
-  .talk-meta {
-    flex-direction: column;
-    gap: 0.75rem;
-  }
-
-  .meta-item {
-    align-self: flex-start;
-  }
-
-  .image-grid.grid-4,
-  .image-grid.grid-5,
-  .image-grid.grid-6,
-  .image-grid.grid-7,
-  .image-grid.grid-8,
-  .image-grid.grid-9 {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .action-buttons {
-    flex-wrap: wrap;
-    gap: 1rem;
-  }
-
-  .view-count {
-    margin-left: 0;
-    width: 100%;
-    justify-content: center;
-  }
-
-  .form-actions {
-    flex-direction: column;
-  }
-
-  .submit-btn,
-  .cancel-btn {
-    width: 100%;
-  }
-
-  .nav-btn.prev-btn {
-    left: -2rem;
-  }
-
-  .nav-btn.next-btn {
-    right: -2rem;
-  }
-
-  .image-preview-modal {
-    padding: 1rem;
-  }
-
-  .modal-content .close-btn {
-    top: -2rem;
-    font-size: 1.5rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .talk-container {
-    padding: 0 0.5rem;
-  }
-
-  .talk-card {
-    padding: 1rem;
-    margin: 0;
-  }
-
-  .page-title {
-    font-size: 1.5rem;
-  }
-
-  .content-text {
-    font-size: 1rem;
-  }
-
-  .image-grid {
-    gap: 0.5rem;
-  }
-
-  .action-btn {
-    padding: 0.5rem 1rem;
-    font-size: 0.8rem;
-  }
-
-  .load-more-btn {
-    padding: 0.875rem 2rem;
-    font-size: 0.9rem;
-    min-width: 140px;
-    min-height: 45px;
-  }
-
-  .nav-btn {
-    font-size: 1.5rem;
-    padding: 0.75rem;
-  }
-
-  .nav-btn.prev-btn,
-  .nav-btn.next-btn {
-    position: fixed;
-    top: 50%;
-  }
-
-  .nav-btn.prev-btn {
-    left: 1rem;
-  }
-
-  .nav-btn.next-btn {
-    right: 1rem;
-  }
-
-  .reply-form {
-    padding: 1rem;
-  }
-
-  .reply-item {
-    padding: 1rem;
-  }
-}
-.infinite-sentinel {
-  width: 100%;
-  height: 1px;
-}
-
-.end-tip {
-  text-align: center;
-  color: #888;
-  padding: 1rem 0;
-}
-
-/* 点赞和回复功能样式 */
-.talk-actions {
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid #f0f0f0;
-}
-
-.action-left {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
+/* 动作区域 */
+.talk-actions { margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px dashed rgba(148,163,184,0.25); }
+.action-left { display:flex; align-items:center; gap: 0.6rem; flex-wrap: wrap; }
 
 .action-btn {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  border: none;
-  background: #f8f9fa;
-  border-radius: 20px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-size: 0.9rem;
-  color: #666;
+  display:inline-flex; align-items:center; gap:0.5rem;
+  padding: 0.5rem 0.9rem; border: 1px solid rgba(148,163,184,0.25);
+  background: rgba(255,255,255,0.55);
+  color: var(--text-secondary); border-radius: 9999px; cursor: pointer;
+  transition: all 0.25s ease; backdrop-filter: blur(6px);
 }
+.action-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(2,6,23,0.12); }
+.action-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
 
-.action-btn:hover {
-  background: #e9ecef;
-  transform: translateY(-1px);
-}
+.like-btn.liked { color: #ef4444; background: rgba(239, 68, 68, 0.08); border-color: rgba(239, 68, 68, 0.25); animation: pop 300ms ease; }
+.like-btn.liked:hover { background: rgba(239, 68, 68, 0.12); }
 
-.action-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-}
+@keyframes pop { 0% { transform: scale(1); } 50% { transform: scale(1.06); } 100% { transform: scale(1); } }
 
-.like-btn.liked {
-  background: #ffe6e6;
-  color: #ff4757;
-}
+.view-count { display:inline-flex; align-items:center; gap:0.4rem; color: var(--muted); font-size: 0.9rem; }
 
-.like-btn.liked:hover {
-  background: #ffd6d6;
-}
+/* 回复区域 */
+.reply-section { margin-top: 1rem; padding-top: 1rem; border-top: 2px solid rgba(148,163,184,0.2); }
+.reply-form { background: rgba(148,163,184,0.08); border: 1px solid rgba(148,163,184,0.25); border-radius: 12px; padding: 1rem; margin-bottom: 1rem; }
+.form-header { display:flex; align-items:center; justify-content: space-between; margin-bottom: 0.75rem; }
+.form-header h4 { margin: 0; color: var(--text-primary); font-size: 1rem; }
+.close-btn { background: none; border: none; font-size: 1.1rem; cursor:pointer; color: var(--muted); padding: 0.25rem; border-radius: 6px; transition: background 0.2s ease, color 0.2s ease; }
+.close-btn:hover { background: rgba(148,163,184,0.15); color: var(--text-secondary); }
 
-.view-count {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: #999;
-  font-size: 0.9rem;
-}
+.form-group { display:flex; flex-direction: column; gap: 0.45rem; }
+.form-group label { font-weight: 600; color: var(--text-secondary); font-size: 0.9rem; }
+.form-group textarea { padding: 0.75rem; border: 1px solid rgba(148,163,184,0.35); border-radius: 10px; font-size: 0.95rem; background: rgba(255,255,255,0.6); color: var(--text-primary); transition: border-color 0.25s ease, box-shadow 0.25s ease; }
+.form-group textarea:focus { outline:none; border-color: var(--accent-1); box-shadow: 0 0 0 4px rgba(99,102,241,0.15); }
+.char-count { text-align:right; font-size: 0.8rem; color: var(--muted); }
 
-.reply-section {
-  margin-top: 1.5rem;
-  padding-top: 1.5rem;
-  border-top: 2px solid #f0f0f0;
-}
-
-.reply-form {
-  background: #f8f9fa;
-  border-radius: 12px;
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
-}
-
-.form-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-}
-
-.form-header h4 {
-  margin: 0;
-  color: #333;
-  font-size: 1.1rem;
-}
-
-.close-btn {
-  background: none;
-  border: none;
-  font-size: 1.2rem;
-  cursor: pointer;
-  color: #999;
-  padding: 0.25rem;
-  border-radius: 4px;
-  transition: all 0.2s ease;
-}
-
-.close-btn:hover {
-  background: #e9ecef;
-  color: #666;
-}
-
-.form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-  margin-bottom: 1rem;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.form-group label {
-  font-weight: 500;
-  color: #555;
-  font-size: 0.9rem;
-}
-
-.form-group input,
-.form-group textarea {
-  padding: 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  transition: border-color 0.3s ease;
-}
-
-.form-group input:focus,
-.form-group textarea:focus {
-  outline: none;
-  border-color: #4dabf7;
-  box-shadow: 0 0 0 3px rgba(77, 171, 247, 0.1);
-}
-
-.char-count {
-  text-align: right;
-  font-size: 0.8rem;
-  color: #999;
-  margin-top: 0.25rem;
-}
-
-.form-actions {
-  display: flex;
-  gap: 1rem;
-  justify-content: flex-end;
-}
-
-.submit-btn,
-.cancel-btn {
-  padding: 0.75rem 1.5rem;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  font-weight: 500;
-  transition: all 0.3s ease;
-}
-
-.submit-btn {
-  background: #4dabf7;
-  color: white;
-}
-
-.submit-btn:hover:not(:disabled) {
-  background: #339af0;
-  transform: translateY(-1px);
-}
-
-.submit-btn:disabled {
-  background: #adb5bd;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.cancel-btn {
-  background: #e9ecef;
-  color: #666;
-}
-
-.cancel-btn:hover:not(:disabled) {
-  background: #dee2e6;
-  transform: translateY(-2px);
-}
+.form-actions { display:flex; gap: 0.6rem; justify-content: flex-end; }
+.submit-btn, .cancel-btn { padding: 0.6rem 1.1rem; border: none; border-radius: 10px; cursor: pointer; font-size: 0.9rem; font-weight: 600; transition: all 0.25s ease; }
+.submit-btn { background: linear-gradient(135deg, var(--accent-1), var(--accent-2)); color: #fff; box-shadow: 0 10px 18px rgba(99,102,241,0.25); }
+.submit-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 14px 22px rgba(99,102,241,0.35); }
+.submit-btn:disabled { background: #94a3b8; cursor: not-allowed; box-shadow: none; }
+.cancel-btn { background: rgba(148,163,184,0.15); color: var(--text-secondary); }
+.cancel-btn:hover:not(:disabled) { background: rgba(148,163,184,0.25); transform: translateY(-1px); }
 
 /* 回复列表 */
-.replies-section {
-  margin-top: 2rem;
-  padding-top: 1.5rem;
-  border-top: 2px solid #f0f0f0;
-}
+.replies-header { display:flex; justify-content: space-between; align-items:center; margin-bottom: 0.75rem; padding: 0.6rem 0.75rem; background: rgba(148,163,184,0.12); border:1px solid rgba(148,163,184,0.25); border-radius: 10px; }
+.replies-title { margin:0; color: var(--text-primary); font-size: 1rem; font-weight: 700; display:flex; align-items:center; gap: 0.4rem; }
+.toggle-replies-btn { display:inline-flex; align-items:center; gap:0.4rem; padding:0.4rem 0.8rem; border:none; background: linear-gradient(135deg, var(--accent-1), var(--accent-2)); color:#fff; border-radius: 9999px; cursor:pointer; box-shadow: 0 8px 18px rgba(99,102,241,0.3); transition: transform 0.25s ease, box-shadow 0.25s ease; }
+.toggle-replies-btn:hover { transform: translateY(-1px); box-shadow: 0 12px 24px rgba(99,102,241,0.4); }
 
-.replies-title {
-  margin: 0 0 1.5rem 0;
-  color: #333;
-  font-size: 1.1rem;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
+.replies-content { margin-top: 0.5rem; }
+.replies-list { display:flex; flex-direction: column; gap: 0.75rem; }
+.reply-item { background: rgba(255,255,255,0.5); border:1px solid rgba(148,163,184,0.25); border-radius: 12px; padding: 0.9rem; transition: transform 0.25s ease, background 0.25s ease; }
+.reply-item:hover { transform: translateX(4px); background: rgba(255,255,255,0.65); }
+.reply-header { display:flex; justify-content: space-between; align-items:center; margin-bottom: 0.6rem; }
+.reply-author { display:flex; align-items:center; gap: 0.6rem; }
+.author-name { font-weight: 700; color: var(--text-primary); font-size: 0.95rem; }
+.reply-time { color: var(--muted); font-size: 0.8rem; }
+.reply-actions { display:flex; align-items:center; }
+.reply-like-btn { display:inline-flex; align-items:center; gap:0.35rem; padding:0.35rem 0.7rem; border:none; background: rgba(148,163,184,0.12); border-radius: 9999px; cursor:pointer; font-size:0.85rem; color: var(--text-secondary); transition: all 0.25s ease; }
+.reply-like-btn:hover { transform: translateY(-1px); }
+.reply-like-btn.liked { background: rgba(239,68,68,0.15); color: #ef4444; }
 
-.replies-title::before {
-  content: '💭';
-}
-
-/* 回复区域头部样式 */
-.replies-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-  padding: 0.75rem 1rem;
-  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-  border-radius: 12px;
-  border: 1px solid #dee2e6;
-}
-
-.replies-count {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-weight: 600;
-  color: #495057;
-  font-size: 0.95rem;
-}
-
-.replies-count::before {
-  content: '💬';
-  font-size: 1.1rem;
-}
-
-.toggle-replies-btn {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  border: none;
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  color: white;
-  border-radius: 20px;
-  cursor: pointer;
-  font-size: 0.85rem;
-  font-weight: 500;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
-}
-
-.toggle-replies-btn:hover {
-  background: linear-gradient(135deg, #5a67d8, #6b46c1);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-}
-
-.toggle-replies-btn:active {
-  transform: translateY(0);
-}
-
-.toggle-icon {
-  transition: transform 0.3s ease;
-  font-size: 0.9rem;
-}
-
-.toggle-icon.expanded {
-  transform: rotate(180deg);
-}
-
-/* 回复列表动画 */
-.replies-list-container {
-  overflow: hidden;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.replies-list-container.collapsed {
-  max-height: 0;
-  opacity: 0;
-  margin-top: 0;
-}
-
-.replies-list-container.expanded {
-  max-height: 2000px;
-  opacity: 1;
-  margin-top: 1rem;
-}
-
-.replies-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.reply-item {
-  background: #f8f9fa;
-  border-radius: 12px;
-  padding: 1.25rem;
-  border: 1px solid #e9ecef;
-  transition: all 0.3s ease;
-}
-
-.reply-item:hover {
-  background: #f1f3f4;
-  transform: translateX(5px);
-}
-
-.reply-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-}
-
-.reply-author {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.reply-avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-size: 1rem;
-}
-
-.author-info {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.author-name {
-  font-weight: 600;
-  color: #333;
-  font-size: 0.9rem;
-}
-
-.reply-time {
-  color: #999;
-  font-size: 0.8rem;
-}
-
-.reply-actions {
-  display: flex;
-  align-items: center;
-}
-
-.reply-like-btn {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.5rem 0.75rem;
-  border: none;
-  background: white;
-  border-radius: 20px;
-  cursor: pointer;
-  font-size: 0.8rem;
-  color: #666;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
-.reply-like-btn:hover {
-  background: #f8f9fa;
-  transform: translateY(-1px);
-}
-
-.reply-like-btn.liked {
-  background: linear-gradient(135deg, #ff6b6b, #ee5a52);
-  color: white;
-}
-
-.reply-content {
-  margin-bottom: 0.5rem;
-}
-
-.reply-to {
-  color: #667eea;
-  font-size: 0.9rem;
-  margin-bottom: 0.5rem;
-  font-weight: 500;
-}
-
-.reply-text {
-  color: #333;
-  line-height: 1.6;
-  font-size: 0.95rem;
-  margin: 0;
-}
+.reply-to { color: var(--accent-1); font-size: 0.9rem; margin-bottom: 0.35rem; font-weight: 600; }
+.reply-text { color: var(--text-primary); line-height: 1.65; font-size: 0.95rem; margin: 0; }
 
 /* 加载更多区域 */
-.load-more-section {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 3rem 0;
-  margin: 2rem 0;
-}
+.load-more-section { display:flex; justify-content:center; align-items:center; padding: 2rem 0 0.5rem; }
+.load-more-btn { position:relative; display:flex; align-items:center; justify-content:center; padding: 0.9rem 2rem; border:none; background: linear-gradient(135deg, var(--accent-1), var(--accent-2)); color:#fff; border-radius: 9999px; cursor:pointer; font-weight: 700; letter-spacing: 0.3px; transition: all 0.3s ease; box-shadow: 0 12px 30px rgba(99,102,241,0.35); min-width: 160px; }
+.load-more-btn:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 18px 36px rgba(99,102,241,0.45); }
+.load-more-btn:disabled { background: linear-gradient(135deg, #94a3b8, #64748b); cursor: not-allowed; transform:none; box-shadow: none; }
+.btn-content { display:flex; align-items:center; justify-content:center; gap: 0.6rem; }
+.spinner-dots { display:flex; align-items:center; gap: 4px; }
+.dot { width: 6px; height: 6px; border-radius: 50%; background: #fff; animation: dotPulse 1.4s ease-in-out infinite both; }
+.dot-1 { animation-delay: -0.32s; }
+.dot-2 { animation-delay: -0.16s; }
+.dot-3 { animation-delay: 0s; }
+@keyframes dotPulse { 0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; } 40% { transform: scale(1); opacity: 1; } }
 
-.load-more-btn {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem 2.5rem;
-  border: none;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border-radius: 50px;
-  cursor: pointer;
-  font-size: 1rem;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
-  overflow: hidden;
-  min-width: 160px;
-  min-height: 50px;
-}
+.end-tip { text-align:center; color: rgba(226,232,240,0.85); padding: 0.75rem 0; display:flex; justify-content:center; align-items:center; gap: 0.5rem; }
 
-.load-more-btn::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.2),
-    transparent
-  );
-  transition: left 0.6s ease;
-}
+/* 进入/列表动画 */
+.stagger-enter-from { opacity: 0; transform: translateY(10px) scale(0.98); }
+.stagger-enter-active { transition: all 420ms cubic-bezier(0.22, 1, 0.36, 1); transition-delay: var(--delay, 0ms); }
+.stagger-enter-to { opacity: 1; transform: translateY(0) scale(1); }
+.stagger-leave-from { opacity: 1; transform: scale(1); }
+.stagger-leave-active { transition: all 260ms ease; }
+.stagger-leave-to { opacity: 0; transform: scale(0.98); }
+.stagger-move { transition: transform 380ms ease; }
 
-.load-more-btn:hover::before {
-  left: 100%;
-}
+/* 展开动画 */
+.expand-enter-from, .expand-leave-to { opacity: 0; transform: translateY(-6px); }
+.expand-enter-active, .expand-leave-active { transition: all 260ms ease; }
 
-.load-more-btn:hover {
-  background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
-  transform: translateY(-3px) scale(1.02);
-  box-shadow: 0 12px 35px rgba(102, 126, 234, 0.4);
-}
-
-.load-more-btn:active {
-  transform: translateY(-1px) scale(0.98);
-  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
-}
-
-.load-more-btn:disabled {
-  background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: 0 4px 15px rgba(148, 163, 184, 0.2);
-}
-
-.load-more-btn:disabled::before {
-  display: none;
-}
-
-.btn-content {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
-  position: relative;
-  z-index: 1;
-}
-
-.btn-content .loading-spinner {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.spinner-dots {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: white;
-  animation: dotPulse 1.4s ease-in-out infinite both;
-}
-
-.dot-1 {
-  animation-delay: -0.32s;
-}
-
-.dot-2 {
-  animation-delay: -0.16s;
-}
-
-.dot-3 {
-  animation-delay: 0s;
-}
-
-@keyframes dotPulse {
-  0%,
-  80%,
-  100% {
-    transform: scale(0.8);
-    opacity: 0.5;
-  }
-  40% {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
-.btn-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform 0.3s ease;
-}
-
-.load-more-btn:hover .btn-icon {
-  transform: rotate(90deg);
-}
-
-.btn-text {
-  font-weight: 600;
-  transition: all 0.3s ease;
-}
-
-.load-more-btn:hover .btn-text {
-  letter-spacing: 0.8px;
-}
-
-/* 加载区域 */
-.loading-section {
-  text-align: center;
-  padding: 2rem 0;
-}
-
-.loading-spinner {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
-  color: white;
-  font-size: 1.1rem;
-}
-
-.icon-loading::before {
-  content: '⏳';
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.infinite-sentinel {
-  width: 100%;
-  height: 1px;
-}
-
-.end-tip {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 1rem;
-}
-
-.icon-check::before {
-  content: '✅';
-}
+/* 加载与空状态 */
+.loading-container,
+.empty-container { display:flex; justify-content:center; align-items:center; min-height: 300px; color: #e2e8f0; }
+.loading-spinner { text-align:center; }
+.spinner { width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.25); border-top: 4px solid #fff; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1rem; }
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+.empty-content { text-align:center; }
+.empty-content .icon-empty { font-size: 2.2rem; display:block; margin-bottom: 0.5rem; }
+.empty-content h3 { font-size: 1.3rem; margin-bottom: 0.25rem; }
 
 /* 图片预览模态框 */
-.image-preview-modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.9);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 2rem;
-}
+.image-preview-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display:flex; align-items:center; justify-content:center; z-index: 1000; padding: 2rem; }
+.modal-content { position: relative; max-width: 90vw; max-height: 90vh; display:flex; flex-direction: column; align-items:center; }
+.modal-content .close-btn { position: absolute; top: -3rem; right: 0; background: rgba(255,255,255,0.1); border:none; color:#fff; font-size: 2rem; cursor:pointer; z-index: 1001; padding: 0.6rem; border-radius: 9999px; transition: background 0.2s ease; }
+.modal-content .close-btn:hover { background: rgba(255,255,255,0.2); }
+.preview-container { position: relative; display:flex; align-items:center; justify-content:center; }
+.preview-image { max-width: 100%; max-height: 80vh; object-fit: contain; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+.nav-btn { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.1); border:none; color:#fff; font-size: 2rem; padding: 1rem; border-radius: 9999px; cursor:pointer; transition: all 0.2s ease; z-index: 1001; backdrop-filter: blur(10px); }
+.nav-btn:hover { background: rgba(255,255,255,0.2); transform: translateY(-50%) scale(1.08); }
+.nav-btn.prev-nav { left: -4rem; }
+.nav-btn.next-nav { right: -4rem; }
+.preview-info { color:#fff; margin-top: 0.75rem; font-size: 0.95rem; background: rgba(0,0,0,0.5); padding: 0.35rem 0.8rem; border-radius: 9999px; backdrop-filter: blur(10px); }
 
-.modal-content {
-  position: relative;
-  max-width: 90vw;
-  max-height: 90vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.modal-content .close-btn {
-  position: absolute;
-  top: -3rem;
-  right: 0;
-  background: rgba(255, 255, 255, 0.1);
-  border: none;
-  color: white;
-  font-size: 2rem;
-  cursor: pointer;
-  z-index: 1001;
-  padding: 0.75rem;
-  border-radius: 50%;
-  transition: background 0.2s ease;
-  width: auto;
-  height: auto;
-}
-
-.modal-content .close-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-}
-
-.preview-container {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.preview-image {
-  max-width: 100%;
-  max-height: 80vh;
-  object-fit: contain;
-  border-radius: 8px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-}
-
-.nav-btn {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  background: rgba(255, 255, 255, 0.1);
-  border: none;
-  color: white;
-  font-size: 2rem;
-  padding: 1rem;
-  border-radius: 50%;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  z-index: 1001;
-  backdrop-filter: blur(10px);
-}
-
-.nav-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-  transform: translateY(-50%) scale(1.1);
-}
-
-.nav-btn.prev-btn {
-  left: -4rem;
-}
-
-.nav-btn.next-btn {
-  right: -4rem;
-}
-
-.icon-chevron-left::before {
-  content: '‹';
-}
-
-.icon-chevron-right::before {
-  content: '›';
-}
-
-.preview-info {
-  color: white;
-  margin-top: 1rem;
-  font-size: 1rem;
-  background: rgba(0, 0, 0, 0.5);
-  padding: 0.5rem 1rem;
-  border-radius: 20px;
-  backdrop-filter: blur(10px);
-}
-
-/* 响应式设计 */
-@media (max-width: 768px) {
-  .talk-page {
-    padding: 1rem 0;
-  }
-
-  .page-title {
-    font-size: 2rem;
-  }
-
-  .page-subtitle {
-    font-size: 1rem;
-  }
-
-  .talk-card {
-    padding: 1.5rem;
-    margin: 0 0.5rem;
-    border-radius: 16px;
-  }
-
-  .talk-meta {
-    flex-direction: column;
-    gap: 0.75rem;
-  }
-
-  .meta-item {
-    align-self: flex-start;
-  }
-
-  .image-grid.grid-4,
-  .image-grid.grid-5,
-  .image-grid.grid-6,
-  .image-grid.grid-7,
-  .image-grid.grid-8,
-  .image-grid.grid-9 {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .action-buttons {
-    flex-wrap: wrap;
-    gap: 1rem;
-  }
-
-  .view-count {
-    margin-left: 0;
-    width: 100%;
-    justify-content: center;
-  }
-
-  .form-actions {
-    flex-direction: column;
-  }
-
-  .submit-btn,
-  .cancel-btn {
-    width: 100%;
-  }
-
-  .nav-btn.prev-btn {
-    left: -2rem;
-  }
-
-  .nav-btn.next-btn {
-    right: -2rem;
-  }
-
-  .image-preview-modal {
-    padding: 1rem;
-  }
-
-  .modal-content .close-btn {
-    top: -2rem;
-    font-size: 1.5rem;
-  }
-}
-
+/* 响应式补充 */
 @media (max-width: 480px) {
-  .talk-container {
-    padding: 0 0.5rem;
-  }
-
-  .talk-card {
-    padding: 1rem;
-    margin: 0;
-  }
-
-  .page-title {
-    font-size: 1.5rem;
-  }
-
-  .content-text {
-    font-size: 1rem;
-  }
-
-  .image-grid {
-    gap: 0.5rem;
-  }
-
-  .action-btn {
-    padding: 0.5rem 1rem;
-    font-size: 0.8rem;
-  }
-
-  .nav-btn {
-    font-size: 1.5rem;
-    padding: 0.75rem;
-  }
-
-  .nav-btn.prev-btn,
-  .nav-btn.next-btn {
-    position: fixed;
-    top: 50%;
-  }
-
-  .nav-btn.prev-btn {
-    left: 1rem;
-  }
-
-  .nav-btn.next-btn {
-    right: 1rem;
-  }
-
-  .reply-form {
-    padding: 1rem;
-  }
-
-  .reply-item {
-    padding: 1rem;
-  }
+  .talk-container { padding: 0 0.5rem 2rem; }
+  .modal-content { padding: 0; }
+  .nav-btn.prev-nav { left: -2rem; }
+  .nav-btn.next-nav { right: -2rem; }
+  .form-actions { flex-direction: column; }
+  .submit-btn, .cancel-btn { width: 100%; }
 }
 </style>

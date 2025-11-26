@@ -119,9 +119,15 @@
     <div v-if="selectedCategories.length > 0" class="batch-actions">
       <ElAlert :title="`已选择 ${selectedCategories.length} 个分类`" type="info" :closable="false">
         <template #default>
-          <ElButton size="small" @click="handleBatchDelete" :disabled="isReadOnly">批量删除</ElButton>
-          <ElButton size="small" @click="handleBatchStatus('active')" :disabled="isReadOnly">批量启用</ElButton>
-          <ElButton size="small" @click="handleBatchStatus('inactive')" :disabled="isReadOnly">批量禁用</ElButton>
+          <ElButton size="small" @click="handleBatchDelete" :disabled="isReadOnly">
+            批量删除
+          </ElButton>
+          <ElButton size="small" @click="handleBatchStatus('active')" :disabled="isReadOnly">
+            批量启用
+          </ElButton>
+          <ElButton size="small" @click="handleBatchStatus('inactive')" :disabled="isReadOnly">
+            批量禁用
+          </ElButton>
         </template>
       </ElAlert>
     </div>
@@ -165,7 +171,12 @@
       </ElForm>
       <template #footer>
         <ElButton @click="dialogVisible = false">取消</ElButton>
-        <ElButton type="primary" @click="handleSubmit" :loading="submitLoading" :disabled="isReadOnly">
+        <ElButton
+          type="primary"
+          @click="handleSubmit"
+          :loading="submitLoading"
+          :disabled="isReadOnly"
+        >
           {{ dialogMode === 'add' ? '新增' : '更新' }}
         </ElButton>
       </template>

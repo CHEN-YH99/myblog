@@ -254,6 +254,7 @@ import { useArticlesStore } from '@/stores/getarticles'
 import { useTalksStore } from '@/stores/talks'
 // import { getUserLikedArticles } from '@/api/articles'
 import { changePassword, type ChangePasswordParams } from '@/api/user'
+import { incrementViews } from '@/api/articles'
 import WaveContainer from '@/components/WaveContainer.vue'
 import Footer from '@/components/Footer.vue'
 import avatarUrl from '@/assets/images/hui.svg'
@@ -474,7 +475,22 @@ const passwordRules = {
 
 // 跳转到文章详情
 const goToArticle = (article: any) => {
-  router.push(`/article/${article._id}`)
+  const id = article?._id
+  if (!id) return
+
+  // 乐观更新本地浏览量，提升体验
+  try {
+    const current = typeof article.views === 'number' ? article.views : 0
+    article.views = current + 1
+  } catch (e) {
+    // ignore
+  }
+
+  // 后台上报浏览量（不阻塞跳转，静默失败）
+  incrementViews(id).catch(() => {})
+
+  // 跳转到详情页
+  router.push(`/article/${id}`)
 }
 
 // 格式化日期

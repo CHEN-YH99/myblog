@@ -324,6 +324,173 @@
       "serverError": "500"
     }
   },
+  "dashboard": {
+    "cardList": {
+      "totalVisits": "总访问次数",
+      "totalArticles": "文章总数",
+      "totalCategories": "文章分类",
+      "totalUsers": "用户总数",
+      "weekCompared": "较上周"
+    },
+    "activeUser": {
+      "title": "文章发表统计",
+      "monthOverMonth": "比上月",
+      "desc": "每月文章发表数量统计，帮助您了解内容创作趋势",
+      "totalArticles": "总文章数",
+      "currentMonth": "本月发表",
+      "averageMonthly": "平均月发表",
+      "mom": "月同比"
+    },
+    "salesOverview": {
+      "title": "访问量",
+      "totalViews": "总访问量"
+    },
+    "months": ["1月","2月","3月","4月","5月","6月","7月","8月","9月","10月","11月","12月"],
+    "newUser": {
+      "title": "用户管理",
+      "subtitle": "用户数据",
+      "subtitleRealtime": "实时更新",
+      "filters": {
+        "thisMonth": "本月",
+        "lastMonth": "上月",
+        "thisYear": "今年"
+      },
+      "columns": {
+        "user": "用户",
+        "role": "角色",
+        "city": "城市",
+        "gender": "性别",
+        "status": "状态"
+      },
+      "status": {
+        "enabled": "启用",
+        "disabled": "禁用"
+      },
+      "genderMap": {
+        "male": "男",
+        "female": "女",
+        "other": "其他"
+      },
+      "placeholderDash": "-"
+    },
+    "todoList": {
+      "title": "代办事项",
+      "pending": "待处理",
+      "items": {
+        "viewTodayWork": "查看今天工作内容",
+        "replyEmails": "回复邮件",
+        "reportPreparation": "工作汇报整理",
+        "productMeeting": "产品需求会议",
+        "organizeMeetingNotes": "整理会议内容",
+        "tomorrowPlan": "明天工作计划"
+      },
+      "time": {
+        "morning_0930": "上午 09:30",
+        "morning_1030": "上午 10:30",
+        "morning_1100": "上午 11:00",
+        "afternoon_0200": "下午 02:00",
+        "afternoon_0330": "下午 03:30",
+        "afternoon_0630": "下午 06:30"
+      }
+    },
+    "dynamic": {
+      "title": "动态",
+      "added": "新增",
+      "types": {
+        "followed": "关注了",
+        "publishedArticle": "发表文章",
+        "askedQuestion": "提出问题",
+        "redeemedItem": "兑换了物品",
+        "closedQuestion": "关闭了问题"
+      }
+    }
+  },
+  "talk": {
+    "searchPlaceholder": "输入说说内容查询",
+    "actions": {
+      "search": "搜索",
+      "reset": "重置",
+      "publish": "发表说说",
+      "edit": "编辑",
+      "more": "更多",
+      "top": "置顶",
+      "cancelTop": "取消置顶",
+      "hide": "隐藏",
+      "show": "显示",
+      "delete": "删除",
+      "restore": "恢复",
+      "permanentDelete": "永久删除",
+      "batchDelete": "批量删除",
+      "batchRestore": "批量恢复",
+      "batchPermanentDelete": "批量永久删除",
+      "batchToggleTop": "批量置顶/取消置顶",
+      "batchToggleHide": "批量隐藏/显示",
+      "confirm": "确认",
+      "cancel": "取消"
+    },
+    "statusOptions": {
+      "all": "全部说说",
+      "public": "公开说说",
+      "private": "私密说说",
+      "deleted": "回收站"
+    },
+    "table": {
+      "content": "内容",
+      "status": "状态",
+      "metrics": "互动数据",
+      "publishTime": "发布时间",
+      "actions": "操作",
+      "views": "浏览",
+      "likes": "点赞",
+      "top": "置顶",
+      "hidden": "隐藏",
+      "updatePrefix": "更新: "
+    },
+    "status": {
+      "public": "公开",
+      "private": "私密",
+      "deleted": "已删除"
+    },
+    "batch": {
+      "selectedInfo": "已选择 {count} 条说说"
+    },
+    "messages": {
+      "operationFailed": "操作失败",
+      "deleteConfirmTitle": "确认删除",
+      "deleteConfirmMessage": "确定要删除这条说说吗？删除后将移动到回收站，可以恢复。",
+      "deleteSuccess": "删除成功，已移动到回收站",
+      "deleteFailed": "删除失败，请重试",
+      "restoreSuccess": "恢复成功",
+      "restoreFailed": "恢复失败，请重试",
+      "permanentDeleteConfirmTitle": "确认永久删除",
+      "permanentDeleteConfirmMessage": "确定要永久删除这条说说吗？此操作不可恢复！",
+      "permanentDeleteButton": "永久删除",
+      "permanentDeleteSuccess": "永久删除成功",
+      "permanentDeleteFailed": "永久删除失败，请重试",
+      "selectToDelete": "请选择要删除的说说",
+      "selectToRestore": "请选择要恢复的说说",
+      "selectToPermanentDelete": "请选择要永久删除的说说",
+      "batchDeleteConfirmTitle": "批量删除",
+      "batchDeleteConfirmMessage": "确定要删除选中的 {count} 条说说吗？删除后将移动到回收站，可以恢复。",
+      "batchDeleteSuccess": "成功删除 {count} 条说说，已移动到回收站",
+      "batchRestoreSuccess": "成功恢复 {count} 条说说",
+      "batchPermanentDeleteConfirmTitle": "批量永久删除",
+      "batchPermanentDeleteConfirmMessage": "确定要永久删除选中的 {count} 条说说吗？此操作不可恢复！",
+      "batchPermanentDeleteSuccess": "成功永久删除 {count} 条说说",
+      "batchToggleTopSuccess": "批量置顶操作成功",
+      "batchToggleTopFailed": "批量置顶操作失败",
+      "batchToggleHideSuccess": "批量隐藏操作成功",
+      "batchToggleHideFailed": "批量隐藏操作失败",
+      "topSuccess": "置顶成功",
+      "cancelTopSuccess": "取消置顶成功",
+      "hideSuccess": "隐藏成功",
+      "showSuccess": "显示成功",
+      "selectToOperate": "请选择要操作的说说",
+      "batchDeleteFailed": "批量删除失败，请重试",
+      "batchRestoreFailed": "批量恢复失败，请重试",
+      "batchPermanentDeleteFailed": "批量永久删除失败，请重试"
+    }
+  },
   "table": {
     "searchBar": {
       "reset": "重置",

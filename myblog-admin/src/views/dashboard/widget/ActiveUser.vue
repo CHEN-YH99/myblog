@@ -10,9 +10,9 @@
       :key="refreshKey"
     />
     <div class="text">
-      <h3 class="box-title">文章发表统计</h3>
-      <p class="subtitle">比上月 <span class="text-success">{{ currentMonthGrowth }}</span></p>
-      <p class="subtitle">每月文章发表数量统计，帮助您了解内容创作趋势</p>
+      <h3 class="box-title">{{ $t('dashboard.activeUser.title') }}</h3>
+      <p class="subtitle">{{ $t('dashboard.activeUser.monthOverMonth') }} <span class="text-success">{{ currentMonthGrowth }}</span></p>
+      <p class="subtitle">{{ $t('dashboard.activeUser.desc') }}</p>
     </div>
     <div class="list">
       <div v-for="(item, index) in list" :key="index">
@@ -27,7 +27,13 @@
   import { ref, onMounted, computed, onUnmounted } from 'vue'
   import { useArticleStats, articleEventBus } from '@/composables/useArticleStats'
 
-  const monthLabels = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月']
+  import { useI18n } from 'vue-i18n'
+  const { t } = useI18n()
+  const monthLabels = computed(() => [
+    t('dashboard.months[0]'), t('dashboard.months[1]'), t('dashboard.months[2]'), t('dashboard.months[3]'),
+    t('dashboard.months[4]'), t('dashboard.months[5]'), t('dashboard.months[6]'), t('dashboard.months[7]'),
+    t('dashboard.months[8]'), t('dashboard.months[9]'), t('dashboard.months[10]'), t('dashboard.months[11]')
+  ])
   
   // 使用文章统计 Composable
   const { 
@@ -44,10 +50,10 @@
   const currentMonthArticles = computed(() => articleStats.value.currentMonthArticles)
 
   const list = computed(() => [
-    { name: '总文章数', num: totalArticles.value.toString() },
-    { name: '本月发表', num: currentMonthArticles.value.toString() },
-    { name: '平均月发表', num: averageMonthlyArticles.value.toString() },
-    { name: '月同比', num: currentMonthGrowth.value }
+    { name: t('dashboard.activeUser.totalArticles'), num: totalArticles.value.toString() },
+    { name: t('dashboard.activeUser.currentMonth'), num: currentMonthArticles.value.toString() },
+    { name: t('dashboard.activeUser.averageMonthly'), num: averageMonthlyArticles.value.toString() },
+    { name: t('dashboard.activeUser.mom'), num: currentMonthGrowth.value }
   ])
 
   // 监听路由变化，当从文章编辑页面返回时刷新数据

@@ -28,5 +28,10 @@ export default createViteConfig({
   ],
   serverConfig: {
     port: 5174
+  },
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, 'src')
+    }
   }
 })

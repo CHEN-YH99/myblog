@@ -819,6 +819,38 @@ onBeforeUnmount(() => {
 
 <!-- 全局样式：确保挂载到 body 的弹出层也能生效 -->
 <style>
+/* 主题切换背景视图过渡（更炫酷的径向揭示动画） */
+@supports (view-transition-name: theme) or (view-transition-name: page-theme) {
+  /* 指定文档根的视图过渡名称，作用于整页背景 */
+  html { view-transition-name: page-theme; }
+
+  ::view-transition-old(page-theme),
+  ::view-transition-new(page-theme) {
+    animation-duration: 1520ms;
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+    /* 避免混合模式导致颜色失真 */
+    mix-blend-mode: normal;
+  }
+  /* 新主题从点击点向外扩散 */
+  ::view-transition-new(page-theme) {
+    animation-name: theme-reveal-in;
+    z-index: 9999;
+  }
+  /* 旧主题向点击点收缩 */
+  ::view-transition-old(page-theme) {
+    animation-name: theme-reveal-out;
+  }
+
+  @keyframes theme-reveal-in {
+    from { clip-path: circle(0 at var(--vt-x, 50%) var(--vt-y, 50%)); }
+    to   { clip-path: circle(150% at var(--vt-x, 50%) var(--vt-y, 50%)); }
+  }
+  @keyframes theme-reveal-out {
+    from { clip-path: circle(150% at var(--vt-x, 50%) var(--vt-y, 50%)); }
+    to   { clip-path: circle(0 at var(--vt-x, 50%) var(--vt-y, 50%)); }
+  }
+}
+
 /* 子菜单弹层容器（通过 popper-class 绑定） */
 .navbar-submenu-popper {
   background-color: var(--el-bg-color-overlay, #fff) !important;

@@ -5,6 +5,7 @@
     "allowImportingTsExtensions": true,
     "moduleDetection": "force",
     "noEmit": true,
+    "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"],
       "@shared/*": ["../shared/*"],

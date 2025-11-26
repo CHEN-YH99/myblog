@@ -2,8 +2,8 @@
   <div class="card art-custom-card">
     <div class="card-header">
       <div class="title">
-        <h4 class="box-title">访问量</h4>
-        <p class="subtitle">总访问量 <span class="text-success">{{ totalViews.toLocaleString() }}</span></p>
+        <h4 class="box-title">{{ $t('dashboard.salesOverview.title') }}</h4>
+        <p class="subtitle">{{ $t('dashboard.salesOverview.totalViews') }} <span class="text-success">{{ totalViews.toLocaleString() }}</span></p>
       </div>
     </div>
     <ArtLineChart
@@ -22,20 +22,22 @@
   import { ref, onMounted, computed, onUnmounted } from 'vue'
   import { useArticleStats, articleEventBus } from '@/composables/useArticleStats'
 
-  const xAxisData = [
-    '1月',
-    '2月',
-    '3月',
-    '4月',
-    '5月',
-    '6月',
-    '7月',
-    '8月',
-    '9月',
-    '10月',
-    '11月',
-    '12月'
-  ]
+  import { useI18n } from 'vue-i18n'
+  const { t } = useI18n()
+  const xAxisData = computed(() => [
+    t('dashboard.months[0]'),
+    t('dashboard.months[1]'),
+    t('dashboard.months[2]'),
+    t('dashboard.months[3]'),
+    t('dashboard.months[4]'),
+    t('dashboard.months[5]'),
+    t('dashboard.months[6]'),
+    t('dashboard.months[7]'),
+    t('dashboard.months[8]'),
+    t('dashboard.months[9]'),
+    t('dashboard.months[10]'),
+    t('dashboard.months[11]')
+  ])
 
   // 使用文章统计 Composable
   const { 

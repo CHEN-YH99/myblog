@@ -2,13 +2,13 @@
   <div class="card art-custom-card">
     <div class="card-header">
       <div class="title">
-        <h4 class="box-title">用户管理</h4>
-        <p class="subtitle">用户数据<span class="text-success">实时更新</span></p>
+        <h4 class="box-title">{{ $t('dashboard.newUser.title') }}</h4>
+        <p class="subtitle">{{ $t('dashboard.newUser.subtitle') }}<span class="text-success">{{ $t('dashboard.newUser.subtitleRealtime') }}</span></p>
       </div>
       <el-radio-group v-model="radio2">
-        <el-radio-button label="本月" />
-        <el-radio-button label="上月" />
-        <el-radio-button label="今年" />
+        <el-radio-button :label="'thisMonth'">{{ $t('dashboard.newUser.filters.thisMonth') }}</el-radio-button>
+        <el-radio-button :label="'lastMonth'">{{ $t('dashboard.newUser.filters.lastMonth') }}</el-radio-button>
+        <el-radio-button :label="'thisYear'">{{ $t('dashboard.newUser.filters.thisYear') }}</el-radio-button>
       </el-radio-group>
     </div>
     <ArtTable
@@ -21,7 +21,7 @@
       :header-cell-style="{ background: 'transparent' }"
     >
       <template #default>
-        <el-table-column label="用户" prop="username" width="150px">
+        <el-table-column :label="$t('dashboard.newUser.columns.user')" prop="username" width="150px">
           <template #default="scope">
             <div style="display: flex; align-items: center">
               <el-avatar :size="36" :src="scope.row.avatar" :icon="UserFilled" />
@@ -29,21 +29,21 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column label="角色" prop="roleName" />
-        <el-table-column label="城市" prop="city">
+        <el-table-column :label="$t('dashboard.newUser.columns.role')" prop="roleName" />
+        <el-table-column :label="$t('dashboard.newUser.columns.city')" prop="city">
           <template #default="scope">
-            <span>{{ scope.row.city || '-' }}</span>
+            <span>{{ scope.row.city || $t('dashboard.newUser.placeholderDash') }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="性别" prop="gender">
+        <el-table-column :label="$t('dashboard.newUser.columns.gender')" prop="gender">
           <template #default="scope">
             <span>{{ getGenderText(scope.row.gender) }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="状态" prop="enabled">
+        <el-table-column :label="$t('dashboard.newUser.columns.status')" prop="enabled">
           <template #default="scope">
             <el-tag :type="scope.row.enabled ? 'success' : 'danger'" size="small">
-              {{ scope.row.enabled ? '启用' : '禁用' }}
+              {{ scope.row.enabled ? $t('dashboard.newUser.status.enabled') : $t('dashboard.newUser.status.disabled') }}
             </el-tag>
           </template>
         </el-table-column>
@@ -57,8 +57,10 @@
   import { fetchGetUserList } from '@/api/system-manage'
   import { UserFilled } from '@element-plus/icons-vue'
   import { ElAvatar, ElTag } from 'element-plus'
+  import { useI18n } from 'vue-i18n'
+  const { t } = useI18n()
 
-  const radio2 = ref('本月')
+  const radio2 = ref('thisMonth')
   const allUsers = ref<any[]>([]) // 存储从API获取的所有用户
   const tableData = ref<any[]>([]) // 存储过滤后用于表格显示的用户
 
@@ -72,13 +74,13 @@
 
     // 关键改动：根据推测，将日期字段从 'createdAt' 修改为 'createTime'
     switch (radio2.value) {
-      case '本月':
+      case 'thisMonth':
         filteredList = allUsers.value.filter(user => {
           const userDate = new Date(user.createTime)
           return userDate.getFullYear() === year && userDate.getMonth() === month
         })
         break
-      case '上月':
+      case 'lastMonth':
         const prevMonthDate = new Date(year, month - 1, 1)
         const prevMonthYear = prevMonthDate.getFullYear()
         const prevMonth = prevMonthDate.getMonth()
@@ -87,7 +89,7 @@
           return userDate.getFullYear() === prevMonthYear && userDate.getMonth() === prevMonth
         })
         break
-      case '今年':
+      case 'thisYear':
         filteredList = allUsers.value.filter(user => {
           const userDate = new Date(user.createTime)
           return userDate.getFullYear() === year
@@ -124,12 +126,12 @@
 
   // 性别文本转换
   const getGenderText = (gender: string) => {
-    const genderMap = {
-      'male': '男',
-      'female': '女',
-      'other': '其他'
+    const genderMap: Record<string, string> = {
+      male: t('dashboard.newUser.genderMap.male'),
+      female: t('dashboard.newUser.genderMap.female'),
+      other: t('dashboard.newUser.genderMap.other')
     }
-    return genderMap[gender] || '-'
+    return genderMap[gender] || t('dashboard.newUser.placeholderDash')
   }
 
   // 监听 radio group 的变化，并重新应用过滤

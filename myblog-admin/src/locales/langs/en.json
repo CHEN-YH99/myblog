@@ -293,11 +293,195 @@
       "category": "Article Category",
       "tags": "Article Tags"
     },
+    "talk": {
+      "title": "Talks",
+      "talkList": "Talk List",
+      "publishTalk": "Publish Talk"
+    },
+    "site": {
+      "title": "Site Management",
+      "siteManagement": "Blog Site Info",
+      "backgroundManagement": "Background Management",
+      "friendLinkManagement": "Friend Links"
+    },
+    "photoAlbum": {
+      "title": "Photo Albums"
+    },
+    "personal": {
+      "title": "Personal Center"
+    },
     "exception": {
       "title": "Exception Pages",
       "forbidden": "403",
       "notFound": "404",
       "serverError": "500"
+    }
+  },
+  "dashboard": {
+    "cardList": {
+      "totalVisits": "Total Visits",
+      "totalArticles": "Total Articles",
+      "totalCategories": "Article Categories",
+      "totalUsers": "Total Users",
+      "weekCompared": "vs last week"
+    },
+    "activeUser": {
+      "title": "Article Publication Stats",
+      "monthOverMonth": "MoM",
+      "desc": "Monthly article publications to help you track content trends",
+      "totalArticles": "Total Articles",
+      "currentMonth": "This Month",
+      "averageMonthly": "Monthly Avg",
+      "mom": "MoM"
+    },
+    "salesOverview": {
+      "title": "Views",
+      "totalViews": "Total Views"
+    },
+    "months": ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],
+    "newUser": {
+      "title": "User Management",
+      "subtitle": "User Data",
+      "subtitleRealtime": "Realtime",
+      "filters": {
+        "thisMonth": "This Month",
+        "lastMonth": "Last Month",
+        "thisYear": "This Year"
+      },
+      "columns": {
+        "user": "User",
+        "role": "Role",
+        "city": "City",
+        "gender": "Gender",
+        "status": "Status"
+      },
+      "status": {
+        "enabled": "Enabled",
+        "disabled": "Disabled"
+      },
+      "genderMap": {
+        "male": "Male",
+        "female": "Female",
+        "other": "Other"
+      },
+      "placeholderDash": "-"
+    },
+    "todoList": {
+      "title": "Todo",
+      "pending": "Pending",
+      "items": {
+        "viewTodayWork": "Review today's work",
+        "replyEmails": "Reply to emails",
+        "reportPreparation": "Prepare work report",
+        "productMeeting": "Product requirements meeting",
+        "organizeMeetingNotes": "Organize meeting notes",
+        "tomorrowPlan": "Plan for tomorrow"
+      },
+      "time": {
+        "morning_0930": "09:30 AM",
+        "morning_1030": "10:30 AM",
+        "morning_1100": "11:00 AM",
+        "afternoon_0200": "02:00 PM",
+        "afternoon_0330": "03:30 PM",
+        "afternoon_0630": "06:30 PM"
+      }
+    },
+    "dynamic": {
+      "title": "Activity",
+      "added": "Added",
+      "types": {
+        "followed": "followed",
+        "publishedArticle": "published an article",
+        "askedQuestion": "asked a question",
+        "redeemedItem": "redeemed an item",
+        "closedQuestion": "closed a question"
+      }
+    }
+  },
+  "talk": {
+    "searchPlaceholder": "Enter text to search talks",
+    "actions": {
+      "search": "Search",
+      "reset": "Reset",
+      "publish": "Publish Talk",
+      "edit": "Edit",
+      "more": "More",
+      "top": "Top",
+      "cancelTop": "Cancel Top",
+      "hide": "Hide",
+      "show": "Show",
+      "delete": "Delete",
+      "restore": "Restore",
+      "permanentDelete": "Delete Permanently",
+      "batchDelete": "Batch Delete",
+      "batchRestore": "Batch Restore",
+      "batchPermanentDelete": "Batch Delete Permanently",
+      "batchToggleTop": "Batch Top/Untop",
+      "batchToggleHide": "Batch Hide/Show",
+      "confirm": "Confirm",
+      "cancel": "Cancel"
+    },
+    "statusOptions": {
+      "all": "All",
+      "public": "Public",
+      "private": "Private",
+      "deleted": "Recycle Bin"
+    },
+    "table": {
+      "content": "Content",
+      "status": "Status",
+      "metrics": "Engagement",
+      "publishTime": "Published At",
+      "actions": "Actions",
+      "views": "Views",
+      "likes": "Likes",
+      "top": "Top",
+      "hidden": "Hidden",
+      "updatePrefix": "Updated: "
+    },
+    "status": {
+      "public": "Public",
+      "private": "Private",
+      "deleted": "Deleted"
+    },
+    "batch": {
+      "selectedInfo": "Selected {count} talks"
+    },
+    "messages": {
+      "operationFailed": "Operation failed",
+      "deleteConfirmTitle": "Confirm Delete",
+      "deleteConfirmMessage": "Are you sure to delete this talk? It will be moved to recycle bin and can be restored.",
+      "deleteSuccess": "Deleted successfully and moved to recycle bin",
+      "deleteFailed": "Delete failed, please try again",
+      "restoreSuccess": "Restored successfully",
+      "restoreFailed": "Restore failed, please try again",
+      "permanentDeleteConfirmTitle": "Confirm Permanent Delete",
+      "permanentDeleteConfirmMessage": "Are you sure to permanently delete this talk? This action cannot be undone!",
+      "permanentDeleteButton": "Delete Permanently",
+      "permanentDeleteSuccess": "Permanently deleted successfully",
+      "permanentDeleteFailed": "Permanent delete failed, please try again",
+      "selectToDelete": "Please select talks to delete",
+      "selectToRestore": "Please select talks to restore",
+      "selectToPermanentDelete": "Please select talks to permanently delete",
+      "batchDeleteConfirmTitle": "Batch Delete",
+      "batchDeleteConfirmMessage": "Are you sure to delete the selected {count} talks? They will be moved to recycle bin and can be restored.",
+      "batchDeleteSuccess": "Successfully deleted {count} talks and moved to recycle bin",
+      "batchRestoreSuccess": "Successfully restored {count} talks",
+      "batchPermanentDeleteConfirmTitle": "Batch Permanent Delete",
+      "batchPermanentDeleteConfirmMessage": "Are you sure to permanently delete the selected {count} talks? This action cannot be undone!",
+      "batchPermanentDeleteSuccess": "Successfully permanently deleted {count} talks",
+      "batchToggleTopSuccess": "Batch top operation succeeded",
+      "batchToggleTopFailed": "Batch top operation failed",
+      "batchToggleHideSuccess": "Batch hide operation succeeded",
+      "batchToggleHideFailed": "Batch hide operation failed",
+      "topSuccess": "Topped successfully",
+      "cancelTopSuccess": "Untopped successfully",
+      "hideSuccess": "Hidden successfully",
+      "showSuccess": "Shown successfully",
+      "selectToOperate": "Please select talks to operate",
+      "batchDeleteFailed": "Batch delete failed, please try again",
+      "batchRestoreFailed": "Batch restore failed, please try again",
+      "batchPermanentDeleteFailed": "Batch permanent delete failed, please try again"
     }
   },
   "table": {
