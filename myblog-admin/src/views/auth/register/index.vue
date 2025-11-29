@@ -170,7 +170,8 @@
         username: formData.username,
         email: formData.email,
         password: formData.password,
-        confirmPassword: formData.confirmPassword
+        confirmPassword: formData.confirmPassword,
+        registerSource: 'backend'
       })
 
       // 同步到后台users表，设置为普通用户（只读权限）
@@ -182,7 +183,7 @@
           role: '普通用户',
           status: 'active',
           createTime: new Date().toISOString(),
-          registerSource: 'admin'
+          registerSource: 'backend'
         })
       } catch (syncErr) {
         console.warn('用户同步到后台失败，但注册已成功：', syncErr)

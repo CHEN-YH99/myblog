@@ -10,6 +10,11 @@
     <template #left>
       <ElSpace wrap>
         <ElButton @click="showDialog('add')" v-ripple :disabled="isReadOnly">新增用户</ElButton>
+        <ElRadioGroup v-model="filterSource" style="margin-left: 20px">
+          <ElRadioButton v-for="item in sourceOptions" :key="item.value" :label="item.value">
+            {{ item.label }}
+          </ElRadioButton>
+        </ElRadioGroup>
       </ElSpace>
     </template>
   </ArtTableHeader>
@@ -17,7 +22,7 @@
       <!-- 表格 -->
       <ArtTable
         :loading="loading"
-        :data="data"
+        :data="filteredData"
         :columns="columns"
         :pagination="pagination"
         @selection-change="handleSelectionChange"
@@ -105,6 +110,14 @@
   // 只读状态
   const { isReadOnly } = storeToRefs(useUserStore())
 
+  // 筛选相关
+  const filterSource = ref('all')
+  const sourceOptions = [
+    { label: '全部', value: 'all' },
+    { label: '客户端', value: 'client' },
+    { label: '管理端', value: 'admin' }
+  ]
+
   // 弹窗相关
   const dialogType = ref<Form.DialogType>('add')
   const dialogVisible = ref(false)
@@ -119,6 +132,9 @@
 
   // 角色列表
   const roleList = ref<RoleOption[]>([])
+
+  const CLIENT_SOURCES = new Set(['frontend', 'client', 'myblog'])
+  const ADMIN_SOURCES = new Set(['admin', 'backend', 'myblog-admin', 'admin-register'])
 
   const REGISTER_SOURCE_LABELS: Record<string, string> = {
     frontend: '客户端',
@@ -319,6 +335,23 @@
         })
         return transformedData
       }
+    }
+  })
+
+  const filteredData = computed(() => {
+    if (filterSource.value === 'all') return data.value
+    return data.value.filter((row: any) => {
+      const key = String(row.registerSource || '').toLowerCase()
+      if (filterSource.value === 'client') return CLIENT_SOURCES.has(key)
+      if (filterSource.value === 'admin') return ADMIN_SOURCES.has(key)
+      return true
+    })
+  })
+
+  // 切换筛选时回到第一页（避免当前页无数据的空白感）
+  watch(filterSource, () => {
+    if (pagination && typeof (pagination as any).current !== 'undefined') {
+      ;(pagination as any).current = 1
     }
   })
 

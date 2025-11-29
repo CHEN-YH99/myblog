@@ -15,7 +15,7 @@ export interface UserSyncData {
   status?: 'active' | 'inactive' | 'banned'
   createTime?: string
   updateTime?: string
-  registerSource?: 'frontend' | 'admin' | 'other'
+  registerSource?: 'frontend' | 'backend' | 'admin' | 'other'
 }
 
 // 接收前台用户注册数据

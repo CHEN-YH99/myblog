@@ -133,7 +133,7 @@
   import { HttpError } from '@/utils/http/error'
   import { themeAnimation } from '@/utils/theme/animation'
   import { fetchLogin, fetchGetUserInfo } from '@/api/auth'
-  import { fetchGetRoleList } from '@/api/system-manage'
+  import { fetchGetRoleList, fetchGetUserList } from '@/api/system-manage'
 
   defineOptions({ name: 'Login' })
 
@@ -157,30 +157,37 @@
   const roleLoading = ref(false)
 
   const ACCOUNT_PRESETS = computed<Record<string, { label: string; userName: string; password: string }>>(() => ({
-    SUPER_ADMIN: { label: t('login.roles.super'), userName: 'superadmin', password: '123456' },
-    ADMIN: { label: t('login.roles.admin'), userName: 'admin', password: 'Xanxus2979@' },
-    EDITOR: { label: t('login.roles.editor'), userName: 'editor', password: '123456' },
+    SUPER_ADMIN: { label: t('login.roles.super'), userName: '', password: '' },
+    ADMIN: { label: t('login.roles.admin'), userName: '', password: '' },
+    EDITOR: { label: t('login.roles.editor'), userName: '', password: '' },
     USER: { label: t('login.roles.user'), userName: 'user1', password: 'a123456' }
   }))
 
+  // 可选：支持通过环境变量提供演示密码映射，如 {"ADMIN":"adminPass","SUPER_ADMIN":"superPass"}
+  const DEMO_PASSWORDS = (() => {
+    try {
+      const raw = import.meta.env.VITE_DEMO_PASSWORDS as string | undefined
+      return raw ? (JSON.parse(raw) as Record<string, string>) : {}
+    } catch {
+      return {} as Record<string, string>
+    }
+  })()
+
   const accounts = computed<Account[]>(() => {
     if (!roleOptions.value?.length) return []
-    const list: Account[] = []
-    for (const role of roleOptions.value) {
-      if (!role?.enabled) continue
-      const code = String(role.roleCode || '').toUpperCase()
-      const preset = ACCOUNT_PRESETS.value[code]
-      if (preset) {
-        list.push({
+    return roleOptions.value
+      .filter((r) => r?.enabled)
+      .map((role) => {
+        const code = String(role.roleCode || '').toUpperCase()
+        const preset = ACCOUNT_PRESETS.value[code]
+        return {
           key: code,
-          label: preset.label || role.roleName,
-          userName: preset.userName,
-          password: preset.password,
+          label: preset?.label || role.roleName || code,
+          userName: preset?.userName || '',
+          password: preset?.password || '',
           roleCode: code
-        })
-      }
-    }
-    return list
+        }
+      })
   })
 
   const loadRoleOptions = async () => {
@@ -262,13 +269,45 @@
     }
   })
 
-  // 设置账号：根据所选角色填充匹配该角色的账号与密码，并确保角色编码与后端一致
-  const setupAccount = (key: AccountKey) => {
+  const userFetchLoading = ref(false)
+
+  // 按角色从后端拉取一个示例账号（不返回密码）
+  const getFirstUserByRole = async (roleCode?: string) => {
+    if (!roleCode) return ''
+    try {
+      userFetchLoading.value = true
+      const res = await fetchGetUserList({ current: 1, size: 1, roleCode, enabled: true } as any)
+      const first = (res?.records || [])[0]
+      return first?.username || first?.userName || ''
+    } catch (e) {
+      console.warn('[Login] 获取角色对应用户失败:', e)
+      return ''
+    } finally {
+      userFetchLoading.value = false
+    }
+  }
+
+  // 设置账号：根据所选角色填充匹配该角色的账号，并尽量从环境变量读取演示密码
+  const setupAccount = async (key: AccountKey) => {
     const selectedAccount = accounts.value.find((account: Account) => String(account.key).toUpperCase() === String(key).toUpperCase())
     formData.account = selectedAccount?.key || ''
-    formData.username = selectedAccount?.userName || ''
-    formData.password = selectedAccount?.password || ''
     formData.roleCode = selectedAccount?.roleCode || ''
+
+    // 先用后端数据找一个该角色的有效用户名
+    const usernameFromServer = await getFirstUserByRole(formData.roleCode)
+    const fallbackUser = selectedAccount?.userName || ''
+    formData.username = usernameFromServer || fallbackUser
+
+    // 密码优先取环境变量 DEMO_PASSWORDS 映射，其次预置（仅 USER 提供），否则留空让用户自己输入
+    const roleKey = String(formData.roleCode || '').toUpperCase()
+    const pwdFromEnv = DEMO_PASSWORDS?.[roleKey]
+    formData.password = pwdFromEnv || selectedAccount?.password || ''
+
+    if (!formData.password) {
+      // 不自动填错密码，提示用户手动输入
+      // 这里不使用弹窗打扰，仅在控制台提示；若需要也可改为 ElMessage.info
+      console.info(`[Login] 角色 ${roleKey} 未配置演示密码，请手动输入密码`)
+    }
   }
 
   // 登录

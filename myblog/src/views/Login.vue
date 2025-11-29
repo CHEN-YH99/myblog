@@ -585,7 +585,7 @@ const handleRegister = async () => {
         role: '普通用户',
         status: 'active',
         createTime: new Date().toISOString(),
-        registerSource: 'client',
+        registerSource: 'frontend',
       })
     } catch (syncError) {
       console.warn('用户数据同步失败，但注册成功:', syncError)

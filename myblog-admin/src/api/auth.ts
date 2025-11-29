@@ -37,6 +37,7 @@ export function fetchRegister(params: {
   email: string
   password: string
   confirmPassword: string
+  registerSource?: 'frontend' | 'backend' | 'admin' | 'other'
 }) {
   return request.post<void>({
     url: '/api/auth/register',

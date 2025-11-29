@@ -16,7 +16,7 @@ export interface UserSyncData {
   status?: 'active' | 'inactive' | 'banned'
   createTime?: string
   updateTime?: string
-  registerSource?: 'frontend' | 'admin' | 'other'
+  registerSource?: 'frontend' | 'backend' | 'admin' | 'other'
 }
 
 // 缓存配置

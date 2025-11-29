@@ -2944,6 +2944,20 @@ app.post('/api/auth/register', async (req: Request, res: Response) => {
     const lastUser = await User.findOne().sort({ userId: -1 });
     const newUserId = lastUser ? lastUser.userId + 1 : 1;
 
+    // 解析注册来源
+    const resolvedRegisterSource = (() => {
+      const raw = typeof req.body?.registerSource === 'string' ? String(req.body.registerSource).toLowerCase() : 'frontend'
+      if (raw === 'backend' || raw === 'admin') return 'backend'
+      return 'frontend'
+    })();
+
+    console.log('[auth/register] 收到注册请求:', {
+      username,
+      email,
+      registerSourceInBody: req.body?.registerSource,
+      resolvedRegisterSource
+    });
+
     // 创建新用户
     const newUser = new User({
       userId: newUserId,
@@ -2954,8 +2968,14 @@ app.post('/api/auth/register', async (req: Request, res: Response) => {
       roleId: userRole.roleId,
       roleName: userRole.roleName,
       enabled: true,
-      registerSource: 'frontend',
+      registerSource: resolvedRegisterSource,
       registerIp: req.ip || ''
+    });
+
+    console.log('[auth/register] 即将写入用户：', {
+      userId: newUserId,
+      username,
+      resolvedRegisterSource
     });
 
     await newUser.save();
