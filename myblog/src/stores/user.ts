@@ -50,7 +50,7 @@ export const useUserStore = defineStore(
       if (savedToken) {
         // 检查token是否过期
         if (!checkTokenExpire()) {
-          /* log removed */ ;('Token已过期，清理状态')
+          // Token已过期，清理状态（仅在开发环境下提示）
           return
         }
 
@@ -106,9 +106,9 @@ export const useUserStore = defineStore(
             const encoded = encodeURIComponent(returnedName)
             const newToken = `mock-jwt-token-${encoded}-${Date.now()}`
             setToken(newToken)
-            void 0 && console.warn('检测到令牌与服务端用户不一致，已根据服务端用户刷新本地令牌')
+            // dev-only tip removed
           } else {
-            void 0 && console.warn('服务端返回的用户与当前令牌不匹配，已忽略更新')
+            if ((import.meta as any)?.env?.DEV) console.warn('服务端返回的用户与当前令牌不匹配，已忽略更新')
             return userInfo.value
           }
         }

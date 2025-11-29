@@ -49,12 +49,10 @@
 <script setup lang="ts">
 import { onMounted, computed } from 'vue'
 import { ElMessage } from 'element-plus'
-import { useArticles } from '@/composables/useArticles' // 引入获取到文章列表数据文件
 import { usePhotoCategories } from '@/composables/usePhotoCategories' // 引入图片分类数据文件
 import WaveContainer from '@/components/WaveContainer.vue'
 import Footer from '@/components/Footer.vue'
 
-const { articles: articleslist, initArticles, cleanup } = useArticles()
 const { photoCategories, initPhotoCategories } = usePhotoCategories()
 
 // 分类显示/隐藏逻辑：禁用或不可见则隐藏
@@ -74,11 +72,11 @@ const visiblePhotoCategories = computed(() =>
 
 // 组件挂载时初始化数据
 onMounted(async () => {
-  void 0 && console.log('PhotoAlbum.vue - 组件挂载，开始初始化数据')
+  // dev log: 组件挂载，开始初始化数据
   try {
     // 不强制刷新，使用缓存策略
     await initPhotoCategories()
-    void 0 && console.log('PhotoAlbum.vue - 相册分类初始化完成')
+    if ((import.meta as any)?.env?.DEV) console.log('PhotoAlbum.vue - 相册分类初始化完成')
   } catch (err) {
     console.error('PhotoAlbum.vue - 初始化数据失败:', err)
     ElMessage.error('初始化数据失败，请刷新页面重试')

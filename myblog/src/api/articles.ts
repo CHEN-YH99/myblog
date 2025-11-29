@@ -355,7 +355,7 @@ export function getRelatedArticles(articleId: string, limit: number = 5) {
  * @returns 分类列表
  */
 export function getCategories(params?: Api.Article.CategorySearchParams) {
-  const cacheKey = getCacheKey('/api/categories', params)
+  const cacheKey = getCacheKey('/api/categories', params as unknown as Record<string, unknown>)
   const cached = getFromCache<Api.Article.CategoryItem[]>(cacheKey)
 
   if (cached) {
@@ -467,7 +467,7 @@ export function getTags() {
  * @returns 文章列表
  */
 export function getArticlesByTag(tag: string, params?: Api.Article.SearchParams) {
-  const cacheKey = getCacheKey(`/api/tags/${tag}/articles`, params)
+  const cacheKey = getCacheKey(`/api/tags/${tag}/articles`, params as unknown as Record<string, unknown>)
   const cached = getFromCache<Api.Article.ArticleItem[]>(cacheKey)
 
   if (cached) {

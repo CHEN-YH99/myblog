@@ -254,7 +254,7 @@ watch(
   () => route.params.tag,
   async (newTag, oldTag) => {
     if (newTag && newTag !== oldTag) {
-      void 0 && console.log('CategoryTag: 路由参数变化，重新加载数据')
+      if (import.meta.env?.DEV) console.log('CategoryTag: 路由参数变化，重新加载数据')
       currentPage.value = 1 // 重置分页
       await loadData()
     }
@@ -443,6 +443,7 @@ onMounted(async () => {
       // color: #2c3e50;
       display: -webkit-box;
       -webkit-line-clamp: 2;
+            line-clamp: 2;
       -webkit-box-orient: vertical;
       overflow: hidden;
       min-height: 36px; // 缩小最小高度

@@ -25,7 +25,8 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, nextTick } from 'vue'
-import { useRouter } from 'vue-router'
+
+
 
 interface TocItem {
   id: string
@@ -41,7 +42,7 @@ const tocItems = ref<TocItem[]>([])
 const activeId = ref<string>('')
 const observer = ref<IntersectionObserver | null>(null)
 let mutationObserver: MutationObserver | null = null
-let inited = false
+
 
 // 简易防抖
 const debounce = (fn: (...args: any[]) => void, delay = 200) => {
@@ -56,7 +57,7 @@ const debounce = (fn: (...args: any[]) => void, delay = 200) => {
 const generateToc = () => {
   const contentElement = document.querySelector(props.contentSelector || '.article-content')
   if (!contentElement) {
-    void 0 && console.warn('TableOfContents: 找不到内容元素', props.contentSelector)
+    if (import.meta.env?.DEV) console.warn('TableOfContents: 找不到内容元素', props.contentSelector)
     return
   }
 
@@ -77,28 +78,28 @@ const generateToc = () => {
   })
 
   tocItems.value = items
-  void 0 && console.log('TableOfContents: 生成目录项数量:', items.length)
+  if (import.meta.env?.DEV) console.log('TableOfContents: 生成目录项数量:', items.length)
 }
 
 // 处理目录点击 - 这是关键函数，必须立即生效
 const handleTocClick = (id: string) => {
-  void 0 && console.log('🎯 TableOfContents: 点击目录项', id)
-  void 0 && console.log('🎯 TableOfContents: 当前 activeId:', activeId.value)
+  if (import.meta.env?.DEV) console.log('🎯 TableOfContents: 点击目录项', id)
+  if (import.meta.env?.DEV) console.log('🎯 TableOfContents: 当前 activeId:', activeId.value)
 
   const element = document.getElementById(id)
   if (!element) {
-    void 0 && console.warn('❌ TableOfContents: 找不到目标元素', id)
+    if (import.meta.env?.DEV) console.warn('❌ TableOfContents: 找不到目标元素', id)
     return
   }
 
   // 立即更新 activeId，确保 UI 立即响应
   activeId.value = id
-  void 0 && console.log('✅ TableOfContents: 已更新 activeId 为', id)
-  void 0 && console.log('✅ TableOfContents: 新的 activeId:', activeId.value)
+  if (import.meta.env?.DEV) console.log('✅ TableOfContents: 已更新 activeId 为', id)
+  if (import.meta.env?.DEV) console.log('✅ TableOfContents: 新的 activeId:', activeId.value)
 
   // 使用 scrollIntoView 配合 CSS scroll-margin-top，避免手动计算偏移
   element.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  void 0 && console.log('📍 TableOfContents: 使用 scrollIntoView 滚动到', id)
+  if (import.meta.env?.DEV) console.log('📍 TableOfContents: 使用 scrollIntoView 滚动到', id)
 }
 
 // 设置交叉观察器 - 用于自动更新当前位置
@@ -115,7 +116,7 @@ const setupIntersectionObserver = () => {
     .filter((el): el is HTMLElement => el !== null)
 
   if (headingElements.length === 0) {
-    void 0 && console.warn('TableOfContents: 没有找到标题元素')
+    if (import.meta.env?.DEV) console.warn('TableOfContents: 没有找到标题元素')
     return
   }
 
@@ -131,8 +132,7 @@ const setupIntersectionObserver = () => {
           return current.boundingClientRect.top < top.boundingClientRect.top ? current : top
         })
         activeId.value = topEntry.target.id
-        void 0 &&
-          console.log('TableOfContents: IntersectionObserver 更新 activeId 为', topEntry.target.id)
+        if (import.meta.env?.DEV)           console.log('TableOfContents: IntersectionObserver 更新 activeId 为', topEntry.target.id)
       }
     },
     {
@@ -145,7 +145,7 @@ const setupIntersectionObserver = () => {
     if (element) observer.value?.observe(element)
   })
 
-  void 0 &&
+  if (import.meta.env?.DEV) 
     console.log('TableOfContents: IntersectionObserver 已设置，观察元素数:', headingElements.length)
 }
 
@@ -155,7 +155,7 @@ const observeContentChanges = () => {
   let contentElement = document.querySelector(selector)
 
   if (!contentElement) {
-    void 0 &&
+    if (import.meta.env?.DEV) 
       console.warn('TableOfContents: 初次未找到内容元素，开始监听 body，等待内容出现:', selector)
 
     // 监听 body，等待内容元素出现后再切换到精确监听
@@ -173,7 +173,7 @@ const observeContentChanges = () => {
     const debouncedInitWhenReady = debounce(async () => {
       const el = document.querySelector(selector)
       if (el) {
-        void 0 && console.log('TableOfContents: 发现内容元素，开始生成目录并切换监听目标')
+        if (import.meta.env?.DEV) console.log('TableOfContents: 发现内容元素，开始生成目录并切换监听目标')
         // 先断开对 body 的监听
         if (mutationObserver) {
           mutationObserver.disconnect()
@@ -186,7 +186,7 @@ const observeContentChanges = () => {
         // 切换到对内容元素的观察
         mutationObserver = new MutationObserver(() => debouncedRefresh())
         mutationObserver.observe(el, { childList: true, subtree: true })
-        void 0 && console.log('TableOfContents: 已切换为监听内容元素')
+        if (import.meta.env?.DEV) console.log('TableOfContents: 已切换为监听内容元素')
       }
     }, 100)
 
@@ -202,7 +202,7 @@ const observeContentChanges = () => {
   }
 
   const debouncedRefresh = debounce(async () => {
-    void 0 && console.log('TableOfContents: 检测到内容变化，重新生成目录')
+    if (import.meta.env?.DEV) console.log('TableOfContents: 检测到内容变化，重新生成目录')
     generateToc()
     await nextTick()
     setupIntersectionObserver()
@@ -211,12 +211,12 @@ const observeContentChanges = () => {
   mutationObserver = new MutationObserver(() => debouncedRefresh())
   mutationObserver.observe(contentElement, { childList: true, subtree: true })
 
-  void 0 && console.log('TableOfContents: MutationObserver 已设置')
+  if (import.meta.env?.DEV) console.log('TableOfContents: MutationObserver 已设置')
 }
 
 // 初始化
 const init = async () => {
-  void 0 && console.log('TableOfContents: 开始初始化')
+  if (import.meta.env?.DEV) console.log('TableOfContents: 开始初始化')
 
   // 等待 DOM 更新
   await nextTick()
@@ -233,11 +233,11 @@ const init = async () => {
   // 观察内容变化
   observeContentChanges()
 
-  void 0 && console.log('TableOfContents: 初始化完成')
+  if (import.meta.env?.DEV) console.log('TableOfContents: 初始化完成')
 }
 
 onMounted(() => {
-  void 0 && console.log('TableOfContents: onMounted 触发')
+  if (import.meta.env?.DEV) console.log('TableOfContents: onMounted 触发')
   // 延迟初始化，确保内容已渲染
   // 使用更长的延迟以确保父组件的内容已经渲染
   setTimeout(() => {
@@ -246,7 +246,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-  void 0 && console.log('TableOfContents: onUnmounted 触发')
+  if (import.meta.env?.DEV) console.log('TableOfContents: onUnmounted 触发')
   teardownIntersectionObserver()
   if (mutationObserver) {
     mutationObserver.disconnect()

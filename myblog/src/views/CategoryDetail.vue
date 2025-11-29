@@ -146,7 +146,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Calendar, View, Star } from '@element-plus/icons-vue'
-import { getAllArticles, getArticle } from '@/api/articles'
+// import { getAllArticles, getArticle } from '@/api/articles'
 import { useCategories } from '@/composables/useCategories'
 import { useArticlesStore } from '@/stores/getarticles'
 import { useUserStore } from '@/stores/user'
@@ -164,7 +164,6 @@ const error = ref<string | null>(null)
 const allArticles = ref<Api.Article.ArticleItem[]>([])
 const currentPage = ref(1)
 const pageSize = ref(12)
-const currentArticle = ref<Api.Article.ArticleItem | null>(null)
 
 // 使用分类组合式函数
 const { findCategory, initCategories } = useCategories()
@@ -174,10 +173,8 @@ const articlesStore = useArticlesStore()
 
 // 获取分类参数和文章ID参数
 const categorySlug = computed(() => route.params.category as string)
-const articleId = computed(() => route.query.id as string)
 
 // 判断是否为文章详情模式
-const isArticleDetailMode = computed(() => !!articleId.value)
 
 // 获取分类信息
 const currentCategory = ref<Api.Article.CategoryItem | null>(null)
@@ -189,8 +186,8 @@ const categoryDisplayName = computed(() => {
 
 // 筛选当前分类的文章
 const categoryArticles = computed(() => {
-  // void 0 && console.log('CategoryDetail - 筛选分类文章:', categorySlug.value)
-  // void 0 && console.log('CategoryDetail - 全部文章:', allArticles.value.length)
+  // if (import.meta.env?.DEV)  console.log('CategoryDetail - 筛选分类文章:', categorySlug.value)
+  // if (import.meta.env?.DEV)  console.log('CategoryDetail - 全部文章:', allArticles.value.length)
 
   if (!categorySlug.value || !allArticles.value.length) {
     return []
@@ -201,7 +198,7 @@ const categoryArticles = computed(() => {
     return matchesCategory
   })
 
-  // void 0 && console.log('CategoryDetail - 筛选后的文章:', filtered.length)
+  // if (import.meta.env?.DEV)  console.log('CategoryDetail - 筛选后的文章:', filtered.length)
   return filtered
 })
 
@@ -280,7 +277,7 @@ const handleRefresh = async () => {
 
 // 加载数据
 const loadData = async () => {
-  // void 0 && console.log('CategoryDetail - 开始加载数据, 分类:', categorySlug.value)
+  // if (import.meta.env?.DEV)  console.log('CategoryDetail - 开始加载数据, 分类:', categorySlug.value)
 
   try {
     loading.value = true
@@ -288,7 +285,7 @@ const loadData = async () => {
     // 获取文章数据
     await articlesStore.fetchArticles()
     allArticles.value = articlesStore.articles
-    // void 0 && console.log('CategoryDetail - 获取到文章:', allArticles.value.length)
+    // if (import.meta.env?.DEV)  console.log('CategoryDetail - 获取到文章:', allArticles.value.length)
 
     // 获取分类数据
     await initCategories()
@@ -296,7 +293,7 @@ const loadData = async () => {
     if (foundCategory) {
       currentCategory.value = foundCategory
     }
-    // void 0 && console.log('CategoryDetail - 找到分类:', currentCategory.value)
+    // if (import.meta.env?.DEV)  console.log('CategoryDetail - 找到分类:', currentCategory.value)
   } catch (err: any) {
     error.value = err.message || '加载数据失败'
   } finally {
@@ -309,7 +306,7 @@ watch(
   () => route.params.category,
   async (newCategory, oldCategory) => {
     if (newCategory && newCategory !== oldCategory) {
-      void 0 && console.log('CategoryDetail: 路由参数变化，重新加载数据')
+      if (import.meta.env?.DEV)  console.log('CategoryDetail: 路由参数变化，重新加载数据')
       currentPage.value = 1 // 重置分页
       await loadData()
     }
@@ -440,6 +437,7 @@ onMounted(async () => {
       color: #212529;
       display: -webkit-box;
       -webkit-line-clamp: 2;
+      line-clamp: 2;
       -webkit-box-orient: vertical;
       overflow: hidden;
       min-height: 50px;
@@ -474,6 +472,7 @@ onMounted(async () => {
       margin-bottom: 12px;
       display: -webkit-box;
       -webkit-line-clamp: 3;
+      line-clamp: 3;
       -webkit-box-orient: vertical;
       overflow: hidden;
     }

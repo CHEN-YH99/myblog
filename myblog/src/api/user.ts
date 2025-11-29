@@ -62,15 +62,11 @@ async function withRetry<T>(
 }
 
 // 判断是否应该重试
-function shouldRetry(error: Record<string, unknown>): boolean {
+function shouldRetry(error: unknown): boolean {
   // 网络错误或服务器错误才重试，客户端错误不重试
-  if (error?.response?.status) {
-    const status = (error.response as Record<string, unknown>).status
-    return (
-      (status as number) >= 500 ||
-      (status as number) === 408 ||
-      (status as number) === 429
-    )
+  const status = (error as any)?.response?.status
+  if (typeof status === 'number') {
+    return status >= 500 || status === 408 || status === 429
   }
   return true // 网络错误等情况
 }

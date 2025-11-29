@@ -255,12 +255,13 @@
           sortable: true,
           // checked: false, // 隐藏列
           formatter: (row) => {
-            if (row.userGender === 'male' || row.userGender === '1' || row.userGender === 1) {
+            const gender = String(row.userGender)
+            if (gender === 'male' || gender === '1') {
               return '男'
-            } else if (row.userGender === 'female' || row.userGender === '0' || row.userGender === 0) {
+            } else if (gender === 'female' || gender === '0') {
               return '女'
             }
-            return row.userGender || '未知'
+            return gender || '未知'
           }
         },
         { prop: 'userPhone', label: '手机号' },
@@ -410,8 +411,8 @@
         console.error('=== 删除过程中发生错误 ===')
         console.error('错误详情:', error)
         console.error('错误类型:', typeof error)
-        console.error('错误消息:', error?.message || '未知错误')
-        console.error('错误堆栈:', error?.stack || '无堆栈信息')
+        console.error('错误消息:', error instanceof Error ? error.message : String(error))
+        console.error('错误堆栈:', error instanceof Error && error.stack ? error.stack : '无堆栈信息')
         ElMessage.error('删除失败，请稍后重试')
       }
     }).catch((error) => {
@@ -464,9 +465,7 @@
           row.userEmail = submitData.email
           row.nickName = submitData.nickname
           // enabled -> status: true: 按是否有 lastLoginTime 决定在线/离线；false: 禁用
-          row.status = submitData.enabled
-            ? (row.lastLoginTime ? '1' : '2')
-            : '4'
+          row.status = submitData.enabled ? row.status : '4'
           // 角色名同步（表格显示用）
           const roleIdsArr: number[] = Array.isArray(formData.roleIds) && formData.roleIds.length
             ? formData.roleIds
@@ -474,9 +473,9 @@
           const idSet = new Set(roleIdsArr)
           const names = roleList.value.filter((r) => idSet.has(r.roleId)).map((r) => r.roleName)
           row.userRoles = names
-          // 同步便捷字段
-          row.roleId = roleIdsArr[0] ?? row.roleId
-          row.roleName = names[0] ?? row.roleName
+          // 如果需要在其他地方使用便捷字段，可在使用处做类型断言：
+          // (row as any).roleId = roleIdsArr[0]
+          // (row as any).roleName = names[0]
         }
 
         // 如果修改的是当前用户且修改了角色，需要重新加载权限

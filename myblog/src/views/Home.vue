@@ -394,7 +394,7 @@ const scrollDown = () => {
 
 // 处理图片加载错误
 const handleImageError = (event: Event) => {
-  void 0 && console.warn('图片加载失败:', event)
+  if (import.meta.env?.DEV) console.warn('图片加载失败:', event)
   // 可以在这里设置默认图片
 }
 
@@ -600,7 +600,7 @@ const retryLoadData = async () => {
 }
 </script>
 
-<style scoped lang="scss">
+<!-- <style scoped lang="scss">
 /* 样式已移动到 index.css 中 */
 .empty {
   margin: 0 auto;
@@ -703,4 +703,4 @@ const retryLoadData = async () => {
     transform: rotate(360deg);
   }
 }
-</style>
+</style> -->
