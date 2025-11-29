@@ -2,6 +2,7 @@ import { createViteConfig } from '../shared/config/vite.config.base'
 import AutoImport from 'unplugin-auto-import/vite'
 import Components from 'unplugin-vue-components/vite'
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
+import path from 'path'
 
 // 使用共享配置，针对管理端项目进行定制
 export default createViteConfig({
