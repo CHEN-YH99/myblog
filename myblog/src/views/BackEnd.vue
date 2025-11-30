@@ -2,7 +2,7 @@
   <!-- 头部大图 -->
   <div class="page_header">
     <div class="large-img">
-      <img src="../assets/images/backend.jpeg" alt="" />
+      <img src="../assets/images/backend.jpeg" alt="后端页面头图" />
       <div class="inner-header flex">
         <h1 v-typing="{ duration: 1000 }" class="animate__animated animate__backInDown">
           {{ $route.meta.title }}
@@ -16,7 +16,7 @@
   <div class="end_content animate__animated animate__fadeInUp">
     <ul class="end-item">
       <li v-for="item in state" :key="item.id" @click="goToDetail(item)">
-        <el-image class="end-image" style="width: 60px; height: 60px" />
+        <el-image class="end-image" style="width: 60px; height: 60px" alt="后端分类图标" />
         <div class="end-description">
           <h4>{{ item.title }}</h4>
           <p>{{ item.content }}</p>

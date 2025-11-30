@@ -1,0 +1,14 @@
+# robots.txt for 小灰个人博客
+# Allow all crawlers
+User-agent: *
+Allow: /
+
+# Optional: disallow private/auth routes
+Disallow: /login
+
+# Crawl-delay can be set if your server is limited (commented out by default)
+# Crawl-delay: 2
+
+# Sitemaps (add your real domain if available)
+# Sitemap: https://your-domain.com/sitemap.xml
+

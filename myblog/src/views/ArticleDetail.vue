@@ -232,6 +232,7 @@ import 'highlight.js/styles/atom-one-dark.css'
 import Footer from '@/components/Footer.vue'
 import TableOfContents from '@/components/TableOfContents.vue'
 import RelatedArticles from '@/components/RelatedArticles.vue'
+import { applySEO } from '@/utils/seo'
 
 const route = useRoute()
 const router = useRouter()
@@ -315,6 +316,17 @@ const fetchArticle = async () => {
     article.value = result
     if (import.meta.env.DEV)
       console.log('ArticleDetail: 文章获取成功:', article.value?.title)
+
+    // 文章详情页SEO：使用文章标题/摘要/封面
+    try {
+      applySEO({
+        title: article.value.title || '文章详情',
+        description: article.value.excerpt || undefined,
+        canonical: typeof window !== 'undefined' ? window.location.href : undefined,
+        image: article.value.image || undefined,
+        robots: 'index,follow',
+      })
+    } catch {}
 
     // 文章加载完成后，等待DOM更新并刷新目录
     // 第一次 nextTick：等待 article.value 的响应式更新

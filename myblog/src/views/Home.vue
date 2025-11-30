@@ -6,7 +6,7 @@
       <img
         class="header-bg"
         :src="url"
-        alt=""
+        alt="首页头图"
         fetchpriority="high"
         loading="eager"
         decoding="async"
@@ -59,6 +59,7 @@
                 <el-image
                   style="width: 100%; height: 100%"
                   :src="article.image || url"
+                  :alt="article.title || '文章封面'"
                   :fit="fit"
                   :lazy="index !== 0"
                   @error="handleImageError"
@@ -150,7 +151,7 @@
           <el-col v-if="sidebarReady" :span="6">
             <!-- 右侧个人信息栏 -->
             <div class="about-me">
-              <el-image :src="url" :fit="fit" lazy />
+              <el-image :src="url" :fit="fit" alt="个人头像/关于我图片" lazy />
               <el-avatar class="avatar" shape="circle" size="large" :src="url" />
               <h5>小灰的个人博客</h5>
               <div class="pub about-me-content">
@@ -207,15 +208,15 @@
               <section class="tag-cloud">
                 <div class="tag-header">📋标签</div>
                 <div class="tags-content">
-                  <a
+                  <router-link
                     v-for="tag in tagslist"
                     :key="tag"
                     class="tag"
+                    :to="{ name: 'CategoryTag', params: { tag } }"
                     :style="`background-color: ${colorFor(tag)} !important; color: #fff; padding: 4px 8px; border-radius: 4px;`"
-                    @click="searchByTag(tag)"
                   >
                     {{ tag }}
-                  </a>
+                  </router-link>
                 </div>
               </section>
             </div>

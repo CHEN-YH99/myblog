@@ -2,9 +2,18 @@
   <div class="footer">
     <p>© 小灰的个人博客</p>
     <p>Powered by Vue3</p>
-    <a href="">
-      <img v-for="(item, index) in footlist" :key="index" :src="item.img" alt="" />
-    </a>
+    <div class="badges">
+      <a
+        v-for="(item, index) in footlist"
+        :key="index"
+        :href="item.imgurl"
+        target="_blank"
+        rel="noopener noreferrer"
+        :title="`前往：${item.imgurl}`"
+      >
+        <img :src="item.img" :alt="`站点徽章-${index + 1}`" />
+      </a>
+    </div>
   </div>
 </template>
 

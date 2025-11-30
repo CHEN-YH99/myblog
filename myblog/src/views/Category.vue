@@ -3,7 +3,7 @@
     <!-- 头部大图 -->
     <div class="page_header">
       <div class="large-img">
-        <img src="../assets/images/category.jpeg" alt="" />
+        <img src="../assets/images/category.jpeg" alt="分类页面头图" />
         <div class="inner-header flex">
           <h1 v-typing="{ duration: 1000 }" class="animate__animated animate__backInDown">
             {{ $route.meta.title }}
@@ -53,18 +53,18 @@
         <section class="tag-cloud">
           <h3 class="tag-header">分类 -- {{ categoriesWithCount.length }}</h3>
           <div class="tags-content">
-            <a
+            <router-link
               v-for="category in categoriesWithCount"
               :key="category.slug"
               class="tag"
+              :to="`/category/${encodeURIComponent(category.slug)}`"
               :style="{
                 color: category.color || colorFor(category.name),
                 borderColor: category.color || colorFor(category.name),
               }"
-              @click="goToCategoryPage(category.slug)"
             >
               <span class="tag-name">{{ category.name }}</span>
-            </a>
+            </router-link>
           </div>
         </section>
       </div>

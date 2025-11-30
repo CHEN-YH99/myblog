@@ -7,7 +7,7 @@ const routes: RouteRecordRaw[] = [
     path: '/',
     name: 'Home',
     component: () => import('../views/Home.vue'),
-    meta: { title: '首页', transition: 'fade' },
+    meta: { title: '首页', description: '小灰个人博客首页：最新文章、标签与站点动态。', transition: 'fade' },
   },
   {
     path: '/timeline',

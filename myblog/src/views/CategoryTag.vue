@@ -3,7 +3,7 @@
     <!-- 页头 -->
     <div class="page_header">
       <div class="large-img">
-        <img src="../assets/images/category.jpeg" alt="" />
+        <img src="../assets/images/category.jpeg" alt="分类文章页面头图" />
         <div class="inner-header flex">
           <h1 v-typing="{ duration: 1000 }" class="animate__animated animate__backInDown">相关文章</h1>
         </div>
@@ -46,7 +46,7 @@
             <div class="article-image">
               <el-image
                 :src="article.image || '/default-article.jpg'"
-                :alt="article.title"
+                :alt="article.title || '文章封面'"
                 fit="contain"
                 lazy
               />

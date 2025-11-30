@@ -3,7 +3,7 @@
     <!-- 头部大图 -->
     <div class="page_header">
       <div class="large-img">
-        <img :src="currentCategory?.coverImage || defaultCover" alt="" />
+        <img :src="currentCategory?.coverImage || defaultCover" :alt="currentCategory?.title ? `${currentCategory.title} 头图` : '相册分类头图'" />
         <div class="inner-header flex">
           <h1 v-typing="{ duration: 1000 }" class="animate__animated animate__backInDown">
             {{ currentCategory?.title || '相册分类' }}

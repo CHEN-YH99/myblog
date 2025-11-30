@@ -8,7 +8,7 @@
     <!-- 头部大图 -->
     <div class="page_header">
       <div class="large-img">
-        <img src="../assets/images/timeline4k.jpg" alt="" />
+        <img src="../assets/images/timeline4k.jpg" alt="时间轴封面图" />
         <div class="inner-header flex">
           <h1 v-typing="$route.meta.title" class="animate__animated animate__backInDown">
             {{ $route.meta.title }}
@@ -64,6 +64,7 @@
                 class="timeline-card-image"
                 fit="cover"
                 :src="article.image"
+                :alt="article.title || '文章配图'"
                 :lazy="true"
               />
               <div class="timeline-card-content">

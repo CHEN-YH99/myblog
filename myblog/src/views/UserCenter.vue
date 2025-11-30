@@ -2,7 +2,7 @@
   <!-- 头部大图 -->
   <div class="page_header">
     <div class="large-img">
-      <img src="../assets/images/category.jpeg" alt="" />
+      <img src="../assets/images/category.jpeg" alt="个人中心页面头图" />
       <div class="inner-header flex">
         <h1 v-typing="{ duration: 1000 }" class="animate__animated animate__backInDown">个人中心</h1>
       </div>
