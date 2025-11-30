@@ -2,8 +2,18 @@
 <template>
   <div class="home-page">
     <div class="header">
+      <!-- LCP/首图：使用 <img>，便于浏览器尽早发现与调度，并设置 fetchpriority -->
+      <img
+        class="header-bg"
+        :src="url"
+        alt=""
+        fetchpriority="high"
+        loading="eager"
+        decoding="async"
+        sizes="100vw"
+      />
       <div class="inner-header flex">
-        <h1 class="animate__animated animate__backInDown">小灰个人博客</h1>
+        <h1 v-once class="animate__animated animate__backInDown">小灰个人博客</h1>
       </div>
       <el-icon color="#ffffff" size="30px" class="turndown" @click="scrollDown"
         ><arrow-down-bold
@@ -35,7 +45,7 @@
           <!-- 左侧文章列表 -->
           <el-col :span="18">
             <div
-              v-for="(article, index) in pagedArticles"
+              v-for="(article, index) in displayedArticles"
               :key="article._id || (currentPage - 1) * pageSize + index"
               class="article-card"
               :class="{
@@ -50,8 +60,7 @@
                   style="width: 100%; height: 100%"
                   :src="article.image || url"
                   :fit="fit"
-                  lazy
-                  :loading="'lazy'"
+                  :lazy="index !== 0"
                   @error="handleImageError"
                 >
                   <template #placeholder>
@@ -138,7 +147,7 @@
             />
           </el-col>
           <!-- 右侧个人信息栏 -->
-          <el-col :span="6">
+          <el-col v-if="sidebarReady" :span="6">
             <!-- 右侧个人信息栏 -->
             <div class="about-me">
               <el-image :src="url" :fit="fit" lazy />
@@ -236,7 +245,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick, defineAsyncComponent } from 'vue'
 import { ArrowDownBold, Loading, Picture } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
@@ -247,8 +256,8 @@ import { useArticlesStore } from '@/stores/getarticles'
 import { formatNumber } from '@/utils/format'
 import { getUserStats } from '@/api/user'
 
-import WaveContainer from '@/components/WaveContainer.vue'
-import Footer from '@/components/Footer.vue'
+const WaveContainer = defineAsyncComponent(() => import('@/components/WaveContainer.vue'))
+const Footer = defineAsyncComponent(() => import('@/components/Footer.vue'))
 // 已全局引入 index.scss 于 main.ts，无需重复引入
 import bgImage from '@/assets/images/shunsea1.jpg'
 import { useExternalLinkConfirm } from '@/composables/useExternalLinkConfirm'
@@ -259,6 +268,19 @@ const router = useRouter()
 // 用户状态管理
 const userStore = useUserStore()
 const articlesStore = useArticlesStore()
+
+// 首屏优化：侧边栏延迟渲染与空闲时加载
+const sidebarReady = ref(false)
+const scheduleIdle = (cb: () => void) => {
+  try {
+    const ric = (window as any).requestIdleCallback
+    if (typeof ric === 'function') {
+      ric(cb, { timeout: 1200 })
+      return
+    }
+  } catch {}
+  setTimeout(cb, 300)
+}
 
 // 使用优化后的 composable
 const {
@@ -277,6 +299,13 @@ const {
   routeName: 'Home',
   autoInit: true,
   defaultPageSize: 10,
+})
+
+// 仅渲染首屏少量卡片，待空闲再补齐，降低初始渲染压力
+const INITIAL_RENDER_COUNT = 4
+const displayedArticles = computed(() => {
+  const all = pagedArticles.value
+  return sidebarReady.value ? all : all.slice(0, Math.min(INITIAL_RENDER_COUNT, pageSize.value))
 })
 
 // 点赞功能（直接使用 articlesStore 提供的状态与动作）
@@ -537,6 +566,11 @@ onMounted(async () => {
     await loadUserStats()
 
     stopWatchingPagination = watchPagination()
+
+    // 空闲时再补齐列表渲染，降低首屏压力
+    scheduleIdle(() => {
+      sidebarReady.value = true
+    })
   } catch (error) {
     console.error('组件初始化失败:', error)
   }

@@ -44,7 +44,7 @@
       v-else-if="articleslist.length"
       class="timeline_content animate__animated animate__fadeInUp"
     >
-      <el-timeline style="max-width: 600px">
+      <el-timeline class="timeline-list">
         <el-timeline-item
           v-for="(article, index) in articlesWithYearDisplay"
           :key="article._id || (currentPage - 1) * pageSize + index"
@@ -58,11 +58,10 @@
           placement="top"
           type="primary"
         >
-          <el-card @click="goToArticle(article)" style="cursor: pointer">
+          <el-card class="tl-card" shadow="hover" @click="goToArticle(article)">
             <div class="timeline-card">
               <el-image
                 class="timeline-card-image"
-                style="width: 100px; height: 100px"
                 fit="cover"
                 :src="article.image"
                 :lazy="true"
@@ -87,7 +86,7 @@
       size="small"
       v-model:current-page="currentPage"
       v-model:page-size="pageSize"
-      hide-on-single-page:true
+:hide-on-single-page="true"
       background
       layout="prev, pager, next "
       :total="total"
@@ -100,7 +99,7 @@
 
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount, watch, nextTick, computed } from 'vue'
-import { useRouter } from 'vue-router'
+// import { useRouter } from 'vue-router'
 import { useArticles } from '@/composables/useArticles' // 引入获取到文章列表数据文件
 import WaveContainer from '@/components/WaveContainer.vue'
 import Footer from '@/components/Footer.vue'
@@ -119,8 +118,6 @@ interface Article {
   isFirstOfYear?: boolean
 }
 
-// 路由
-const router = useRouter()
 
 // 请求文章列表数据
 const {
@@ -175,18 +172,6 @@ const formatFullDate = (dateString: string | Date | undefined): string => {
   return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
 }
 
-// 日期格式化函数
-const formatDate = (dateString: string | Date | undefined): string => {
-  if (!dateString) return '暂无日期'
-
-  const date = new Date(dateString)
-  if (isNaN(date.getTime())) return '无效日期'
-
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
 
 // 处理文章年份显示逻辑的计算属性
 const articlesWithYearDisplay = computed(() => {
@@ -286,29 +271,126 @@ onBeforeUnmount(() => {
 
 // 内容
 .timeline_content {
+  --tl-primary: #58bff2;
+  --tl-accent: #7f5af0;
+  --tl-spine: linear-gradient(180deg, var(--tl-primary), var(--tl-accent));
+  --tl-card-bg: rgba(255, 255, 255, 0.5);
+  --tl-card-bg-strong: rgba(255, 255, 255, 0.65);
+  --tl-card-border: rgba(255, 255, 255, 0.45);
+  --tl-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  --tl-shadow-hover: 0 16px 40px rgba(0, 0, 0, 0.25);
+
   margin-top: 2rem;
-  box-shadow: 2px 2px 10px 0px #0000001a;
-  max-width: 800px;
+  max-width: 1100px;
   margin: 50px auto;
-  border-radius: 10px;
-  padding: 2.5rem;
-  // background-color: #fff;
-  :deep .el-timeline-item__node {
-    background-color: rgb(88, 191, 242);
+  border-radius: 16px;
+  padding: 1rem 1rem 2rem;
+
+  @media (prefers-color-scheme: dark) {
+    --tl-card-bg: rgba(17, 17, 26, 0.45);
+    --tl-card-bg-strong: rgba(17, 17, 26, 0.6);
+    --tl-card-border: rgba(255, 255, 255, 0.12);
+    --tl-shadow: 0 8px 28px rgba(0, 0, 0, 0.5);
+    --tl-shadow-hover: 0 20px 60px rgba(0, 0, 0, 0.6);
   }
-  :deep .el-timeline-item__timestamp {
-    font-size: 1.5rem;
-    color: rgb(88, 191, 242);
+
+  @media (prefers-reduced-motion: reduce) {
+    :deep(.el-timeline-item),
+    :deep(.el-timeline-item__node) {
+      animation: none !important;
+    }
+    .tl-card {
+      transition: none !important;
+    }
+  }
+
+  .timeline-list {
+    max-width: 900px;
+    margin: 0 auto;
+    position: relative;
+  }
+
+  // 主时间轴强化
+  :deep(.el-timeline) {
+    position: relative;
+  }
+
+  :deep(.el-timeline-item) {
+    animation: tl-reveal 0.6s ease both;
+  }
+  :deep(.el-timeline-item:nth-child(1)) {
+    animation-delay: 0.05s;
+  }
+  :deep(.el-timeline-item:nth-child(2)) {
+    animation-delay: 0.1s;
+  }
+  :deep(.el-timeline-item:nth-child(3)) {
+    animation-delay: 0.15s;
+  }
+  :deep(.el-timeline-item:nth-child(4)) {
+    animation-delay: 0.2s;
+  }
+
+  // 年份时间戳
+  :deep(.el-timeline-item__timestamp) {
+    font-weight: 800;
+    font-size: 1.75rem;
+    letter-spacing: 0.02em;
+    background: linear-gradient(90deg, var(--tl-primary), var(--tl-accent));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-transform: none;
+    margin-bottom: 10px;
+  }
+
+  // 连接线
+  :deep(.el-timeline-item__tail) {
+    left: calc(50% - 1px);
+    width: 2px;
+    background-image: var(--tl-spine);
+    background-size: 100% 100%;
+    border: none;
+    opacity: 0.9;
+  }
+  // 内容容器与中轴对齐在右侧，默认放在右半区；给定宽度确保左右对称
+  :deep(.el-timeline-item__wrapper) {
+    margin-left: calc(50% + 18px);
+    width: calc(50% - 32px);
+  }
+  // 交错布局：每隔一个放到左半区
+  :deep(.reverse .el-timeline-item__wrapper) {
+    margin-left: 0;
+    margin-right: calc(50% + 18px);
+    width: calc(50% - 32px);
+    text-align: right;
+  }
+
+  // 节点
+  :deep(.el-timeline-item__node) {
+    width: 14px;
+    height: 14px;
+    left: calc(50% - 7px);
+    z-index: 2;
+    border: 2px solid rgba(255, 255, 255, 0.7);
+    background: radial-gradient(
+      circle at 30% 30%,
+      #fff 0%,
+      var(--tl-primary) 40%,
+      var(--tl-accent) 100%
+    );
+    box-shadow: 0 0 0 0 rgba(127, 90, 240, 0.25), 0 6px 12px rgba(0, 0, 0, 0.2);
+    animation: tl-pulse 2.8s ease-out infinite;
   }
 
   // 同年文章缩小行距
-  :deep .same-year {
+  :deep(.same-year) {
     .el-timeline-item__tail {
-      height: 20px; // 缩小连接线高度
+      height: 18px; // 缩小连接线高度
     }
 
     .el-timeline-item__wrapper {
-      padding-bottom: 10px; // 缩小底部间距
+      padding-bottom: 6px; // 缩小底部间距
     }
 
     // 隐藏时间戳区域以节省空间
@@ -316,26 +398,153 @@ onBeforeUnmount(() => {
       display: none;
     }
   }
+
+  .tl-card {
+    border: 1px solid var(--tl-card-border);
+    background: linear-gradient(180deg, var(--tl-card-bg), var(--tl-card-bg-strong));
+    backdrop-filter: saturate(150%) blur(12px);
+    -webkit-backdrop-filter: saturate(150%) blur(12px);
+    border-radius: 16px;
+    box-shadow: var(--tl-shadow);
+    transition: transform 260ms ease, box-shadow 260ms ease, background 260ms ease, border-color 260ms ease;
+    overflow: hidden;
+    cursor: pointer;
+  }
+  .tl-card:hover {
+    transform: translateY(-6px);
+    box-shadow: var(--tl-shadow-hover);
+  }
+  .tl-card:active {
+    transform: translateY(-2px);
+  }
+
+  :deep(.el-card__body) {
+    padding: 16px 18px;
+  }
+
   .timeline-card {
     display: flex;
-    flex-direction: row;
-    gap: 1rem;
-    // flex: 1 1 100%;
+    align-items: center;
+    gap: 16px;
+
     .timeline-card-content {
       display: flex;
       flex-direction: column;
       justify-content: center;
 
+      h4 {
+        font-size: 1.1rem;
+        font-weight: 700;
+        line-height: 1.35;
+        color: var(--el-text-color-primary, #1f2937);
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+
       .publish-time {
         margin-top: 8px;
-        font-size: 0.9rem;
-        color: #666;
-        font-style: italic;
+        font-size: 0.875rem;
+        color: var(--el-text-color-secondary, #6b7280);
+        font-style: normal;
       }
     }
+
     .timeline-card-image {
+      width: 110px;
+      height: 110px;
+      border-radius: 12px;
+      object-fit: cover;
+      overflow: hidden;
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
+      position: relative;
       flex-shrink: 0; // 防止图片挤压缩小
+      background: #f4f4f5;
+      transition: transform 260ms ease, box-shadow 260ms ease, filter 260ms ease;
     }
+
+    .timeline-card-image:hover {
+      transform: translateZ(0) scale(1.02);
+      filter: saturate(110%);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
+    }
+  }
+
+  // 左右分栏时，左侧项把图片放到靠近中轴的一侧
+  :deep(.reverse .el-card__body .timeline-card) {
+    flex-direction: row-reverse;
+  }
+
+  @media (max-width: 768px) {
+    .timeline-list {
+      max-width: 100%;
+    }
+    :deep(.el-timeline-item__timestamp) {
+      font-size: 1.25rem;
+    }
+    :deep(.el-timeline-item__tail) {
+      left: 12px;
+    }
+    :deep(.el-timeline-item__wrapper) {
+      margin-left: 28px;
+      margin-right: 0;
+      width: auto;
+      text-align: left;
+    }
+    :deep(.reverse .el-timeline-item__wrapper) {
+      margin-left: 28px;
+      margin-right: 0;
+      width: auto;
+      text-align: left;
+    }
+    .timeline-card {
+      align-items: flex-start;
+      flex-direction: row;
+      gap: 12px;
+    }
+    .timeline-card .timeline-card-image {
+      width: 88px;
+      height: 88px;
+      border-radius: 10px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    :deep(.el-timeline-item__wrapper) {
+      margin-left: 20px;
+    }
+    .timeline-card {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .timeline-card .timeline-card-image {
+      width: 100%;
+      height: 180px;
+    }
+  }
+}
+
+// 动画
+@keyframes tl-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes tl-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(127, 90, 240, 0.35), 0 6px 12px rgba(0, 0, 0, 0.2);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(127, 90, 240, 0), 0 6px 12px rgba(0, 0, 0, 0.2);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(127, 90, 240, 0), 0 6px 12px rgba(0, 0, 0, 0.2);
   }
 }
 // 分页控件
