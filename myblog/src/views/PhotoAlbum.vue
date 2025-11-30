@@ -5,7 +5,7 @@
       <div class="large-img">
         <img src="../assets/images/kahs.jpeg" alt="" />
         <div class="inner-header flex">
-          <h1 class="animate__animated animate__backInDown">相册</h1>
+          <h1 v-typing="{ duration: 1000 }" class="animate__animated animate__backInDown">相册</h1>
         </div>
       </div>
       <!-- 海水波浪 -->

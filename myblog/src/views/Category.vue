@@ -5,7 +5,7 @@
       <div class="large-img">
         <img src="../assets/images/category.jpeg" alt="" />
         <div class="inner-header flex">
-          <h1 class="animate__animated animate__backInDown">
+          <h1 v-typing="{ duration: 1000 }" class="animate__animated animate__backInDown">
             {{ $route.meta.title }}
           </h1>
         </div>

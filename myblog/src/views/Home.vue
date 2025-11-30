@@ -13,7 +13,7 @@
         sizes="100vw"
       />
       <div class="inner-header flex">
-        <h1 v-once class="animate__animated animate__backInDown">小灰个人博客</h1>
+        <h1 v-typing="{ duration: 1000 }" v-once class="animate__animated animate__backInDown">小灰个人博客</h1>
       </div>
       <el-icon color="#ffffff" size="30px" class="turndown" @click="scrollDown"
         ><arrow-down-bold

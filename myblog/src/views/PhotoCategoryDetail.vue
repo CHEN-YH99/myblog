@@ -5,7 +5,7 @@
       <div class="large-img">
         <img :src="currentCategory?.coverImage || defaultCover" alt="" />
         <div class="inner-header flex">
-          <h1 class="animate__animated animate__backInDown">
+          <h1 v-typing="{ duration: 1000 }" class="animate__animated animate__backInDown">
             {{ currentCategory?.title || '相册分类' }}
           </h1>
         </div>

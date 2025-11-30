@@ -8,7 +8,7 @@
     <div class="large-img">
       <img src="../assets/images/category.jpeg" alt="文章详情" />
       <div class="inner-header flex">
-        <h1 class="animate__animated animate__backInDown">文章详情</h1>
+        <h1 v-typing="{ duration: 1000 }" class="animate__animated animate__backInDown">文章详情</h1>
       </div>
     </div>
     <!-- 海水波浪 -->

@@ -12,6 +12,7 @@ import '@/assets/style/common/theme.scss' // 主题样式
 import '@/assets/style/common/headpicture.scss' // 头部大图样式
 import 'animate.css' // 动画库
 import '@/assets/style/index.scss' // 全局样式与重置，全站生效
+import typing from '@/directives/typing'
 
 const app = createApp(App)
 const pinia = createPinia()
@@ -30,6 +31,9 @@ pinia.use(
 app.use(pinia)
 app.use(router)
 app.use(ElementPlus)
+
+// 全局注册打字指令
+app.directive('typing', typing)
 
 // 异步初始化用户状态
 ;(async () => {

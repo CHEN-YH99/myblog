@@ -10,7 +10,7 @@
       <div class="large-img">
         <img src="../assets/images/timeline4k.jpg" alt="" />
         <div class="inner-header flex">
-          <h1 class="animate__animated animate__backInDown">
+          <h1 v-typing="$route.meta.title" class="animate__animated animate__backInDown">
             {{ $route.meta.title }}
           </h1>
         </div>
@@ -280,6 +280,16 @@ onBeforeUnmount(() => {
   --tl-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
   --tl-shadow-hover: 0 16px 40px rgba(0, 0, 0, 0.25);
 
+  // 类暗色开关（html 或 body 上添加 .dark）
+  :global(html.dark) &,
+  :global(.dark) & {
+    --tl-card-bg: rgba(88, 191, 242, 0.12);
+    --tl-card-bg-strong: rgba(127, 90, 240, 0.18);
+    --tl-card-border: rgba(88, 191, 242, 0.28);
+    --tl-shadow: 0 8px 28px rgba(0, 0, 0, 0.55);
+    --tl-shadow-hover: 0 20px 60px rgba(0, 0, 0, 0.65);
+  }
+
   margin-top: 2rem;
   max-width: 1100px;
   margin: 50px auto;
@@ -287,11 +297,12 @@ onBeforeUnmount(() => {
   padding: 1rem 1rem 2rem;
 
   @media (prefers-color-scheme: dark) {
-    --tl-card-bg: rgba(17, 17, 26, 0.45);
-    --tl-card-bg-strong: rgba(17, 17, 26, 0.6);
-    --tl-card-border: rgba(255, 255, 255, 0.12);
-    --tl-shadow: 0 8px 28px rgba(0, 0, 0, 0.5);
-    --tl-shadow-hover: 0 20px 60px rgba(0, 0, 0, 0.6);
+    /* 深色模式：使用接近主题色的半透明背景，增强卡片轮廓便于阅读 */
+    --tl-card-bg: rgba(88, 191, 242, 0.12); /* 基于主色 #58bff2 的底色 */
+    --tl-card-bg-strong: rgba(127, 90, 240, 0.18); /* 基于强调色 #7f5af0 的叠加 */
+    --tl-card-border: rgba(88, 191, 242, 0.28); /* 略显的边框以区分卡片 */
+    --tl-shadow: 0 8px 28px rgba(0, 0, 0, 0.55);
+    --tl-shadow-hover: 0 20px 60px rgba(0, 0, 0, 0.65);
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -559,5 +570,43 @@ onBeforeUnmount(() => {
 }
 .empty {
   margin: 0 auto;
+}
+
+/* 通过类名触发的深色模式（html 或 body 上添加 .dark）- 使用全局选择器避免 scoped 作用域限制 */
+:global(.dark) .timeline_content,
+:global(html.dark) .timeline_content {
+  /* 使用接近主题色的卡片底色，提升卡片可读性和尺寸感知 */
+  --tl-card-bg: rgba(88, 191, 242, 0.12); /* 主色 #58bff2 */
+  --tl-card-bg-strong: rgba(127, 90, 240, 0.18); /* 强调色 #7f5af0 */
+  --tl-card-border: rgba(88, 191, 242, 0.28);
+  --tl-shadow: 0 8px 28px rgba(0, 0, 0, 0.55);
+  --tl-shadow-hover: 0 20px 60px rgba(0, 0, 0, 0.65);
+}
+
+</style>
+
+<!-- 全局样式块，确保类名切换的暗色也生效 -->
+<style lang="scss">
+html.dark .timeline_content,
+.dark .timeline_content {
+  --tl-card-bg: rgba(88, 191, 242, 0.22);
+  --tl-card-bg-strong: rgba(127, 90, 240, 0.28);
+  --tl-card-border: rgba(88, 191, 242, 0.45);
+  --tl-shadow: 0 8px 28px rgba(0, 0, 0, 0.55);
+  --tl-shadow-hover: 0 20px 60px rgba(0, 0, 0, 0.65);
+}
+
+/* 直接对卡片在暗色下着色，确保覆盖到位 */
+html.dark .timeline_content .tl-card,
+.dark .timeline_content .tl-card {
+  /* 避免 Element Plus 卡片背景色覆盖 */
+  --el-card-bg-color: transparent;
+  background: linear-gradient(180deg, rgba(88, 191, 242, 0.22), rgba(127, 90, 240, 0.28)) !important;
+  border-color: rgba(88, 191, 242, 0.45) !important;
+}
+
+html.dark .timeline_content .tl-card:hover,
+.dark .timeline_content .tl-card:hover {
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.65) !important;
 }
 </style>
