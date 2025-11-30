@@ -385,6 +385,8 @@ onMounted(async () => {
   transition: all 0.3s ease;
   cursor: pointer;
   border: 1px solid #ffffff;
+  display: flex;              // 强制为纵向卡片
+  flex-direction: column;     // 图片在上，文字在下
 
   &:hover {
     transform: translateY(-2px); // 缩小悬停位移
