@@ -83,4 +83,4 @@ const goToDetail = (item: FrontendItem) => {
   })
 }
 </script>
-<style scoped lang="scss"></style>
+

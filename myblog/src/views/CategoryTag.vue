@@ -113,6 +113,7 @@ import { ElMessage } from 'element-plus'
 import { useCategories } from '@/composables/useCategories'
 import { getAllArticles } from '@/api/articles'
 import { useUserStore } from '@/stores/user'
+import { mapPathToMenu } from '@/utils/routerMap'
 import WaveContainer from '@/components/WaveContainer.vue'
 import Footer from '@/components/Footer.vue'
 
@@ -186,21 +187,6 @@ const formatDate = (dateString: string | Date | undefined): string => {
 }
 
 // 跳转到文章详情
-const mapPathToMenu = (p: string) => {
-  if (p === '/') return 'home'
-  if (p === '/timeline') return 'timeline'
-  if (p.startsWith('/frontend')) return 'frontend'
-  if (p.startsWith('/backend')) return 'backend'
-  if (p.startsWith('/category')) return 'category'
-  if (p.startsWith('/photoAlbum')) return 'photos'
-  if (p.startsWith('/photo-category/')) return 'photos'
-  if (p.startsWith('/talk')) return 'talk'
-  if (p.startsWith('/links')) return 'links'
-  if (p.startsWith('/board')) return 'board'
-  if (p.startsWith('/login')) return 'login'
-  return 'home'
-}
-
 const goToArticle = (article: Api.Article.ArticleItem) => {
   // 检查登录状态
   if (!userStore.isLoggedIn) {

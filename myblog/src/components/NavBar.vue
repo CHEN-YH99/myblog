@@ -253,6 +253,7 @@ import {
 } from '@element-plus/icons-vue'
 
 import avatarUrl from '@/assets/images/hui.svg'
+import { mapPathToMenu } from '@/utils/routerMap'
 
 const router = useRouter()
 const route = useRoute()
@@ -283,23 +284,7 @@ const prevPath = ref('')
 // 用户菜单下拉框显示状态
 const showUserMenu = ref(false)
 
-// 将路径映射到菜单索引的通用函数
-const mapPathToMenu = (path) => {
-  if (!path) return 'home'
-  if (path.startsWith('/user')) return null // 个人中心页不激活任何菜单项
-  if (path === '/') return 'home'
-  if (path === '/timeline') return 'timeline'
-  if (path.startsWith('/frontend')) return 'frontend'
-  if (path.startsWith('/backend')) return 'backend'
-  if (path.startsWith('/category')) return 'category'
-  if (path.startsWith('/photoAlbum')) return 'photos'
-  if (path.startsWith('/photo-category/')) return 'photos'
-  if (path.startsWith('/talk')) return 'talk'
-  if (path.startsWith('/links')) return 'links'
-  if (path.startsWith('/board')) return 'board'
-  if (path.startsWith('/login')) return 'login'
-  return 'home'
-}
+// 使用统一的路径->菜单索引映射工具（见 @/utils/routerMap）
 
 const mapPathToMobileMenu = (path) => {
   const m = mapPathToMenu(path)

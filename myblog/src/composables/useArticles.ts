@@ -5,6 +5,7 @@ import { useUserStore } from '@/stores/user'
 import { ElMessage } from 'element-plus'
 import { nanoid } from 'nanoid'
 import { debounce } from '@/utils/performance'
+import { mapPathToMenu } from '@/utils/routerMap'
 
 // 类型定义
 interface PaginationState {
@@ -141,20 +142,6 @@ export function useArticles(options: UseArticlesOptions = {}) {
         savePagination(currentPage.value, pageSize.value)
         // 跳转到文章详情页，附带来源菜单用于导航高亮
         const path = route.path || '/'
-        const mapPathToMenu = (p: string) => {
-          if (p === '/') return 'home'
-          if (p === '/timeline') return 'timeline'
-          if (p.startsWith('/frontend')) return 'frontend'
-          if (p.startsWith('/backend')) return 'backend'
-          if (p.startsWith('/category')) return 'category'
-          if (p.startsWith('/photoAlbum')) return 'photos'
-          if (p.startsWith('/photo-category/')) return 'photos'
-          if (p.startsWith('/talk')) return 'talk'
-          if (p.startsWith('/links')) return 'links'
-          if (p.startsWith('/board')) return 'board'
-          if (p.startsWith('/login')) return 'login'
-          return 'home'
-        }
         const from = mapPathToMenu(path)
         router.push({ path: `/article/${article._id}`, query: { from } })
       } catch (error) {

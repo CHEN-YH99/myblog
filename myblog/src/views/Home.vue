@@ -249,7 +249,7 @@ import { getUserStats } from '@/api/user'
 
 import WaveContainer from '@/components/WaveContainer.vue'
 import Footer from '@/components/Footer.vue'
-import '@/assets/style/index.scss'
+// 已全局引入 index.scss 于 main.ts，无需重复引入
 import bgImage from '@/assets/images/shunsea1.jpg'
 import { useExternalLinkConfirm } from '@/composables/useExternalLinkConfirm'
 
@@ -259,8 +259,6 @@ const router = useRouter()
 // 用户状态管理
 const userStore = useUserStore()
 const articlesStore = useArticlesStore()
-
-// 性能优化相关
 
 // 使用优化后的 composable
 const {
@@ -292,15 +290,12 @@ const onToggleLike = async (id: string) => {
       return
     }
 
-    // 点赞前状态
     const prevLiked = likedIds.value.includes(id)
 
     await articlesStore.toggleLike(id)
 
-    // 点赞后状态（与 Home 页面使用同一来源）
     const nowLiked = likedIds.value.includes(id)
 
-    // 仅在状态发生变化时提示
     if (nowLiked !== prevLiked) {
       ElMessage.success(nowLiked ? '点赞成功' : '已取消点赞')
     }
@@ -387,7 +382,6 @@ const scrollDown = () => {
     })
   } catch (error) {
     console.error('滚动失败:', error)
-    // 降级处理
     window.scrollBy(0, window.innerHeight)
   }
 }
@@ -395,7 +389,6 @@ const scrollDown = () => {
 // 处理图片加载错误
 const handleImageError = (event: Event) => {
   if (import.meta.env?.DEV) console.warn('图片加载失败:', event)
-  // 可以在这里设置默认图片
 }
 
 // 分页变化处理
@@ -413,7 +406,7 @@ const handlePageChange = async (page: number) => {
 const handleSizeChange = async (size: number) => {
   try {
     pageSize.value = size
-    currentPage.value = 1 // 重置到第一页
+    currentPage.value = 1
     await nextTick()
     scrollToTop()
   } catch (error) {
@@ -474,18 +467,15 @@ const loadUserStats = async () => {
     const stats = await getUserStats()
     userStats.value = stats
 
-    // 模拟今日访问量
     todayVisits.value = Math.floor(Math.random() * 1000) + 100
   } catch (error) {
     console.error('加载用户统计失败:', error)
-    // 使用默认值，不影响页面显示
   }
 }
 
 // 彩色板标签云
 const tagslist = computed(() => {
   try {
-    // 收集所有标签并去重
     const allTags = Array.from(
       new Set(
         articleslist.value
@@ -497,7 +487,6 @@ const tagslist = computed(() => {
       ),
     )
 
-    // 随机选择20个标签
     return [...allTags].sort(() => Math.random() - 0.5).slice(0, 20)
   } catch (error) {
     console.error('生成标签列表失败:', error)
@@ -505,7 +494,7 @@ const tagslist = computed(() => {
   }
 })
 
-// 稳定配色：根据标签文本 -> HSL 颜色（同一标签始终同色）
+// 稳定配色
 const colorFor = (str: string) => {
   try {
     if (!str) return '#666'
@@ -514,9 +503,9 @@ const colorFor = (str: string) => {
     for (let i = 0; i < str.length; i++) {
       hash = (hash * 31 + str.charCodeAt(i)) >>> 0
     }
-    const hue = hash % 360 // 色相 0-359
-    const sat = 72 // 饱和度，深色背景下略高更鲜明
-    const light = 68 // 明度，注意和背景对比度
+    const hue = hash % 360
+    const sat = 72
+    const light = 68
     return `hsl(${hue}deg, ${sat}%, ${light}%)`
   } catch (error) {
     console.error('生成颜色失败:', error)
@@ -539,18 +528,14 @@ let stopWatchingPagination: (() => void) | null = null
 
 onMounted(async () => {
   try {
-    // 先加载文章数据
     await initArticles()
 
-    // 如果用户已登录且尚未初始化，再初始化点赞状态（避免与 fetchArticles 内部的初始化重复触发）
     if (userStore.isLoggedIn && !articlesStore.likeStatusInitialized) {
       await articlesStore.initializeLikeStatus()
     }
 
-    // 并行加载用户统计数据
     await loadUserStats()
 
-    // 启用分页状态监听
     stopWatchingPagination = watchPagination()
   } catch (error) {
     console.error('组件初始化失败:', error)
@@ -563,10 +548,8 @@ watch(
   async (isLoggedIn) => {
     try {
       if (isLoggedIn) {
-        // 用户登录后重新初始化点赞状态
         await articlesStore.initializeLikeStatus()
       } else {
-        // 用户登出后重置点赞状态
         articlesStore.resetLikeStatus()
       }
     } catch (error) {
@@ -578,7 +561,6 @@ watch(
 onBeforeUnmount(() => {
   try {
     cleanup()
-    // 清理分页监听
     if (stopWatchingPagination) {
       stopWatchingPagination()
     }
@@ -587,7 +569,7 @@ onBeforeUnmount(() => {
   }
 })
 
-// 重新加载数据 - 重命名避免冲突
+// 重新加载数据
 const retryLoadData = async () => {
   try {
     await initArticles()
@@ -599,108 +581,3 @@ const retryLoadData = async () => {
   }
 }
 </script>
-
-<!-- <style scoped lang="scss">
-/* 样式已移动到 index.css 中 */
-.empty {
-  margin: 0 auto;
-}
-
-.loading-container {
-  padding: 20px;
-
-  .el-skeleton {
-    margin-bottom: 20px;
-  }
-}
-
-.error-container {
-  text-align: center;
-  padding: 40px 20px;
-
-  .retry-btn {
-    margin-top: 20px;
-  }
-}
-
-.image-placeholder,
-.image-error {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  background-color: #f5f7fa;
-  color: #909399;
-}
-
-.my-links img {
-  cursor: pointer;
-  transition: transform 0.2s ease;
-
-  &:hover {
-    transform: scale(1.1);
-  }
-}
-
-.custom-gitee-btn {
-  cursor: pointer;
-  transition: all 0.2s ease;
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  }
-}
-
-.tag {
-  cursor: pointer;
-  transition: all 0.2s ease;
-
-  &:hover {
-    transform: scale(1.05);
-    opacity: 0.8;
-  }
-}
-
-.article-card {
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease;
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-  }
-}
-
-.like-btn {
-  cursor: pointer;
-  transition: all 0.2s ease;
-
-  &:hover {
-    transform: scale(1.05);
-  }
-
-  &.loading {
-    pointer-events: none;
-    opacity: 0.6;
-  }
-
-  &.liked {
-    color: #f56c6c;
-  }
-}
-
-.loading-icon {
-  animation: rotate 1s linear infinite;
-}
-
-@keyframes rotate {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-</style> -->

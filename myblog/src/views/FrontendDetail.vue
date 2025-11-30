@@ -308,4 +308,4 @@ const state = computed(() => {
 })
 </script>
 
-<style scoped lang="scss"></style>
+
