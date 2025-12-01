@@ -206,6 +206,9 @@ p {
   overflow: hidden;
   margin-bottom: 15px; /* 统一 5px 间距 */
   transition: box-shadow 0.3s ease, transform 0.3s ease;
+  /* 避免一次性渲染大量卡片：按需绘制（Chrome）*/
+  content-visibility: auto;
+  contain-intrinsic-size: 300px 260px; /* 预估尺寸，避免可见性切换时跳动 */
 }
 .article-card:hover {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);

@@ -11,6 +11,8 @@
         loading="eager"
         decoding="async"
         sizes="100vw"
+        width="1920"
+        height="1080"
       />
       <div class="inner-header flex">
         <h1 v-typing="{ duration: 1000 }" v-once class="animate__animated animate__backInDown">小灰个人博客</h1>

@@ -42,14 +42,14 @@ import { ref } from 'vue'
 	  }
   }
 	 
-// 初始化滚动监听
+// 初始化滚动监听（使用 window，避免 body 不作为滚动容器导致的兼容问题）
 export const initScrollListener = () => {
-  document.body.addEventListener('scroll', handleScroll, { passive: true })
+  window.addEventListener('scroll', handleScroll, { passive: true })
 }
 
 // 移除滚动监听
 export const removeScrollListener = () => {
-  document.body.removeEventListener('scroll', handleScroll)
+  window.removeEventListener('scroll', handleScroll)
 }
 
 export {

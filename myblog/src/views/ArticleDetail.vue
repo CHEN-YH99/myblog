@@ -220,6 +220,7 @@ import {
 } from '@element-plus/icons-vue'
 import ReadingProgress from '@/components/ReadingProgress.vue'
 import WaveContainer from '@/components/WaveContainer.vue'
+import { defineAsyncComponent } from 'vue'
 import { useArticlesStore } from '@/stores/getarticles'
 import { useUserStore } from '@/stores/user'
 
