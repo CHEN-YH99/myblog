@@ -1,11 +1,20 @@
 import { ref, computed } from 'vue'
 import { getArticleList } from '@/api/articles'
 
+interface ArticleStats {
+  totalArticles: number
+  monthlyArticleData: number[]
+  monthlyViewsData: number[]
+  currentMonthArticles: number
+  totalViews: number
+  lastUpdated: number
+}
+
 // 全局文章统计状态
-const articleStats = ref({
+const articleStats = ref<ArticleStats>({
   totalArticles: 0,
-  monthlyArticleData: new Array(12).fill(0),
-  monthlyViewsData: new Array(12).fill(0),
+  monthlyArticleData: new Array(12).fill(0) as number[],
+  monthlyViewsData: new Array(12).fill(0) as number[],
   currentMonthArticles: 0,
   totalViews: 0,
   lastUpdated: Date.now()
@@ -29,7 +38,7 @@ export function useArticleStats() {
       console.log('📊 文章统计API响应:', response)
       
       // 处理不同的API响应格式，确保获取到数组
-      let articles = []
+      let articles: any[] = []
       if (response && response.data) {
         // 新的统一API格式
         if (response.data.articles && Array.isArray(response.data.articles)) {
@@ -149,8 +158,8 @@ export function useArticleStats() {
     const lastCount = articleStats.value.monthlyArticleData[lastMonth]
     
     if (lastCount === 0) return '+100%'
-    const growth = ((currentCount - lastCount) / lastCount * 100).toFixed(1)
-    return growth > 0 ? `+${growth}%` : `${growth}%`
+    const growthVal = Number(((currentCount - lastCount) / lastCount * 100).toFixed(1))
+    return growthVal > 0 ? `+${growthVal}%` : `${growthVal}%`
   })
   
   return {

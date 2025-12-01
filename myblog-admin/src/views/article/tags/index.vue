@@ -69,7 +69,7 @@
         v-loading="isLoading"
         :data="tagsList"
         :size="tableSize"
-        style="width: 100%"
+        :style="{ width: '100%' }"
         @selection-change="handleSelectionChange"
       >
         <ElTableColumn type="selection" width="55" />
@@ -165,13 +165,15 @@
   import { ref, onMounted } from 'vue'
   import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
   import { Search, Refresh, Delete, Plus, Edit } from '@element-plus/icons-vue'
-  import { useDateFormat } from '@vueuse/core'
   import { getTags } from '@/api/articles'
   import { useUserStore } from '@/store/modules/user'
   import { storeToRefs } from 'pinia'
   import { formatDetailDate } from '@shared/utils/user'
 
   defineOptions({ name: 'TagsManagement' })
+
+  // 只读权限：根据当前用户权限控制某些操作按钮
+  const { isReadOnly } = storeToRefs(useUserStore())
 
   // 接口类型定义
   interface TagItem {
@@ -405,11 +407,40 @@
       // 模拟API调用
       await new Promise((resolve) => setTimeout(resolve, 800))
 
+      // 本地更新列表，确保界面实时反映新增/编辑结果
+      const nowIso = new Date().toISOString()
+      if (dialogMode.value === 'add') {
+        const newItem: TagItem = {
+          _id: `tag_${Date.now()}`,
+          name: formData.value.name.trim(),
+          description: (formData.value.description || '').trim(),
+          count: 0,
+          createTime: nowIso,
+          updateTime: nowIso
+        }
+        // 新增置顶到当前列表
+        tagsList.value.unshift(newItem)
+        total.value += 1
+        // 新增后切回第一页，避免出现在其他页不显示的困惑
+        currentPage.value = 1
+      } else {
+        const idx = tagsList.value.findIndex((t) => t._id === currentEditId.value)
+        if (idx !== -1) {
+          tagsList.value[idx] = {
+            ...tagsList.value[idx],
+            name: formData.value.name.trim(),
+            description: (formData.value.description || '').trim(),
+            updateTime: nowIso
+          }
+        }
+      }
+
       const successMsg = dialogMode.value === 'add' ? '新增成功' : '修改成功'
       ElMessage.success(successMsg)
 
       dialogVisible.value = false
-      getTagsList()
+      // 注意：不立即重新拉取远端列表，避免后端未实现写入导致刚更新的数据又被覆盖
+      // 如需与后端同步，可在完成真实API后再调用 getTagsList()
     } catch (error) {
       console.error('表单验证失败:', error)
     } finally {

@@ -131,8 +131,8 @@ const avatarUrl = computed({
 })
 
 // 裁剪相关
-const cropImage = ref<HTMLImageElement>()
-let cropper: Cropper | null = null
+const cropImage = ref<HTMLImageElement | null>(null)
+let cropper: any = null
 
 // 点击上传
 const handleClick = () => {
@@ -174,7 +174,8 @@ const beforeAvatarUpload: UploadProps['beforeUpload'] = (rawFile) => {
 const initCropper = () => {
   if (!cropImage.value) return
 
-  cropper = new Cropper(cropImage.value, {
+  // 使用 any 以兼容不同版本的类型定义
+  const options = {
     aspectRatio: 1, // 1:1 比例
     viewMode: 2,
     dragMode: 'move',
@@ -193,7 +194,9 @@ const initCropper = () => {
     crop() {
       // 裁剪时更新预览
     }
-  })
+  } as any
+  // @ts-ignore 兼容 cropperjs 类型差异
+  cropper = new Cropper(cropImage.value as HTMLImageElement, options)
 }
 
 // 销毁裁剪器
@@ -228,8 +231,8 @@ const handleCropConfirm = async () => {
 
     // 转换为blob
     const blob = await new Promise<Blob>((resolve) => {
-      canvas.toBlob((blob) => {
-        resolve(blob!)
+      canvas.toBlob((blob: Blob | null) => {
+        resolve(blob as Blob)
       }, 'image/jpeg', 0.9)
     })
 

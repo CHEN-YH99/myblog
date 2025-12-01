@@ -244,7 +244,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -371,17 +371,17 @@ const {
 // 分页相关
 const currentPage = computed({
   get: () => pagination.current,
-  set: (val) => {
-    pagination.current = val
-    getTalkListData()
+  set: async (val: number) => {
+    // 通过 useTable 的分页方法更新，避免直接改只读属性
+    await useTableHandleCurrentChange(val)
   }
 })
 
 const pageSize = computed({
   get: () => pagination.size,
-  set: (val) => {
-    pagination.size = val
-    getTalkListData()
+  set: async (val: number) => {
+    // 通过 useTable 的分页方法更新，避免直接改只读属性
+    await useTableHandleSizeChange(val)
   }
 })
 
@@ -465,7 +465,7 @@ const resetFilters = () => {
   currentStatus.value = 'all'
   selectedTalks.value = []
   updateSearchParams()
-  refreshCreate() // 使用refreshCreate回到第一页
+  currentPage.value = 1 // 回到第一页并触发刷新
 }
 
 // 分页处理
@@ -505,7 +505,7 @@ const editTalk = (talk: any) => {
 
 // 操作处理
 const handleAction = async (command: string, row: any) => {
-  const [action, id] = command.split('-')
+  const [action] = command.split('-')
   
   try {
     switch (action) {
@@ -637,7 +637,7 @@ const batchDelete = async () => {
     const ids = selectedTalks.value.map(talk => talk._id)
     await batchOperateTalks({ 
       ids, 
-      operation: 'delete'
+      action: 'delete'
     })
     ElMessage.success(t('talk.messages.batchDeleteSuccess', { count: selectedTalks.value.length }))
     selectedTalks.value = []
@@ -665,7 +665,7 @@ const batchRestore = async () => {
     const ids = selectedTalks.value.map(talk => talk._id)
     await batchOperateTalks({ 
       ids, 
-      operation: 'restore'
+      action: 'restore'
     })
     ElMessage.success(t('talk.messages.batchRestoreSuccess', { count: selectedTalks.value.length }))
     selectedTalks.value = []
@@ -701,8 +701,8 @@ const batchPermanentDelete = async () => {
     const ids = selectedTalks.value.map(talk => talk._id)
     await batchOperateTalks({ 
       ids, 
-      operation: 'permanentDelete'
-    })
+      action: 'permanentDelete'
+    } as any)
     ElMessage.success(t('talk.messages.batchPermanentDeleteSuccess', { count: selectedTalks.value.length }))
     selectedTalks.value = []
     updateSearchParams()
@@ -728,7 +728,7 @@ const batchToggleTop = async () => {
     const ids = selectedTalks.value.map(talk => talk._id)
     await batchOperateTalks({ 
       ids, 
-      operation: 'toggleTop'
+      action: 'top'
     })
     ElMessage.success(t('talk.messages.batchToggleTopSuccess'))
     selectedTalks.value = []
@@ -753,7 +753,7 @@ const batchToggleHide = async () => {
     const ids = selectedTalks.value.map(talk => talk._id)
     await batchOperateTalks({ 
       ids, 
-      operation: 'toggleHide'
+      action: 'hide'
     })
     ElMessage.success(t('talk.messages.batchToggleHideSuccess'))
     selectedTalks.value = []

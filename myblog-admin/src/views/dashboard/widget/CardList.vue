@@ -70,7 +70,15 @@
 
       // 获取实时用户数量
       const userListRes = await fetchGetUserList({ current: 1, size: 1000 })
-      const totalUsers = userListRes?.data?.total || userListRes?.total || 0
+      let totalUsers = 0 as number
+      const anyRes = userListRes as any
+      if (anyRes && anyRes.data && typeof anyRes.data.total === 'number') {
+        totalUsers = anyRes.data.total
+      } else if (anyRes && typeof anyRes.total === 'number') {
+        totalUsers = anyRes.total
+      } else if (anyRes && Array.isArray(anyRes.records)) {
+        totalUsers = anyRes.records.length
+      }
 
       // 更新数据
       dataList[0].num = stats.totalVisits

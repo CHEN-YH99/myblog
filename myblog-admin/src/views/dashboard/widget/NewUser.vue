@@ -14,7 +14,7 @@
     <ArtTable
       class="table"
       :data="tableData"
-      style="width: 100%"
+      :style="{ width: '100%' }"
       size="large"
       :border="false"
       :stripe="false"

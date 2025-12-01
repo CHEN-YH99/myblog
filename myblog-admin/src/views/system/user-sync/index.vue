@@ -97,7 +97,7 @@
       <ArtTable
         :loading="pendingLoading"
         :data="pendingUsers"
-        :pagination="false"
+        :pagination="undefined"
       >
         <el-table-column label="用户名" prop="username" width="150" />
         <el-table-column label="邮箱" prop="email" width="200" />
@@ -338,13 +338,13 @@ const clearLogs = () => {
 }
 
 // 获取状态类型
-const getStatusType = (status: string) => {
-  const statusMap: Record<string, string> = {
+const getStatusType = (status: string): 'success' | 'info' | 'warning' | 'danger' | 'primary' => {
+  const statusMap: Record<string, 'success' | 'info' | 'warning' | 'danger' | 'primary'> = {
     active: 'success',
     inactive: 'info',
     banned: 'danger'
   }
-  return statusMap[status] || 'info'
+  return statusMap[status] ?? 'info'
 }
 
 // 获取状态文本

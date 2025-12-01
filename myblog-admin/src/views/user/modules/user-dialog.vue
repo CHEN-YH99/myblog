@@ -51,11 +51,14 @@
 
 <script setup lang="ts">
   import { ref, reactive, computed, nextTick, watch } from 'vue'
-  // 角色列表数据 - 实际项目中应从API获取
-  const ROLE_LIST_DATA = ref([])
   import type { FormInstance, FormRules } from 'element-plus'
   import { ElMessage } from 'element-plus'
   import { fetchCreateUser, fetchUpdateUser } from '@/api/system-manage'
+
+  interface RoleListItem {
+    roleId: number
+    roleName: string
+  }
 
   interface Props {
     visible: boolean
@@ -71,8 +74,9 @@
   const props = defineProps<Props>()
   const emit = defineEmits<Emits>()
 
-  // 角色列表数据
-  const roleList = ref(ROLE_LIST_DATA)
+  // 角色列表数据 - 实际项目中应从API获取
+  const ROLE_LIST_DATA = ref<RoleListItem[]>([])
+  const roleList = ROLE_LIST_DATA
 
   // 对话框显示控制
   const dialogVisible = computed({
@@ -92,7 +96,7 @@
     password: '',
     email: '',
     phone: '',
-    roleId: null as number | null,
+    roleId: undefined as number | undefined,
     enabled: true
   })
 
@@ -144,7 +148,7 @@
     formData.password = ''
     formData.email = ''
     formData.phone = ''
-    formData.roleId = null
+    formData.roleId = undefined
     formData.enabled = true
     formRef.value?.clearValidate()
   }
@@ -188,7 +192,7 @@
               enabled: formData.enabled
             }
             
-            await fetchUpdateUser(userId, updateData)
+            await fetchUpdateUser(userId, updateData as Partial<Api.SystemManage.UserListItem>)
             ElMessage.success('更新成功')
           } else {
             // 新增用户
@@ -202,7 +206,7 @@
               enabled: formData.enabled
             }
             
-            await fetchCreateUser(createData)
+            await fetchCreateUser(createData as Partial<Api.SystemManage.UserListItem>)
             ElMessage.success('添加成功')
           }
           

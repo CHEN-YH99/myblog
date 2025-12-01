@@ -199,7 +199,8 @@ const goToArticle = (article: Api.Article.ArticleItem) => {
   }
 
   const from = mapPathToMenu(route.path)
-  router.push({ path: `/article/${article._id}`, query: { from } })
+  const fromPath = route.fullPath
+  router.push({ path: `/article/${article._id}`, query: { from, fromPath } })
 }
 
 // 刷新数据

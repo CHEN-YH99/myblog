@@ -9,26 +9,6 @@ const { startTokenCheck } = useTokenCheck()
 onMounted(() => {
   startTokenCheck()
 })
-
-// 过渡动画事件处理
-const onBeforeEnter = (el: Element) => {
-  // 页面进入前的准备工作
-  document.body.style.overflow = 'hidden'
-}
-
-const onEnter = (el: Element, done: () => void) => {
-  // 页面进入动画完成后
-  setTimeout(() => {
-    document.body.style.overflow = ''
-    done()
-  }, 300)
-}
-
-const onLeave = (el: Element, done: () => void) => {
-  // 页面离开时的处理
-  window.scrollTo({ top: 0, behavior: 'smooth' })
-  done()
-}
 </script>
 
 <template>   
@@ -37,15 +17,10 @@ const onLeave = (el: Element, done: () => void) => {
     <!-- 添加路由过渡动画 -->
     <router-view v-slot="{ Component, route }">
       <transition 
-        :name="(route.meta?.transition as string) || 'fade'" 
-        mode="out-in"
-        appear
-        @before-enter="onBeforeEnter"
-        @enter="onEnter"
-        @leave="onLeave"
+        :name="(route.meta?.transition as string) || 'fade'"
       >
         <Suspense v-if="Component">
-          <component :is="Component" :key="route.path" />
+          <component :is="Component" :key="route.fullPath" />
           <template #fallback>
             <div class="loading-fallback">
               <el-skeleton :rows="5" animated />
@@ -57,28 +32,6 @@ const onLeave = (el: Element, done: () => void) => {
   </div>
 </template>
 
-<script lang="ts">
-export default {
-  methods: {
-    onBeforeEnter() {
-      // 页面进入前的准备工作
-      document.body.style.overflow = 'hidden'
-    },
-    onEnter(el: Element, done: () => void) {
-      // 页面进入动画完成后
-      setTimeout(() => {
-        document.body.style.overflow = ''
-        done()
-      }, 300)
-    },
-    onLeave(el: Element, done: () => void) {
-      // 页面离开时的处理
-      window.scrollTo({ top: 0, behavior: 'smooth' })
-      done()
-    }
-  }
-}
-</script>
 
 <style scoped>
 .app-container {

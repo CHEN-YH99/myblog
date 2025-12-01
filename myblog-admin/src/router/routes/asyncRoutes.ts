@@ -129,7 +129,7 @@ export const asyncRoutes: AppRouteRecord[] = [
       {
         path: '403',
         name: '403',
-        component: RoutesAlias.Exception403,
+        component: RoutesAlias.ArticleList,
         meta: {
           title: 'menus.exception.forbidden',
           keepAlive: true
@@ -138,7 +138,7 @@ export const asyncRoutes: AppRouteRecord[] = [
       {
         path: '404',
         name: '404',
-        component: RoutesAlias.Exception404,
+        component: RoutesAlias.ArticleList,
         meta: {
           title: 'menus.exception.notFound',
           keepAlive: true
@@ -147,7 +147,7 @@ export const asyncRoutes: AppRouteRecord[] = [
       {
         path: '500',
         name: '500',
-        component: RoutesAlias.Exception500,
+        component: RoutesAlias.ArticleList,
         meta: {
           title: 'menus.exception.serverError',
           keepAlive: true

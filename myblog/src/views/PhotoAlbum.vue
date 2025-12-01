@@ -21,13 +21,13 @@
       <div class="tags-info">
         <section class="tag-cloud">
           <ul>
-            <li v-for="item in visiblePhotoCategories" :key="item._id">
+            <li v-for="item in visiblePhotoCategories" :key="(item._id || item.id) + '-' + buildCategoryVersion(item)">
               <router-link
-                :to="'/photo-category/' + item._id"
+                :to="'/photo-category/' + (item._id || item.id)"
                 class="photo-link"
               >
                 <div class="image-container">
-                  <img :src="item.coverImage" :alt="item.title" />
+                  <img :src="getCoverUrl(item.coverImage, buildCategoryVersion(item))" :alt="item.title" />
                   <div class="overlay">
                     <span class="title">{{ item.title }}</span>
                     <span class="content">{{ item.description }}</span>
@@ -47,13 +47,41 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, computed } from 'vue'
+import { onMounted, computed, onUnmounted, onActivated } from 'vue'
 import { ElMessage } from 'element-plus'
 import { usePhotoCategories } from '@/composables/usePhotoCategories' // 引入图片分类数据文件
 import WaveContainer from '@/components/WaveContainer.vue'
 import Footer from '@/components/Footer.vue'
 
 const { photoCategories, initPhotoCategories } = usePhotoCategories()
+
+// 根据分类的更新时间构建一个版本号用于 key 和图片缓存破除
+const buildCategoryVersion = (item: any) => {
+  const src = item?.updatedAt || item?.updateTime || item?.createdAt || item?.createTime || ''
+  try {
+    const d = new Date(src)
+    if (!isNaN(d.getTime())) return d.toISOString()
+  } catch {}
+  // 退化到与内容相关的字段，尽量保证变更后 key 改变
+  return String(src || item?.title || item?.name || item?._id || '')
+}
+
+// 根据 updatedAt 追加版本号，避免封面图浏览器缓存导致看不到更新
+const getCoverUrl = (imageUrl?: string, version?: string | Date) => {
+  if (!imageUrl) return ''
+  let finalUrl = imageUrl
+  if (version) {
+    let v: string
+    try {
+      v = typeof version === 'string' ? version : new Date(version).toISOString()
+    } catch {
+      v = String(version)
+    }
+    const sep = finalUrl.includes('?') ? '&' : '?'
+    finalUrl += `${sep}v=${encodeURIComponent(v)}`
+  }
+  return finalUrl
+}
 
 // 分类显示/隐藏逻辑：禁用或不可见则隐藏
 // - 若后端返回 status = 'inactive'，视为禁用
@@ -74,12 +102,38 @@ const visiblePhotoCategories = computed(() =>
 onMounted(async () => {
   // dev log: 组件挂载，开始初始化数据
   try {
-    // 不强制刷新，使用缓存策略
-    await initPhotoCategories()
-    if ((import.meta as any)?.env?.DEV) console.log('PhotoAlbum.vue - 相册分类初始化完成')
+    // 强制刷新，确保管理端更新后用户端立即可见
+    await initPhotoCategories(undefined, { force: true })
+    if ((import.meta as any)?.env?.DEV) console.log('PhotoAlbum.vue - 相册分类初始化完成(强制刷新)')
   } catch (err) {
     console.error('PhotoAlbum.vue - 初始化数据失败:', err)
     ElMessage.error('初始化数据失败，请刷新页面重试')
+  }
+
+  // 监听页面可见性变化，页面回到前台时强制刷新一次
+  const handleVisibilityChange = async () => {
+    if (document.visibilityState === 'visible') {
+      try {
+        await initPhotoCategories(undefined, { force: true })
+      } catch (e) {
+        console.warn('PhotoAlbum.vue - 可见性切换刷新失败:', e)
+      }
+    }
+  }
+  document.addEventListener('visibilitychange', handleVisibilityChange)
+
+  // 在组件卸载时移除监听
+  onUnmounted(() => {
+    document.removeEventListener('visibilitychange', handleVisibilityChange)
+  })
+})
+
+// 当页面从缓存中激活时，强制刷新一次，避免在 KeepAlive 场景下看不到管理端的最新修改
+onActivated(async () => {
+  try {
+    await initPhotoCategories(undefined, { force: true })
+  } catch (e) {
+    console.warn('PhotoAlbum.vue - onActivated 刷新失败:', e)
   }
 })
 

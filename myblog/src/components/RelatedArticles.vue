@@ -36,8 +36,9 @@
 
 <script setup>
 import { ref, onMounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { getAllArticles } from '@/api/articles'
+import { mapPathToMenu } from '@/utils/routerMap'
 
 const props = defineProps({
   currentArticleId: {
@@ -55,6 +56,7 @@ const props = defineProps({
 })
 
 const router = useRouter()
+const route = useRoute()
 const relatedArticles = ref([])
 const loading = ref(false)
 
@@ -158,7 +160,9 @@ const navigateToArticle = async (article) => {
     void 0 && console.log('RelatedArticles: 开始跳转到文章:', `/article/${articleId}`)
 
     // 使用push进行导航，这是标准的Vue Router导航方式
-    await router.push(`/article/${articleId}`)
+    const from = mapPathToMenu(route.path)
+    const fromPath = route.fullPath
+    await router.push({ path: `/article/${articleId}`, query: { from, fromPath } })
     void 0 && console.log('RelatedArticles: 路由跳转成功')
   } catch (error) {
     console.error('RelatedArticles: 路由跳转失败:', error)

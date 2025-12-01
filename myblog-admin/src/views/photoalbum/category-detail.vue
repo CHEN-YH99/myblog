@@ -101,7 +101,7 @@
           </div>
           <div class="photo-info">
             <p class="photo-name" :title="photo.name">{{ photo.name }}</p>
-            <p class="photo-date">{{ formatDate(photo.uploadDate || photo.createdAt || photo.updatedAt) }}</p>
+            <p class="photo-date">{{ formatDate((photo.uploadDate || photo.createdAt || photo.updatedAt) as string) }}</p>
           </div>
         </div>
       </div>
@@ -177,13 +177,13 @@
         <div class="preview-info">
           <ElDescriptions :column="2" border>
             <ElDescriptionsItem label="图片名称">{{ currentPhoto.name }}</ElDescriptionsItem>
-            <ElDescriptionsItem label="文件大小">{{ formatFileSize(currentPhoto.size) }}</ElDescriptionsItem>
+            <ElDescriptionsItem label="文件大小">{{ formatFileSize(currentPhoto.size || 0) }}</ElDescriptionsItem>
             <ElDescriptionsItem label="图片尺寸">{{ currentPhoto.width }} × {{ currentPhoto.height }}</ElDescriptionsItem>
-            <ElDescriptionsItem label="上传时间">{{ formatDate(currentPhoto.uploadDate || currentPhoto.createdAt || currentPhoto.updatedAt) }}</ElDescriptionsItem>
+            <ElDescriptionsItem label="上传时间">{{ formatDate((currentPhoto.uploadDate || currentPhoto.createdAt || currentPhoto.updatedAt) as string) }}</ElDescriptionsItem>
             <ElDescriptionsItem label="图片URL" :span="2">
               <ElInput v-model="currentPhoto.url" readonly>
                 <template #append>
-                  <ElButton @click="copyUrl(currentPhoto.url)">复制</ElButton>
+                  <ElButton @click="copyUrl(currentPhoto.url || '')">复制</ElButton>
                 </template>
               </ElInput>
             </ElDescriptionsItem>
@@ -197,7 +197,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage, ElMessageBox, type UploadUserFile, type UploadFile, type UploadFiles } from 'element-plus'
 import {
   ArrowLeft,
   Upload,
@@ -206,13 +206,11 @@ import {
   Delete,
   UploadFilled
 } from '@element-plus/icons-vue'
-import { getPhotoCategories, type PhotoCategoryItem } from '@/api/photoCategories'
+import { getPhotoCategoryDetail, type PhotoCategoryItem } from '@/api/photoCategories'
 import {
   getPhotosByCategory,
   deletePhoto,
-  createPhoto,
-  type PhotoItem,
-  type PhotoSearchParams as ApiPhotoSearchParams
+  createPhoto
 } from '@/api/photos'
 // 批量删除 API 引入
 // import { batchDeletePhotos } from '@/api/photos'
@@ -223,7 +221,7 @@ defineOptions({ name: 'PhotoCategoryDetail' })
 
 interface PhotoSearchParams {
   keyword?: string
-  dateRange?: [string, string] | null
+  dateRange?: [string, string] | undefined
   categoryId?: string
   page?: number
   size?: number
@@ -261,6 +259,9 @@ interface PhotoItem {
   uploadDate?: string
   updatedAt?: string
   createTime?: string
+  size?: number
+  width?: number
+  height?: number
 }
 
 const getPhotoId = (p: PhotoItem) => {
@@ -284,7 +285,7 @@ const isAllSelected = computed(() => {
   const allIds = photoList.value.map(getPhotoId).filter(Boolean)
   return allIds.length > 0 && allIds.every((id) => selectedIds.value.includes(id))
 })
-const toggleSelectAll = (val: boolean | Event) => {
+const toggleSelectAll = (val: unknown) => {
   const checked = !!val
   if (checked) {
     const allIds = photoList.value.map(getPhotoId).filter(Boolean)
@@ -319,7 +320,8 @@ const handleBatchDelete = async () => {
   } catch (error: unknown) {
     if (error !== 'cancel') {
       console.error('批量删除失败:', error)
-      ElMessage.error(error?.msg || '批量删除失败')
+      const msg = (error as any)?.msg || (error as any)?.message || '批量删除失败'
+      ElMessage.error(msg)
     }
   } finally {
     loading.value = false
@@ -338,7 +340,7 @@ const normalizePhoto = (p: Record<string, any>): PhotoItem => ({
 // 搜索表单
 const searchForm = reactive<PhotoSearchParams>({
   keyword: '',
-  dateRange: null
+  dateRange: undefined
 })
 
 // 分页数据
@@ -349,14 +351,7 @@ const pagination = reactive({
 })
 
 // 上传相关
-interface UploadFile {
-  name: string
-  status: string
-  url?: string
-  response?: { url?: string; data?: { url?: string } }
-}
-
-const fileList = ref<UploadFile[]>([])
+const fileList = ref<UploadUserFile[]>([])
 const uploadAction = computed(() => `/api/uploads`)
 const uploadHeaders = computed(() => (userStore.accessToken ? { Authorization: userStore.accessToken } : {}))
 const uploadData = computed(() => ({
@@ -376,11 +371,9 @@ const goBack = () => {
 // 加载分类信息
 const loadCategoryInfo = async () => {
   try {
-    const response = await getPhotoCategories({ _id: categoryId.value })
-    if (response && Array.isArray(response) && response.length > 0) {
-      categoryInfo.value = response[0]
-    } else if (response && 'categories' in response && Array.isArray((response as any).categories) && (response as any).categories.length > 0) {
-      categoryInfo.value = (response as any).categories[0]
+    const detail = await getPhotoCategoryDetail(categoryId.value)
+    if (detail) {
+      categoryInfo.value = detail as PhotoCategoryItem
     }
   } catch (error) {
     console.error('加载分类信息失败:', error)
@@ -392,7 +385,7 @@ const loadCategoryInfo = async () => {
 const loadPhotoList = async () => {
   loading.value = true
   try {
-    const params: ApiPhotoSearchParams = {
+    const params: PhotoSearchParams = {
       page: pagination.currentPage,
       size: pagination.pageSize,
       keyword: searchForm.keyword || undefined,
@@ -443,7 +436,7 @@ const handleSearch = () => {
 // 重置搜索
 const handleReset = () => {
   searchForm.keyword = ''
-  searchForm.dateRange = null
+  searchForm.dateRange = undefined
   handleSearch()
 }
 
@@ -515,32 +508,34 @@ const beforeUpload = (file: File) => {
   return true
 }
 
-const handleFileChange = (_file: UploadFile, files: UploadFile[]) => {
-  fileList.value = files
+const handleFileChange = (_uploadFile: UploadFile, uploadFiles: UploadFiles) => {
+  // 与 v-model:file-list 同步（ElUpload 内部使用 UploadUserFile，做一次兼容转换）
+  fileList.value = (uploadFiles as unknown) as UploadUserFile[]
 }
 
-const handleUploadSuccess = (response: any, file: UploadFile, files?: UploadFile[]) => {
+const handleUploadSuccess = (response: any, uploadFile: UploadFile, uploadFiles: UploadFiles) => {
   // 为上传文件设置可预览的 url（不同后端字段做兼容）
   const url = response?.url || response?.data?.url || response?.file?.url
   if (url) {
-    file.url = url
+    uploadFile.url = url
   }
-  if (files) fileList.value = files
-  ElMessage.success(`${file.name} 上传成功!`)
+  fileList.value = (uploadFiles as unknown) as UploadUserFile[]
+  ElMessage.success(`${uploadFile.name} 上传成功!`)
 }
 
-const handleUploadError = (error: any, file: UploadFile) => {
+const handleUploadError = (error: Error, uploadFile: UploadFile, _uploadFiles: UploadFiles) => {
   console.error('上传失败:', error)
-  ElMessage.error(`${file.name} 上传失败!`)
+  ElMessage.error(`${uploadFile.name} 上传失败!`)
 }
 
-const handleRemove = (file: UploadFile) => {
-  console.log('移除文件:', file)
+const handleRemove = (uploadFile: UploadFile, uploadFiles: UploadFiles) => {
+  console.log('移除文件:', uploadFile)
+  fileList.value = (uploadFiles as unknown) as UploadUserFile[]
 }
 
 const handleUploadConfirm = async () => {
   // 仅统计已成功上传到 /api/uploads 的文件
-  const successFiles = fileList.value.filter((f: UploadFile) => f.status === 'success' && (f.url || f.response?.url || f.response?.data?.url))
+  const successFiles = fileList.value.filter((f) => f.status === 'success' && (f.url || (f.response as any)?.url || (f.response as any)?.data?.url))
   if (successFiles.length === 0) {
     ElMessage.warning('请先选择并上传图片')
     return
@@ -548,11 +543,11 @@ const handleUploadConfirm = async () => {
 
   uploadLoading.value = true
   try {
-    const tasks = successFiles.map((f: UploadFile) => {
-      const imageUrl = f.url || f.response?.url || f.response?.data?.url
-      const title = f.name || f.raw?.name || '未命名'
+    const tasks = successFiles.map((f) => {
+      const imageUrl = (f.url || (f.response as any)?.url || (f.response as any)?.data?.url) as string
+      const title = f.name || (f.raw as any)?.name || '未命名'
       // 以“上传成功回调”的当下时间作为 uploadDate（若后端也返回了时间则优先使用）
-      const uploadDate = f.response?.uploadDate || f.response?.data?.uploadDate || new Date().toISOString()
+      const uploadDate = (f.response as any)?.uploadDate || (f.response as any)?.data?.uploadDate || new Date().toISOString()
       return createPhoto({
         categoryId: categoryId.value,
         title,

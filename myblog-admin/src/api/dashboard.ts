@@ -1,6 +1,4 @@
-import request from '@/utils/http'
-import { getArticleList } from '@/api/articles'
-import { getCategories } from '@/api/articles'
+import { getArticleList, getCategories, type ArticleItem } from '@/api/articles'
 
 // 统计数据接口类型定义
 export interface DashboardStats {
@@ -23,7 +21,7 @@ export const getDashboardStats = async (): Promise<DashboardStats> => {
     const articlesRes = await getArticleList({ page: 1, size: 1000 })
     
     // 处理不同的响应格式
-    let articles = []
+    let articles: ArticleItem[] = []
     let totalArticles = 0
     
     if (articlesRes) {

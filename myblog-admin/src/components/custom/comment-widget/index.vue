@@ -29,18 +29,17 @@
   
   // 评论数据类型定义
   interface Comment {
-    id: string
+    id: number
     author: string
     avatar?: string
     content: string
-    createTime: string
-    likes: number
-    replies?: Comment[]
+    timestamp: string
+    likes?: number
+    replies: Comment[]
   }
   
   // 评论列表数据 - 实际项目中应从API获取
-  const commentList: Comment[] = []
-  const comments = commentList
+  const comments = ref<Comment[]>([])
 
   const newComment = ref<Partial<Comment>>({
     author: '',

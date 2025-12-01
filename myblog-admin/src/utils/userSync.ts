@@ -1,5 +1,5 @@
 import { ElMessage } from 'element-plus'
-import { receiveUserRegistration, syncUserToManagement, type UserSyncData } from '@/api/user-sync'
+import { syncUserToManagement, type UserSyncData } from '@/api/user-sync'
 
 /**
  * 用户数据同步工具类
@@ -41,7 +41,7 @@ export class UserSyncManager {
         const userData = this.syncQueue.shift()!
         await this.syncSingleUser(userData)
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('同步队列处理失败:', error)
     } finally {
       this.isProcessing = false
@@ -145,17 +145,17 @@ export class UserSyncManager {
     }
 
     let successCount = 0
-    const newErrorLogs = []
+    const newErrorLogs: any[] = []
 
     for (const errorLog of errorLogs) {
       try {
         await this.syncSingleUser(errorLog.userData)
         successCount++
-      } catch (error) {
+      } catch (error: any) {
         newErrorLogs.push({
           ...errorLog,
           retryTime: new Date().toISOString(),
-          retryError: error.message
+          retryError: error?.message || '未知错误'
         })
       }
     }

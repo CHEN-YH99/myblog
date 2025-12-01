@@ -34,7 +34,7 @@ const fastEnterConfig: FastEnterConfig = {
       description: '动画特效展示',
       icon: '&#xe7ed;',
       iconColor: '#7A7FFF',
-      path: RoutesAlias.Fireworks,
+      path: RoutesAlias.Personal,
       enabled: true,
       order: 3
     },
@@ -43,7 +43,7 @@ const fastEnterConfig: FastEnterConfig = {
       description: '即时通讯功能',
       icon: '&#xe70a;',
       iconColor: '#13DEB9',
-      path: RoutesAlias.Chat,
+      path: RoutesAlias.TalkList,
       enabled: true,
       order: 4
     },
@@ -52,7 +52,7 @@ const fastEnterConfig: FastEnterConfig = {
       description: '使用指南与开发文档',
       icon: '&#xe788;',
       iconColor: '#ffb100',
-      path: WEB_LINKS.DOCS,
+      path: WEB_LINKS.INTRODUCE,
       enabled: true,
       order: 5
     },
@@ -70,7 +70,7 @@ const fastEnterConfig: FastEnterConfig = {
       description: '版本更新与变更记录',
       icon: '&#xe81c;',
       iconColor: '#38C0FC',
-      path: RoutesAlias.ChangeLog,
+      path: WEB_LINKS.INTRODUCE,
       enabled: true,
       order: 7
     },
@@ -106,7 +106,7 @@ const fastEnterConfig: FastEnterConfig = {
     },
     {
       name: '定价',
-      path: RoutesAlias.Pricing,
+      path: RoutesAlias.ArticleList,
       enabled: true,
       order: 4
     },

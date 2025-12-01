@@ -1,20 +1,25 @@
 <template>
-  <div class="footer">
-    <p>© 小灰的个人博客</p>
-    <p>Powered by Vue3</p>
-    <div class="badges">
-      <a
-        v-for="(item, index) in footlist"
-        :key="index"
-        :href="item.imgurl"
-        target="_blank"
-        rel="noopener noreferrer"
-        :title="`前往：${item.imgurl}`"
-      >
-        <img :src="item.img" :alt="`站点徽章-${index + 1}`" />
-      </a>
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="meta">
+        <p>© 小灰的个人博客</p>
+        <p>Powered by Vue3</p>
+      </div>
+      <div class="badges" aria-label="技术栈与服务徽章">
+        <a
+          v-for="(item, index) in footlist"
+          :key="index"
+          :href="item.imgurl"
+          target="_blank"
+          rel="noopener noreferrer"
+          :title="`前往：${item.imgurl}`"
+          class="badge-link"
+        >
+          <img :src="item.img" :alt="`站点徽章-${index + 1}`" />
+        </a>
+      </div>
     </div>
-  </div>
+  </footer>
 </template>
 
 <script setup lang="ts">
@@ -29,7 +34,7 @@ const footlist = reactive([
   },
   {
     id: 2,
-    img: 'https://img.shields.io/badge/MongDB-Database-gren',
+    img: 'https://img.shields.io/badge/MongoDB-Database-green',
     imgurl: 'https://www.mongodb.com/zh-cn/docs/',
   },
   {
@@ -44,23 +49,57 @@ const footlist = reactive([
   },
 ])
 </script>
+
 <style scoped lang="scss">
 .footer {
-  position: relative;
-  bottom: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  a {
-    display: flex;
-    justify-content: center;
+  width: 100%;
+  margin-top: 48px; /* 和上面内容保持合理距离 */
+  padding: 20px 12px 40px;
+  background: transparent; /* 保持与页面背景一致 */
+}
+.footer-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.meta {
+  text-align: center;
+  line-height: 1.6;
+}
+.meta p {
+  margin: 0;
+  font-size: 12px;
+  color: #aeaeae;
+}
+.badges {
+  /* 水平布局 */
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px 12px; /* 行间与列间间距 */
+  margin-top: 6px;
+}
+.badge-link {
+  display: inline-flex; /* 避免 a 变为块级导致垂直堆叠 */
+}
+.badge-link img {
+  display: block;
+  height: 20px;
+  width: auto;
+}
+
+/* 小屏优化 */
+@media (max-width: 768px) {
+  .footer {
+    margin-top: 32px;
+    padding-bottom: 32px;
   }
-  p {
-    text-align: center;
-    font-size: 12px;
-    color: #aeaeae;
-  }
-  img {
-    margin: 20px 5px;
+  .badge-link img {
+    height: 18px;
   }
 }
 </style>

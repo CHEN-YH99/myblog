@@ -1,5 +1,12 @@
 import api from '@/utils/http'
 
+interface BackendTalkListResponse {
+  records: Talk[]
+  total: number
+  current: number
+  size: number
+}
+
 // 说说相关接口类型定义
 export interface Talk {
   _id?: string
@@ -44,7 +51,7 @@ export interface BatchOperateParams {
 }
 
 // 获取说说列表
-export const getTalkList = async (params: any) => {
+export const getTalkList = async (params: any): Promise<TalkListResponse> => {
   console.log('🚀 getTalkList API调用参数:', params)
   
   // 映射前端参数到后端期望的格式
@@ -60,14 +67,14 @@ export const getTalkList = async (params: any) => {
   console.log('🚀 映射后的后端参数:', backendParams)
   
   try {
-    const response = await api.get({
+    const response = await api.get<BackendTalkListResponse>({
       url: '/api/talks',
       params: backendParams
     })
     console.log('🚀 后端原始响应:', response)
     
     // 适配前端期望的数据格式
-    const adaptedResponse = {
+    const adaptedResponse: TalkListResponse = {
       talks: response.records || [],
       total: response.total || 0,
       page: response.current || 1,

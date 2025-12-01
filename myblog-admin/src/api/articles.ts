@@ -213,6 +213,7 @@ export interface CategoryItem {
   articleCount?: number
   createTime?: string
   updateTime?: string
+  isVisible?: boolean
 }
 
 export interface CategoryListResponse {
@@ -237,6 +238,8 @@ export interface CreateCategoryParams {
 
 export interface UpdateCategoryParams extends Partial<CreateCategoryParams> {
   _id?: string
+  isVisible?: boolean
+  visible?: boolean
 }
 
 export interface CategorySearchParams {
@@ -252,10 +255,13 @@ export interface CategorySearchParams {
 export function getCategories(params?: CategorySearchParams) {
   console.log('调用getCategories API，参数:', params)
 
+  // 后台管理端：显式告知服务端是管理员请求，便于服务端返回所有状态
+  const queryParams: any = { ...(params || {}), admin: true }
+
   return request
     .get({
       url: `${API_BASE_URL}/categories`,
-      params
+      params: queryParams
     })
     .then((res: any) => {
       console.log('getCategories 原始响应:', res)
@@ -308,10 +314,18 @@ export function getCategoryDetail(id: string) {
  * 创建分类
  */
 export function createCategory(data: CreateCategoryParams) {
+  // 同时携带 status 与可见性布尔，确保后端按 status 更新
+  const { status, ...rest } = data
+  const payload: any = {
+    ...rest,
+    ...(typeof status !== 'undefined'
+      ? { status, isVisible: status === 'active', visible: status === 'active' }
+      : {})
+  }
   return request
     .post({
       url: `${API_BASE_URL}/categories`,
-      data
+      data: payload
     })
     .then((res: any) => {
       return res && res.data ? res.data : res
@@ -322,10 +336,18 @@ export function createCategory(data: CreateCategoryParams) {
  * 更新分类
  */
 export function updateCategory(id: string, data: UpdateCategoryParams) {
+  // 向后端同时发送 status 与可见性布尔，保证以 status 为主进行落库
+  const { status, ...rest } = data || {}
+  const payload: any = {
+    ...rest,
+    ...(typeof status !== 'undefined'
+      ? { status, isVisible: status === 'active', visible: status === 'active' }
+      : {})
+  }
   return request
     .put({
       url: `${API_BASE_URL}/categories/${id}`,
-      data
+      data: payload
     })
     .then((res: any) => {
       return res && res.data ? res.data : res

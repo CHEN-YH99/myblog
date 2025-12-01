@@ -1,5 +1,10 @@
 // 升级日志数据 - 实际项目中应从API获取
-const upgradeLogList: any[] = []
+interface UpgradeLogItem {
+  version: string
+  title: string
+  requireReLogin?: boolean
+}
+const upgradeLogList: UpgradeLogItem[] = []
 import { ElNotification } from 'element-plus'
 import { useUserStore } from '@/store/modules/user'
 import { StorageConfig } from '@/utils/storage/storage-config'
@@ -83,10 +88,10 @@ class VersionManager {
     const normalizedCurrent = this.normalizeVersion(StorageConfig.CURRENT_VERSION)
     const normalizedStored = this.normalizeVersion(storedVersion)
 
-    return upgradeLogList.value.some((item) => {
+    return upgradeLogList.some((item: UpgradeLogItem) => {
       const itemVersion = this.normalizeVersion(item.version)
       return (
-        item.requireReLogin && itemVersion > normalizedStored && itemVersion <= normalizedCurrent
+        !!item.requireReLogin && itemVersion > normalizedStored && itemVersion <= normalizedCurrent
       )
     })
   }
@@ -95,7 +100,7 @@ class VersionManager {
    * 构建升级通知消息
    */
   private buildUpgradeMessage(requireReLogin: boolean): string {
-    const { title: content } = upgradeLogList.value[0]
+    const { title: content } = upgradeLogList[0] || { title: '' }
 
     const messageParts = [
       `<p style="color: var(--art-gray-text-800) !important; padding-bottom: 5px;">`,
@@ -163,7 +168,7 @@ class VersionManager {
     legacyStorage: ReturnType<typeof this.findLegacyStorage>
   ): Promise<void> {
     try {
-      if (!upgradeLogList.value.length) {
+      if (!upgradeLogList.length) {
         console.warn('[Upgrade] 升级日志列表为空')
         return
       }

@@ -84,7 +84,7 @@
                   <div class="selection-checkbox" @click.stop>
                     <ElCheckbox
                       :model-value="selectedArticles.includes(item.id)"
-                      @change="(val, event) => toggleSelection(item.id, val, event)"
+                      @change="(val) => toggleSelection(item.id, val)"
                       @click.stop
                     />
                   </div>
@@ -438,7 +438,10 @@
 
       if (res) {
         // 处理统一API响应格式
-        let articlesData, totalCount, currentPageNum, pageSizeNum
+        let articlesData: Record<string, any>[] | undefined
+        let totalCount: number | undefined
+        let currentPageNum: number | undefined
+        let pageSizeNum: number | undefined
 
         // 检查是否是新的统一API格式
         if (res.data && res.data.articles) {
@@ -556,7 +559,7 @@
   }
 
   // 处理图片URL，确保本地图片使用正确的端口
-  const getImageUrl = (imageUrl: string, forceRefresh = false) => {
+  const getImageUrl = (imageUrl?: string, forceRefresh = false) => {
     if (!imageUrl) return ''
 
     let finalUrl = imageUrl

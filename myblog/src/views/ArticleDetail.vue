@@ -207,7 +207,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, nextTick, watch, watchPostEffect } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import {
   User,
@@ -431,13 +431,54 @@ const goToTagPage = (tag: string) => {
   }
 }
 
-// 返回上一页
+// 返回上一页（避免返回后白屏：优先根据来源 from 定位页面，而不是直接 history.back）
 const goBack = () => {
   try {
+    const fromPath = typeof route.query.fromPath === 'string' ? route.query.fromPath : ''
+    const from = typeof route.query.from === 'string' ? route.query.from : ''
+
+    // 将菜单索引映射为路由路径
+    const mapFromToPath = (m: string): string => {
+      switch (m) {
+        case 'home':
+          return '/'
+        case 'timeline':
+          return '/timeline'
+        case 'frontend':
+          return '/frontend'
+        case 'backend':
+          return '/backend'
+        case 'category':
+          return '/category'
+        case 'photos':
+          return '/photoAlbum'
+        case 'talk':
+          return '/talk'
+        // 其他/未知来源回到首页
+        default:
+          return '/'
+      }
+    }
+
+    // 1) 优先使用 fromPath 原路返回并强制重建
+    if (fromPath) {
+      const join = fromPath.includes('?') ? '&' : '?'
+      router.replace(fromPath + join + `_r=${Date.now()}`)
+      return
+    }
+
+    // 2) 其次尝试 from（菜单来源）映射为稳定路径
+    if (from) {
+      const targetPath = mapFromToPath(from)
+      router.replace({ path: targetPath, query: { _r: String(Date.now()) } })
+      return
+    }
+
+    // 3) 再退回历史
     if (window.history.length > 1) {
-      router.go(-1)
+      router.back()
     } else {
-      router.push('/')
+      router.replace('/')
     }
   } catch (error) {
     console.error('返回失败:', error)
@@ -471,6 +512,40 @@ const shareArticle = async () => {
     }
   }
 }
+
+// 处理浏览器后退等离开场景：根据 from 参数定向到稳定路径并强制重建，避免白屏
+onBeforeRouteLeave((to, from, next) => {
+  try {
+    const fromParam = typeof route.query.from === 'string' ? route.query.from : ''
+    // 仅当要离开详情页且目标不是另一个详情页时处理
+    const goingToAnotherArticle = to.name === 'ArticleDetail' || (typeof to.path === 'string' && to.path.startsWith('/article/'))
+    if (!goingToAnotherArticle && fromParam) {
+      const mapFromToPath = (m: string): string => {
+        switch (m) {
+          case 'home': return '/'
+          case 'timeline': return '/timeline'
+          case 'frontend': return '/frontend'
+          case 'backend': return '/backend'
+          case 'category': return '/category'
+          case 'photos': return '/photoAlbum'
+          case 'talk': return '/talk'
+          default: return '/'
+        }
+      }
+      const target = mapFromToPath(fromParam)
+      // 若目标与即将前往的一致，则直接放行；否则重定向并强制刷新 key
+      if (to.path === target) {
+        next()
+      } else {
+        next({ path: target, replace: true, query: { _r: String(Date.now()) } })
+      }
+      return
+    }
+  } catch (e) {
+    // ignore and fallback to default navigation
+  }
+  next()
+})
 
 // 点赞功能（直接使用 articlesStore，组件内只负责本地文章详情的乐观更新）
 const isLiked = (id: string) => articlesStore.isLiked(id)

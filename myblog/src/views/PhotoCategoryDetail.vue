@@ -155,9 +155,10 @@ const updatedAtStr = computed(() =>
 /**
  * 格式化日期
  */
-const formatDate = (dateString: string) => {
-  if (!dateString) return '-'
-  const date = new Date(dateString)
+const formatDate = (dateInput?: string | Date) => {
+  if (!dateInput) return '-'
+  const date = new Date(dateInput)
+  if (isNaN(date.getTime())) return '-'
   return date.toLocaleDateString('zh-CN', {
     year: 'numeric',
     month: 'long',

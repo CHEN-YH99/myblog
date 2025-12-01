@@ -81,7 +81,8 @@
     roleCode: '',
     description: '',
     createTime: '',
-    enabled: true
+    enabled: true,
+    permissions: []
   })
 
   // 监听弹窗打开，初始化表单数据

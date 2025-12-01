@@ -58,7 +58,15 @@
 
 <script setup lang="ts">
   // 升级日志数据 - 实际项目中应从API获取
-  const upgradeLogList = ref([])
+  interface UpgradeLogItem {
+    version: string
+    title: string
+    detail?: string[]
+    date: string
+    remark?: string
+    requireReLogin?: boolean
+  }
+  const upgradeLogList = ref<UpgradeLogItem[]>([])
 
   defineOptions({ name: 'ChangeLog' })
 </script>

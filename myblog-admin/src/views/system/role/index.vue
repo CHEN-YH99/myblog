@@ -48,11 +48,12 @@
 </template>
 
 <script setup lang="ts">
-  import { ElMessage, ElMessageBox, ElTag, ElSwitch } from 'element-plus'
+  import { h } from 'vue'
+  import { ElMessage, ElMessageBox, ElSwitch } from 'element-plus'
   import { ButtonMoreItem } from '@/components/core/forms/art-button-more/index.vue'
   import { Edit, Delete } from '@element-plus/icons-vue'
   import { useTable } from '@/composables/useTable'
-  import { fetchGetRoleList, fetchCreateRole, fetchUpdateRole, fetchDeleteRole } from '@/api/system-manage'
+  import { fetchGetRoleList, fetchUpdateRole, fetchDeleteRole } from '@/api/system-manage'
   import ArtButtonMore from '@/components/core/forms/art-button-more/index.vue'
   import RoleSearch from './modules/role-search.vue'
   import RoleEditDialog from './modules/role-edit-dialog.vue'
@@ -104,9 +105,9 @@
           prop: 'roleId',
           label: '序号',
           width: 80,
-          formatter: (row, column, cellValue, index) => {
+          formatter: ((_row: RoleListItem, _column: any, _cellValue: any, index: number) => {
             return (pagination.current - 1) * pagination.size + index + 1
-          }
+          }) as any
         },
         {
           prop: 'roleName',
@@ -145,7 +146,7 @@
               activeText: '启用',
               inactiveText: '禁用',
               disabled: isReadOnly.value,
-              onChange: (value) => handleStatusChange(row, value)
+              onChange: (value) => handleStatusChange(row, Boolean(value))
             })
           }
         },

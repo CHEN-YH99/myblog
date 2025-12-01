@@ -313,7 +313,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import {
@@ -327,26 +327,59 @@ import {
   Delete
 } from '@element-plus/icons-vue'
 import AvatarUpload from '@/components/AvatarUpload.vue'
+import { useUserStore } from '@/store/modules/user'
+import { storeToRefs } from 'pinia'
+import { useDateFormat } from '@vueuse/core'
 
 // 升级日志数据 - 实际项目中应从API获取
-const upgradeLogList = ref([])
+interface UpgradeLogItem {
+  version: string
+  title: string
+  detail?: string[]
+  date: string
+  remark?: string
+  requireReLogin?: boolean
+}
+const upgradeLogList = ref<UpgradeLogItem[]>([])
 
 defineOptions({ name: 'PersonalCenter' })
 
 const router = useRouter()
 
+// 从用户仓库获取实时用户信息
+const userStore = useUserStore()
+const { getUserInfo } = storeToRefs(userStore)
+
+// 简单日期格式化
+const formatSimpleDate = (d?: string | Date) => {
+  if (!d) return '-'
+  return useDateFormat(d, 'YYYY-MM-DD').value
+}
+
 // 用户资料
-const userProfile = ref({
-  id: 1,
-  username: '管理员',
-  email: 'admin@example.com',
-  phone: '138****8888',
-  gender: 'male',
-  birthday: '1990-01-01',
-  bio: '这是一个简洁大方的个人博客管理系统',
+interface UserProfile {
+  id?: string | number
+  username: string
+  email: string
+  phone?: string
+  gender?: string
+  birthday?: string
+  bio?: string
+  avatar?: string
+  role?: string
+  createTime?: string | Date
+}
+const userProfile = ref<UserProfile>({
+  id: '',
+  username: '未登录',
+  email: '-',
+  phone: '',
+  gender: '',
+  birthday: '',
+  bio: '这个人很懒，什么都没有留下',
   avatar: '/src/assets/images/avatar.jpg',
-  role: '超级管理员',
-  createTime: '2024-01-01'
+  role: '',
+  createTime: ''
 })
 
 // 用户统计数据
@@ -414,7 +447,7 @@ const passwordRules: FormRules = {
   confirmPassword: [
     { required: true, message: '请确认新密码', trigger: 'blur' },
     {
-      validator: (rule, value, callback) => {
+      validator: (_rule, value, callback) => {
         if (value !== passwordForm.newPassword) {
           callback(new Error('两次输入的密码不一致'))
         } else {
@@ -557,9 +590,42 @@ const clearCache = () => {
   })
 }
 
+// 基于用户仓库动态填充个人信息
+const updateUserFromStore = () => {
+  const info: any = getUserInfo.value || {}
+  if (!info || (typeof info === 'object' && Object.keys(info).length === 0)) return
+
+  const resolvedRole = (() => {
+    if (info.roleName) return info.roleName
+    if (Array.isArray(info.roles) && info.roles.length > 0) {
+      const first = info.roles[0]
+      if (typeof first === 'string') return first
+      if (first && typeof first === 'object') return first.roleName || first.roleCode || ''
+    }
+    return info.role || ''
+  })()
+
+  const mapped: UserProfile = {
+    id: info.id || info._id || info.userId || userProfile.value.id,
+    username: info.username || info.userName || info.name || userProfile.value.username,
+    email: info.email || info.mail || userProfile.value.email,
+    phone: info.phone || info.mobile || userProfile.value.phone,
+    gender: info.gender || info.sex || userProfile.value.gender,
+    birthday: info.birthday || info.birthdate || userProfile.value.birthday,
+    bio: info.bio || info.intro || userProfile.value.bio,
+    avatar: info.avatar || info.avatarUrl || userProfile.value.avatar,
+    role: resolvedRole || userProfile.value.role,
+    createTime: info.createTime || info.createdAt || info.registeredAt || userProfile.value.createTime
+  }
+
+  userProfile.value = { ...userProfile.value, ...mapped }
+}
+
+watch(getUserInfo, () => updateUserFromStore(), { immediate: true, deep: true })
+
 // 组件挂载时初始化数据
 onMounted(() => {
-  // 这里可以调用API获取用户数据
+  updateUserFromStore()
 })
 </script>
 

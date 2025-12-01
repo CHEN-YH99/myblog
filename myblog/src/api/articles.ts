@@ -356,25 +356,44 @@ export function getRelatedArticles(articleId: string, limit: number = 5) {
  */
 export function getCategories(params?: Api.Article.CategorySearchParams) {
   const cacheKey = getCacheKey('/api/categories', params as unknown as Record<string, unknown>)
-  const cached = getFromCache<Api.Article.CategoryItem[]>(cacheKey)
 
-  if (cached) {
-    return Promise.resolve(cached)
+  // 当请求显式要求仅获取启用分类时，为保证与后台管理状态同步，跳过缓存
+  if (params?.status === 'active') {
+    // 不走缓存
+  } else {
+    const cached = getFromCache<Api.Article.CategoryItem[]>(cacheKey)
+    if (cached) {
+      return Promise.resolve(cached)
+    }
   }
 
   return api
     .get({ url: '/api/categories', params })
     .then((response) => {
-      let categories: Api.Article.CategoryItem[] = []
+      let categories: any[] = []
 
       if (Array.isArray(response)) {
         categories = response
       } else if (response && typeof response === 'object' && 'categories' in response) {
-        categories = (response as Record<string, unknown>).categories as Api.Article.CategoryItem[]
+        categories = (response as Record<string, unknown>).categories as any[]
       }
 
-      setCache(cacheKey, categories as unknown as Record<string, unknown>)
-      return categories
+      // 统一映射：visible/isVisible -> status
+      const mapped = categories.map((item) => {
+        const visibleLike = typeof item?.visible === 'boolean' ? item.visible
+          : (typeof item?.isVisible === 'boolean' ? item.isVisible : undefined)
+        const status = item?.status ?? (visibleLike === false ? 'inactive' : 'active')
+        return {
+          ...item,
+          status
+        } as Api.Article.CategoryItem
+      })
+
+      // 如果入参要求仅返回启用分类，则在前端再做一次兜底过滤
+      const finalList = params?.status === 'active' ? mapped.filter((c) => c.status === 'active') : mapped
+
+      setCache(cacheKey, finalList as unknown as Record<string, unknown>)
+      return finalList
     })
     .catch(() => []) // 降级处理
 }

@@ -85,12 +85,12 @@
             <div class="images-section">
               <div class="section-title">
                 <ElIcon><Picture /></ElIcon>
-                <span>图片 ({{ talkForm.images.length }}/9)</span>
+                <span>图片 ({{ (talkForm.images || []).length }}/9)</span>
               </div>
               <div class="images-upload">
                 <div class="image-grid">
                   <div 
-                    v-for="(image, index) in talkForm.images" 
+                    v-for="(image, index) in (talkForm.images || [])" 
                     :key="index" 
                     class="image-item"
                   >
@@ -98,7 +98,7 @@
                       :src="image"
                       fit="cover"
                       class="image-preview"
-                      :preview-src-list="talkForm.images"
+                      :preview-src-list="talkForm.images || []"
                       :initial-index="index"
                     />
                     <div class="image-actions">
@@ -112,7 +112,7 @@
                     </div>
                   </div>
                   <div 
-                    v-if="talkForm.images.length < 9" 
+                    v-if="(talkForm.images || []).length < 9" 
                     class="upload-trigger"
                     @click="triggerImageUpload"
                   >
@@ -300,16 +300,16 @@
                     暂无内容...
                   </div>
                   
-                  <div v-if="talkForm.images.length > 0" class="preview-images">
+                  <div v-if="(talkForm.images || []).length > 0" class="preview-images">
                     <ElImage
-                      v-for="(image, index) in talkForm.images.slice(0, 3)"
+                      v-for="(image, index) in (talkForm.images || []).slice(0, 3)"
                       :key="index"
                       :src="image"
                       class="preview-image"
                       fit="cover"
                     />
-                    <div v-if="talkForm.images.length > 3" class="more-images">
-                      +{{ talkForm.images.length - 3 }}
+                    <div v-if="(talkForm.images || []).length > 3" class="more-images">
+                      +{{ (talkForm.images || []).length - 3 }}
                     </div>
                   </div>
 
@@ -326,7 +326,7 @@
                     </div>
                   </div>
 
-                  <div v-if="talkForm.tags.length > 0" class="preview-tags">
+                  <div v-if="(talkForm.tags || []).length > 0" class="preview-tags">
                     <ElTag
                       v-for="tag in talkForm.tags"
                       :key="tag"
@@ -349,7 +349,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, nextTick, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import {
   ArrowLeft,
   EditPen,

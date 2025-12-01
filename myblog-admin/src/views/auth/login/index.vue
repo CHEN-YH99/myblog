@@ -277,8 +277,8 @@
     try {
       userFetchLoading.value = true
       const res = await fetchGetUserList({ current: 1, size: 1, roleCode, enabled: true } as any)
-      const first = (res?.records || [])[0]
-      return first?.username || first?.userName || ''
+      const first: any = (res?.records || [])[0]
+      return first?.userName || first?.username || ''
     } catch (e) {
       console.warn('[Login] 获取角色对应用户失败:', e)
       return ''
@@ -396,7 +396,7 @@
       // 存储token和用户信息
       userStore.setToken(token, refreshToken)
       // 获取用户信息；若网络层仍异常，直接请求后端地址
-      let userInfo
+      let userInfo: any
       try {
         userInfo = await fetchGetUserInfo()
       } catch (err) {

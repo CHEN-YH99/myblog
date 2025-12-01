@@ -146,7 +146,7 @@
                       class="popular-tag"
                       :class="{ disabled: isTagSelected(tag.name) }"
                       @click="selectTag(tag)"
-                      :type="isTagSelected(tag.name) ? 'info' : 'default'"
+                      :type="isTagSelected(tag.name) ? 'info' : undefined"
                     >
                       {{ tag.name }}
                     </ElTag>
@@ -189,7 +189,7 @@
               <ElSwitch v-model="visible" />
             </ElFormItem>
             <ElFormItem label="置顶">
-              <ElSwitch v-model="isTop" @change="onTopChange" />
+              <ElSwitch v-model="isTop" @change="onTopChangeWrapper" />
             </ElFormItem>
           </ElForm>
 
@@ -218,6 +218,7 @@
   import { PageModeEnum } from '@/enums/formEnum'
   import { useCommon } from '@/composables/useCommon'
   import { MdEditor } from 'md-editor-v3'
+  import type { ToolbarNames } from 'md-editor-v3'
   import { marked } from 'marked'
   import 'md-editor-v3/lib/style.css'
   import '@/assets/styles/markdown.scss'
@@ -229,6 +230,8 @@
     getTags
   } from '@/api/articles'
   import { router } from '@/router'
+  import { useRoute } from 'vue-router'
+  import { useDateFormat } from '@vueuse/core'
 
   interface ArticleType {
     id: string
@@ -274,10 +277,10 @@
     Authorization: accessToken // 统一使用原始 token
   }))
 
-  let pageMode: PageModeEnum = PageModeEnum.Add // 页面类型 新增 ｜ 编辑
+  const pageMode = ref<PageModeEnum>(PageModeEnum.Add) // 页面类型 新增 ｜ 编辑
   const articleName = ref('') // 文章标题
-  const articleType = ref() // 文章类型
-  const articleTypes = ref() // 类型列表
+  const articleType = ref<string>('') // 文章类型
+  const articleTypes = ref<ArticleType[]>([]) // 类型列表
   const markdownContent = ref('') // Markdown内容
   const editorHtml = ref('') // 编辑器内容（兼容旧版本）
   const createDate = ref('') // 创建时间
@@ -437,7 +440,7 @@
   }
 
   // Markdown 编辑器配置
-  const toolbars: string[] = [
+  const toolbars: ToolbarNames[] = [
     'bold',
     'underline',
     'italic',
@@ -566,8 +569,8 @@
   // 初始化页面类型 新增 ｜ 编辑
   const initPageMode = async () => {
     const { id } = route.query
-    pageMode = id ? PageModeEnum.Edit : PageModeEnum.Add
-    if (pageMode === PageModeEnum.Edit && id) {
+    pageMode.value = id ? PageModeEnum.Edit : PageModeEnum.Add
+    if (pageMode.value === PageModeEnum.Edit && id) {
       await initEditArticle()
     } else {
       initAddArticle()
@@ -597,7 +600,7 @@
       }
 
       const response = await getCategories(params)
-      let categories = []
+      let categories: Record<string, any>[] = []
 
       // 处理不同的响应格式
       if (response && typeof response === 'object') {
@@ -690,7 +693,7 @@
 
         // 加载文章标签
         if (article.tags && Array.isArray(article.tags)) {
-          selectedTags.value = article.tags.map((tagName) => ({
+          selectedTags.value = article.tags.map((tagName: string) => ({
             name: tagName,
             count: 0 // 编辑模式下不需要显示计数
           }))
@@ -809,7 +812,7 @@
 
   // 提交
   const submit = () => {
-    if (pageMode === PageModeEnum.Edit) {
+    if (pageMode.value === PageModeEnum.Edit) {
       editArticle()
     } else {
       // 新文章发布前先确认
@@ -835,7 +838,7 @@
 
   // 验证输入
   const validateArticle = () => {
-    const errors = []
+    const errors: string[] = []
     
     if (!articleName.value?.trim()) {
       errors.push('文章标题')
@@ -999,18 +1002,22 @@
   }
 
   // 新增：置顶状态变更时立即更新到数据库（编辑模式）
+  const onTopChangeWrapper = (val: string | number | boolean) => {
+    onTopChange(Boolean(val))
+  }
+
   const onTopChange = async (value: boolean) => {
     console.log('🔄 onTopChange被调用:', {
       value,
-      pageMode,
+      pageMode: pageMode.value,
       routeId: route.query.id,
-      isEditMode: pageMode === PageModeEnum.Edit,
+      isEditMode: pageMode.value === PageModeEnum.Edit,
       hasId: !!route.query.id
     })
     
     try {
       const { id } = route.query
-      if (pageMode === PageModeEnum.Edit && id) {
+      if (pageMode.value === PageModeEnum.Edit && id) {
         console.log('📤 准备调用updateArticle:', { id, isTop: value })
         const result = await updateArticle(id as string, { isTop: value })
         console.log('📥 updateArticle结果:', result)

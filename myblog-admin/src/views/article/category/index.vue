@@ -49,7 +49,7 @@
         :data="categoryList"
         stripe
         border
-        style="width: 100%"
+        :style="{ width: '100%' }"
         @selection-change="handleSelectionChange"
       >
         <ElTableColumn type="selection" width="55" />
@@ -76,6 +76,7 @@
               active-value="active"
               inactive-value="inactive"
               :disabled="isReadOnly"
+              @click.stop
               @change="handleStatusChange(row)"
             />
           </template>
@@ -164,8 +165,8 @@
         </ElFormItem>
         <ElFormItem label="状态" prop="status">
           <ElRadioGroup v-model="categoryForm.status">
-            <ElRadio value="active">启用</ElRadio>
-            <ElRadio value="inactive">禁用</ElRadio>
+            <ElRadio label="active">启用</ElRadio>
+            <ElRadio label="inactive">禁用</ElRadio>
           </ElRadioGroup>
         </ElFormItem>
       </ElForm>
@@ -222,7 +223,7 @@
 
 <script setup lang="ts">
   import { ref, reactive, onMounted, nextTick } from 'vue'
-  import { ElMessage, ElMessageBox } from 'element-plus'
+  import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
   import { Plus, Search } from '@element-plus/icons-vue'
   import { useUserStore } from '@/store/modules/user'
   import { storeToRefs } from 'pinia'
@@ -251,7 +252,7 @@
   const dialogVisible = ref(false)
   const viewDialogVisible = ref(false)
   const dialogMode = ref<'add' | 'edit'>('add')
-  const formRef = ref()
+  const formRef = ref<FormInstance | null>(null)
 
   // 分类列表数据
   const categoryList = ref<CategoryItem[]>([])
@@ -301,7 +302,7 @@
   ]
 
   // 表单验证规则
-  const formRules = {
+  const formRules: FormRules = {
     name: [
       { required: true, message: '请输入分类名称', trigger: 'blur' },
       { min: 1, max: 50, message: '长度在 1 到 50 个字符', trigger: 'blur' }
@@ -320,6 +321,29 @@
     loadCategoryList()
   })
 
+  // 规范化分类数据，兼容不同后端字段
+  const normalizeCategoryItem = (item: any): CategoryItem => {
+    const visibleLike = typeof item?.visible === 'boolean' ? item.visible
+      : (typeof item?.isVisible === 'boolean' ? item.isVisible : undefined)
+    const status: 'active' | 'inactive' = item?.status
+      ? item.status
+      : (visibleLike === false ? 'inactive' : 'active')
+    return {
+      _id: item?._id,
+      id: item?.id ?? item?._id,
+      name: item?.name ?? '',
+      slug: item?.slug ?? '',
+      description: item?.description ?? '',
+      color: item?.color ?? '#409eff',
+      sort: typeof item?.sort === 'number' ? item.sort : 0,
+      status,
+      articleCount: item?.articleCount ?? 0,
+      createTime: item?.createTime,
+      updateTime: item?.updateTime,
+      isVisible: typeof visibleLike === 'boolean' ? visibleLike : (status === 'active')
+    }
+  }
+
   // 加载分类列表
   const loadCategoryList = async () => {
     loading.value = true
@@ -336,23 +360,23 @@
       // 处理不同的响应格式
       if (response && typeof response === 'object') {
         // 检查是否是分页响应格式
-        if ('categories' in response && Array.isArray(response.categories)) {
-          categoryList.value = response.categories
-          pagination.total = response.total || response.categories.length
+        if ('categories' in response && Array.isArray((response as any).categories)) {
+          categoryList.value = (response as any).categories.map(normalizeCategoryItem)
+          pagination.total = (response as any).total || (response as any).categories.length
         }
         // 检查是否是直接数组响应
         else if (Array.isArray(response)) {
-          categoryList.value = response
+          categoryList.value = (response as any).map(normalizeCategoryItem)
           pagination.total = response.length
         }
         // 检查是否是包装在data中的响应
-        else if (response.data) {
-          if (Array.isArray(response.data)) {
-            categoryList.value = response.data
-            pagination.total = response.data.length
-          } else if (response.data.categories) {
-            categoryList.value = response.data.categories
-            pagination.total = response.data.total || response.data.categories.length
+        else if ((response as any).data) {
+          if (Array.isArray((response as any).data)) {
+            categoryList.value = (response as any).data.map(normalizeCategoryItem)
+            pagination.total = (response as any).data.length
+          } else if ((response as any).data.categories) {
+            categoryList.value = (response as any).data.categories.map(normalizeCategoryItem)
+            pagination.total = (response as any).data.total || (response as any).data.categories.length
           }
         } else {
           console.warn('未知的响应格式:', response)

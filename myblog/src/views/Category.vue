@@ -99,7 +99,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, computed } from 'vue'
+import { onMounted, onUnmounted, onActivated, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useCategories } from '@/composables/useCategories'
@@ -117,7 +117,19 @@ const { articles: articleslist, initArticles, cleanup } = useArticles()
 
 // 计算每个分类的文章数量
 const categoriesWithCount = computed(() => {
-  const result = categories.value.map((category) => {
+  // 兜底过滤：只显示启用中的分类，且排除显式不可见的分类
+  const activeCategories = categories.value.filter((c: any) => {
+    // 显式不可见直接过滤掉
+    if (c?.visible === false || c?.isVisible === false) return false
+    // status 为 active 则显示；若无 status，需显式可见才显示
+    if (c?.status === 'active') return true
+    if (typeof c?.visible === 'boolean') return c.visible === true
+    if (typeof c?.isVisible === 'boolean') return c.isVisible === true
+    // 其他未知情况默认不展示
+    return false
+  })
+
+  const result = activeCategories.map((category) => {
     const articleCount = articleslist.value.filter(
       (article) => article.category === category.name,
     ).length
@@ -161,10 +173,10 @@ const handleRefresh = async () => {
 // 组件挂载后获取分类和文章数据
 onMounted(async () => {
   try {
-    // 使用 Promise.all 并行加载，但不强制刷新，让组合式函数自己决定是否需要刷新
+    // 强制刷新分类，确保与后台管理的状态实时一致；文章可走缓存
     await Promise.all([
-      initCategories(), // 不强制刷新，使用缓存策略
-      initArticles(), // 不强制刷新，使用缓存策略
+      initCategories(true),
+      initArticles(),
     ])
   } catch (err) {
     console.error('Category.vue - 初始化数据失败:', err)
@@ -175,6 +187,11 @@ onMounted(async () => {
 // 组件卸载后清除数据
 onUnmounted(() => {
   cleanup()
+})
+
+// keep-alive 返回时强制刷新分类，保证与后台状态一致
+onActivated(async () => {
+  await initCategories(true)
 })
 </script>
 

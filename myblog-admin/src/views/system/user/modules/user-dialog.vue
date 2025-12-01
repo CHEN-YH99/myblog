@@ -108,7 +108,8 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, watch } from 'vue'
-import { ElDialog, ElForm, ElFormItem, ElInput, ElRadioGroup, ElRadio, ElSelect, ElOption, ElButton, ElMessage, ElTag } from 'element-plus'
+import { ElDialog, ElForm, ElFormItem, ElInput, ElRadioGroup, ElRadio, ElSelect, ElOption, ElButton, ElTag } from 'element-plus'
+import type { FormInstance, FormRules } from 'element-plus'
 
 interface UserForm {
   id?: number
@@ -140,7 +141,7 @@ const emit = defineEmits<{
   confirm: [data: UserForm]
 }>()
 
-const formRef = ref()
+const formRef = ref<FormInstance>()
 const loading = ref(false)
 
 const formData = reactive<UserForm>({
@@ -152,7 +153,7 @@ const formData = reactive<UserForm>({
   roleIds: []
 })
 
-const rules = {
+const rules = reactive<FormRules>({
   username: [
     { required: true, message: '请输入用户名', trigger: 'blur' },
     { min: 3, max: 20, message: '用户名长度在 3 到 20 个字符', trigger: 'blur' }
@@ -171,7 +172,7 @@ const rules = {
   status: [
     { required: true, message: '请选择状态', trigger: 'change' }
   ]
-}
+})
 
 const permissionLabelMap: Record<string, string> = {
   '*': '全部权限',

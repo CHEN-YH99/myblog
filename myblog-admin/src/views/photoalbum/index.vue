@@ -49,7 +49,7 @@
         :data="categoryList"
         stripe
         border
-        style="width: 100%"
+        :style="{ width: '100%' }"
         @selection-change="handleSelectionChange"
         @row-click="handleRowClick"
       >
@@ -220,7 +220,7 @@
 </template>
 
 <script setup lang="ts">
-  import { ref, reactive, onMounted, nextTick, toRaw, onUnmounted } from 'vue'
+  import { ref, reactive, onMounted, nextTick, onUnmounted } from 'vue'
   import { useRouter } from 'vue-router'
   import { ElMessage, ElMessageBox } from 'element-plus'
   import { Plus, Search } from '@element-plus/icons-vue'
@@ -534,7 +534,7 @@
     const originalStatus = currentStatus === 'active' ? 'inactive' : 'active'
     
     try {
-      const result = await updatePhotoCategory(categoryId.toString(), { status: currentStatus })
+      await updatePhotoCategory(categoryId.toString(), { status: currentStatus })
       
       ElMessage.success(`${currentStatus === 'active' ? '启用' : '禁用'}成功`)
       
@@ -604,12 +604,13 @@
       loadCategoryList()
     } catch (error: unknown) {
       console.error('表单提交失败:', error)
-      if (error.fields) {
+      const e = error as any
+      if (e?.fields) {
         // 表单验证失败
         return
       }
-      const errorMsg = error && typeof error === 'object' && 'msg' in error ? (error as any).msg : '操作失败'
-        ElMessage.error(errorMsg)
+      const errorMsg = e?.msg || e?.message || '操作失败'
+      ElMessage.error(errorMsg)
     } finally {
       submitLoading.value = false
     }

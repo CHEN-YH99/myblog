@@ -143,7 +143,8 @@ export function useArticles(options: UseArticlesOptions = {}) {
         // 跳转到文章详情页，附带来源菜单用于导航高亮
         const path = route.path || '/'
         const from = mapPathToMenu(path)
-        router.push({ path: `/article/${article._id}`, query: { from } })
+        const fromPath = route.fullPath || path
+        router.push({ path: `/article/${article._id}`, query: { from, fromPath } })
       } catch (error) {
         console.error('跳转文章详情失败:', error)
         ElMessage.error('跳转失败，请重试')

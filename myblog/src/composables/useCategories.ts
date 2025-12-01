@@ -34,11 +34,12 @@ export function useCategories() {
       error.value = null
 
       // console.log('开始获取分类数据...')
-      // 传递分页参数以获取详细的分类数据
-      const result = await getCategories({ page: 1, size: 100 })
+      // 仅拉取启用中的分类，确保前台不展示被禁用项
+      const result = await getCategories({ page: 1, size: 100, status: 'active' })
       // console.log('获取到分类数据:', result)
 
-      categories.value = Array.isArray(result) ? result : []
+      // 兜底：再次在前端过滤一次状态
+      categories.value = Array.isArray(result) ? result.filter((c) => c.status === 'active') : []
       // console.log('设置分类数据完成，最终数量:', categories.value.length)
 
       // 输出每个分类的详细信息
