@@ -1189,9 +1189,9 @@ const initializeReplyCount = async () => {
       })) as Api.Reply.ReplyList
       // 保存真实的回复总数
       talkReplyCount.value[talk._id] = response?.total || 0
-      console.log(`初始化说说 ${talk._id} 的回复数量: ${talkReplyCount.value[talk._id]}`)
+      // console.log(`初始化说说 ${talk._id} 的回复数量: ${talkReplyCount.value[talk._id]}`)
     } catch (error) {
-      console.error('获取回复数量失败:', error)
+      // console.error('获取回复数量失败:', error)
       talkReplyCount.value[talk._id] = 0
     }
   }
@@ -1209,9 +1209,9 @@ const initializeReplyCountForNewTalks = async () => {
         })) as Api.Reply.ReplyList
         // 保存真实的回复总数
         talkReplyCount.value[talk._id] = response?.total || 0
-        console.log(`初始化新说说 ${talk._id} 的回复数量: ${talkReplyCount.value[talk._id]}`)
+        // console.log(`初始化新说说 ${talk._id} 的回复数量: ${talkReplyCount.value[talk._id]}`)
       } catch (error) {
-        console.error('获取回复数量失败:', error)
+        // console.error('获取回复数量失败:', error)
         talkReplyCount.value[talk._id] = 0
       }
     }

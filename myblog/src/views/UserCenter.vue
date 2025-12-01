@@ -1,4 +1,5 @@
 <template>
+  <div class="user-center-view">
   <!-- 头部大图 -->
   <div class="page_header">
     <div class="large-img">
@@ -242,6 +243,7 @@
 
   <!-- 页脚 -->
   <Footer />
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -254,7 +256,7 @@ import { useArticlesStore } from '@/stores/getarticles'
 import { useTalksStore } from '@/stores/talks'
 // import { getUserLikedArticles } from '@/api/articles'
 import { changePassword, type ChangePasswordParams } from '@/api/user'
-import { incrementViews } from '@/api/articles'
+
 import WaveContainer from '@/components/WaveContainer.vue'
 import Footer from '@/components/Footer.vue'
 import avatarUrl from '@/assets/images/hui.svg'
@@ -486,8 +488,7 @@ const goToArticle = (article: any) => {
     // ignore
   }
 
-  // 后台上报浏览量（不阻塞跳转，静默失败）
-  incrementViews(id).catch(() => {})
+  // 浏览量由文章详情接口在服务端自增，这里不再重复上报，避免 404
 
   // 跳转到详情页
   router.push(`/article/${id}`)
@@ -623,6 +624,13 @@ const loadLikedArticles = async () => {
 
   loadingLikedArticles.value = true
   try {
+    // 确保文章数据与点赞状态已就绪
+    if (articlesStore.articles.length === 0) {
+      await articlesStore.fetchArticles()
+    } else if (!articlesStore.likeStatusInitialized) {
+      await articlesStore.initializeLikeStatus()
+    }
+
     // 以 store 的点赞状态为唯一来源，避免与服务端状态不一致
     const likedArticleIds = articlesStore.likedArticleIds
 
@@ -631,13 +639,12 @@ const loadLikedArticles = async () => {
       return
     }
 
-    // 直接从已加载的文章中过滤
+    // 从已加载的文章中过滤
     const allArticles = articlesStore.articles
     likedArticlesList.value = allArticles.filter((a) =>
       likedArticleIds.includes(a._id),
     )
   } catch (error) {
-    console.error('获取已点赞文章失败:', error)
     ElMessage.error('获取已点赞文章失败')
   } finally {
     loadingLikedArticles.value = false
@@ -710,7 +717,7 @@ const initData = async () => {
 
     // 确保文章数据已加载
     if (articlesStore.articles.length === 0) {
-      console.log('文章数据为空，开始加载文章数据...')
+      // console.log('文章数据为空，开始加载文章数据...')
       await articlesStore.fetchArticles()
     }
 
@@ -725,7 +732,7 @@ const initData = async () => {
 }
 
 onMounted(async () => {
-  initData()
+  await initData()
   await nextTick()
   if (activeTab.value === 'articles') {
     await resetLazy()

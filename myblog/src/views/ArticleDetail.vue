@@ -1,5 +1,6 @@
 <!-- eslint-disable prettier/prettier -->
 <template>
+  <div class="article-detail-view">
   <!-- 阅读进度条 -->
   <ReadingProgress v-if="article && !loading" />
   
@@ -203,10 +204,11 @@
 
   <!-- 页脚 -->
   <Footer />
+  </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick, watch, watchPostEffect } from 'vue'
+import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import {
@@ -220,9 +222,9 @@ import {
 } from '@element-plus/icons-vue'
 import ReadingProgress from '@/components/ReadingProgress.vue'
 import WaveContainer from '@/components/WaveContainer.vue'
-import { defineAsyncComponent } from 'vue'
+
 import { useArticlesStore } from '@/stores/getarticles'
-import { useUserStore } from '@/stores/user'
+
 
 import { formatNumber } from '@/utils/format'
 import { handleError } from '@/utils/error-handler'
@@ -260,7 +262,7 @@ const md = new MarkdownIt({
       try {
         return hljs.highlight(str, { language: lang }).value
       } catch (error) {
-        console.warn('代码高亮失败:', error)
+        
       }
     }
     return (
@@ -277,7 +279,6 @@ const renderedContent = computed(() => {
   try {
     return md.render(article.value.content)
   } catch (error) {
-    console.error('Markdown 解析失败:', error)
     return `<div class="markdown-error">
       <p>内容解析失败，显示原始内容：</p>
       <pre>${article.value.content}</pre>
@@ -306,8 +307,7 @@ const fetchArticle = async () => {
   try {
     loading.value = true
     error.value = ''
-    if (import.meta.env.DEV)
-      console.log('ArticleDetail: 开始获取文章详情，ID:', currentArticleId)
+    
 
     const result = await getArticle(currentArticleId)
     if (!result) {
@@ -315,8 +315,7 @@ const fetchArticle = async () => {
     }
 
     article.value = result
-    if (import.meta.env.DEV)
-      console.log('ArticleDetail: 文章获取成功:', article.value?.title)
+
 
     // 文章详情页SEO：使用文章标题/摘要/封面
     try {
@@ -332,26 +331,26 @@ const fetchArticle = async () => {
     // 文章加载完成后，等待DOM更新并刷新目录
     // 第一次 nextTick：等待 article.value 的响应式更新
     await nextTick()
-    if (import.meta.env.DEV) console.log('ArticleDetail: 第一次 nextTick 完成')
+    
 
     // 第二次 nextTick：等待 v-html 渲染完成
     await nextTick()
-    if (import.meta.env.DEV) console.log('ArticleDetail: 第二次 nextTick 完成')
+    
 
     // 延迟刷新目录，确保 markdown 内容完全渲染
     setTimeout(() => {
       try {
-        if (import.meta.env.DEV) console.log('ArticleDetail: 开始刷新目录')
+        
         tocRef.value?.refresh()
-        if (import.meta.env.DEV) console.log('ArticleDetail: 目录刷新完成')
+        
       } catch (error) {
-        console.warn('ArticleDetail: 目录刷新失败:', error)
+        handleError(error, { showMessage: false, logToConsole: false })
       }
     }, 300)
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : '获取文章失败'
     error.value = errorMessage
-    console.error('获取文章失败:', err)
+
     ElMessage.error(errorMessage)
   } finally {
     loading.value = false
@@ -364,7 +363,7 @@ const retryLoad = async () => {
     await fetchArticle()
     ElMessage.success('文章加载成功')
   } catch (error) {
-    console.error('重新加载失败:', error)
+    
     ElMessage.error('重新加载失败，请稍后再试')
   }
 }
@@ -398,7 +397,6 @@ const formatDate = (dateString: string | Date | undefined): string => {
     const day = String(date.getDate()).padStart(2, '0')
     return `${year}-${month}-${day}`
   } catch (error) {
-    console.error('日期格式化错误:', error)
     return '日期格式错误'
   }
 }
@@ -417,7 +415,7 @@ const colorFor = (str: string) => {
     const light = 68
     return `hsl(${hue}deg, ${sat}%, ${light}%)`
   } catch (error) {
-    console.error('生成颜色失败:', error)
+
     return '#666'
   }
 }
@@ -427,7 +425,7 @@ const goToTagPage = (tag: string) => {
   try {
     router.push(`/category/${encodeURIComponent(tag)}`)
   } catch (error) {
-    console.error('跳转标签页面失败:', error)
+    handleError(error, { showMessage: false, logToConsole: false })
     ElMessage.error('跳转失败')
   }
 }
@@ -482,7 +480,7 @@ const goBack = () => {
       router.replace('/')
     }
   } catch (error) {
-    console.error('返回失败:', error)
+
     ElMessage.error('操作失败')
   }
 }
@@ -500,7 +498,7 @@ const shareArticle = async () => {
       await navigator.share({ title, text, url })
       ElMessage.success('感谢分享！')
     } catch (error) {
-      console.warn('Web Share API 调用失败:', error)
+
       ElMessage.info('已取消分享')
     }
   } else {
@@ -508,14 +506,14 @@ const shareArticle = async () => {
       await navigator.clipboard.writeText(url)
       ElMessage.success('文章链接已复制到剪贴板')
     } catch (error) {
-      console.error('复制链接失败:', error)
+
       ElMessage.error('复制链接失败')
     }
   }
 }
 
 // 处理浏览器后退等离开场景：根据 from 参数定向到稳定路径并强制重建，避免白屏
-onBeforeRouteLeave((to, from, next) => {
+onBeforeRouteLeave((to, _from, next) => {
   try {
     const fromParam = typeof route.query.from === 'string' ? route.query.from : ''
     // 仅当要离开详情页且目标不是另一个详情页时处理
@@ -581,13 +579,7 @@ watch(
   async (newId, oldId) => {
     // 只在路由参数实际改变时重新加载（不使用 immediate）
     if (newId && newId !== oldId) {
-      if (import.meta.env.DEV)
-        console.log(
-          'ArticleDetail: 路由参数变化，重新加载文章，从',
-          oldId,
-          '到',
-          newId,
-        )
+
       await fetchArticle()
     }
   },
@@ -595,8 +587,7 @@ watch(
 
 // 生命周期钩子 - 初始化加载
 onMounted(async () => {
-  if (import.meta.env.DEV)
-    console.log('ArticleDetail: onMounted 触发，开始初始化加载')
+
   // 初始化时加载文章
   if (!article.value) {
     await fetchArticle()

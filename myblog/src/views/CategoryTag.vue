@@ -241,7 +241,7 @@ watch(
   () => route.params.tag,
   async (newTag, oldTag) => {
     if (newTag && newTag !== oldTag) {
-      if (import.meta.env?.DEV) console.log('CategoryTag: 路由参数变化，重新加载数据')
+      if (import.meta.env?.DEV) 
       currentPage.value = 1 // 重置分页
       await loadData()
     }

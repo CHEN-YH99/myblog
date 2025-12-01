@@ -99,6 +99,17 @@ const visiblePhotoCategories = computed(() =>
 )
 
 // 组件挂载时初始化数据
+// 监听页面可见性变化，页面回到前台时强制刷新一次（需在 setup 同步阶段注册卸载钩子）
+const handleVisibilityChange = async () => {
+  if (document.visibilityState === 'visible') {
+    try {
+      await initPhotoCategories(undefined, { force: true })
+    } catch (e) {
+      console.warn('PhotoAlbum.vue - 可见性切换刷新失败:', e)
+    }
+  }
+}
+
 onMounted(async () => {
   // dev log: 组件挂载，开始初始化数据
   try {
@@ -110,22 +121,12 @@ onMounted(async () => {
     ElMessage.error('初始化数据失败，请刷新页面重试')
   }
 
-  // 监听页面可见性变化，页面回到前台时强制刷新一次
-  const handleVisibilityChange = async () => {
-    if (document.visibilityState === 'visible') {
-      try {
-        await initPhotoCategories(undefined, { force: true })
-      } catch (e) {
-        console.warn('PhotoAlbum.vue - 可见性切换刷新失败:', e)
-      }
-    }
-  }
   document.addEventListener('visibilitychange', handleVisibilityChange)
+})
 
-  // 在组件卸载时移除监听
-  onUnmounted(() => {
-    document.removeEventListener('visibilitychange', handleVisibilityChange)
-  })
+// 在组件卸载时移除监听（必须在 setup 同步阶段注册）
+onUnmounted(() => {
+  document.removeEventListener('visibilitychange', handleVisibilityChange)
 })
 
 // 当页面从缓存中激活时，强制刷新一次，避免在 KeepAlive 场景下看不到管理端的最新修改
