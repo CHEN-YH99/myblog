@@ -490,8 +490,8 @@ const goToArticle = (article: any) => {
 
   // 浏览量由文章详情接口在服务端自增，这里不再重复上报，避免 404
 
-  // 跳转到详情页
-  router.push(`/article/${id}`)
+  // 跳转到详情页（使用命名路由与 params，避免路径注入）
+  router.push({ name: 'ArticleDetail', params: { id: String(id) } })
 }
 
 // 格式化日期

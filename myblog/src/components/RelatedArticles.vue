@@ -162,7 +162,7 @@ const navigateToArticle = async (article) => {
     // 使用push进行导航，这是标准的Vue Router导航方式
     const from = mapPathToMenu(route.path)
     const fromPath = route.fullPath
-    await router.push({ path: `/article/${articleId}`, query: { from, fromPath } })
+    await router.push({ name: 'ArticleDetail', params: { id: String(articleId) }, query: { from, fromPath } })
     void 0 && console.log('RelatedArticles: 路由跳转成功')
   } catch (error) {
     console.error('RelatedArticles: 路由跳转失败:', error)

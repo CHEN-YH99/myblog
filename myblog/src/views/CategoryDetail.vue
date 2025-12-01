@@ -248,7 +248,7 @@ const goToArticleDetail = (articleId: string) => {
 
   const from = mapPathToMenu(route.path)
   const fromPath = route.fullPath
-  router.push({ path: `/article/${articleId}`, query: { from, fromPath } })
+  router.push({ name: 'ArticleDetail', params: { id: String(articleId) }, query: { from, fromPath } })
 }
 
 // 返回上一页

@@ -436,7 +436,17 @@ const goBack = () => {
     const fromPath = typeof route.query.fromPath === 'string' ? route.query.fromPath : ''
     const from = typeof route.query.from === 'string' ? route.query.from : ''
 
-    // 将菜单索引映射为路由路径
+    const isSafeInternalPath = (p: string): boolean => {
+      try {
+        const u = new URL(p, window.location.origin)
+        // 仅允许与本站同源的相对路径
+        return u.origin === window.location.origin && u.pathname.startsWith('/')
+      } catch {
+        return false
+      }
+    }
+
+    // 将菜单索引映射为路由路径（白名单）
     const mapFromToPath = (m: string): string => {
       switch (m) {
         case 'home':
@@ -453,34 +463,35 @@ const goBack = () => {
           return '/photoAlbum'
         case 'talk':
           return '/talk'
-        // 其他/未知来源回到首页
         default:
           return '/'
       }
     }
 
-    // 1) 优先使用 fromPath 原路返回并强制重建
-    if (fromPath) {
-      const join = fromPath.includes('?') ? '&' : '?'
-      router.replace(fromPath + join + `_r=${Date.now()}`)
+    // 1) 优先使用 fromPath（需校验同源且为站内路径）
+    if (fromPath && isSafeInternalPath(fromPath)) {
+      const u = new URL(fromPath, window.location.origin)
+      const q: Record<string, string> = {}
+      u.searchParams.forEach((v, k) => (q[k] = v))
+      q._r = String(Date.now())
+      router.replace({ path: u.pathname, query: q })
       return
     }
 
-    // 2) 其次尝试 from（菜单来源）映射为稳定路径
+    // 2) 使用来源白名单映射
     if (from) {
       const targetPath = mapFromToPath(from)
       router.replace({ path: targetPath, query: { _r: String(Date.now()) } })
       return
     }
 
-    // 3) 再退回历史
+    // 3) 回退或返回首页
     if (window.history.length > 1) {
       router.back()
     } else {
       router.replace('/')
     }
   } catch (error) {
-
     ElMessage.error('操作失败')
   }
 }

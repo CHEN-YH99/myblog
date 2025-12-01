@@ -1,7 +1,7 @@
 <template>
   <header
     class="navbar"
-    :class="{ 'scroll-down': scrollDown, navbar: scrollUp, 'is-hidden': isHidden }"
+    :class="{ 'scroll-down': scrollDown, 'is-hidden': isHidden }"
   >
     <div class="navbar__inner">
       <el-avatar class="navbar__avatar" :size="32" :src="avatarUrl" alt="avatar" />
@@ -435,26 +435,22 @@ onBeforeUnmount(() => {
   right: 5px;
   z-index: 1000;
   height: 48px;
-  background: linear-gradient(180deg, rgba(8, 20, 40, 0.1), rgba(8, 20, 40, 0.2));
+  background-color: rgba(8, 20, 40, 0.1);
   backdrop-filter: blur(6px);
   border-bottom: 1px solid rgba(200, 230, 255, 0.12);
-  transition: all 0.8s ease-in-out;
+  /* 背景变深 0.5s；隐藏/出现位移动画 1s */
+  transition:
+    background-color 0.5s ease,
+    backdrop-filter 0.5s ease,
+    transform 1s ease;
+  will-change: transform, background-color;
   transform: translateY(0);
 }
-// 滚动条下滑触发
-.scroll-down {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 5px;
-  z-index: 1000;
-  height: 48px;
-  background: linear-gradient(180deg, rgba(8, 20, 40, 0.7), rgba(8, 20, 40, 0.55));
-  backdrop-filter: blur(6px);
-  border-bottom: 1px solid rgba(200, 230, 255, 0.12);
-  transition: all 0.8s ease-in-out;
+/* 滚动条下滑：仅改变背景色，加深 */
+.navbar.scroll-down {
+  background-color: rgba(8, 20, 40, 0.7);
 }
-// 导航栏显示隐藏
+/* 导航栏显示隐藏（上滑消失） */
 .navbar.is-hidden {
   transform: translateY(-100%);
 }

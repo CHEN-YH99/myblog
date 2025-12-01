@@ -144,7 +144,7 @@ export function useArticles(options: UseArticlesOptions = {}) {
         const path = route.path || '/'
         const from = mapPathToMenu(path)
         const fromPath = route.fullPath || path
-        router.push({ path: `/article/${article._id}`, query: { from, fromPath } })
+        router.push({ name: 'ArticleDetail', params: { id: String(article._id) }, query: { from, fromPath } })
       } catch (error) {
         console.error('跳转文章详情失败:', error)
         ElMessage.error('跳转失败，请重试')
