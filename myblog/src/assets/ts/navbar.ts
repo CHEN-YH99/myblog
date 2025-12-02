@@ -2,7 +2,7 @@ import { ref } from 'vue'
 
 // Hysteresis parameters (adjust to taste)
 const HIDE_OFFSET = 120 // must scroll down at least this many px from anchor to hide
-const SHOW_OFFSET = 40 // must scroll up at least this many px from anchor to show
+const SHOW_OFFSET = 0 // show immediately on upward scroll (filtered by DIR_EPS)
 const DIR_EPS = 2 // ignore tiny deltas
 const BG_DELAY = 500 // background deepen delay before hide
 
@@ -20,6 +20,52 @@ let hideTimer: number | null = null
 let ticking = false
 const listeners = new Set<EventTarget>()
 
+// Wheel/Touch fallback to ensure immediate show on upward intent
+let lastTouchY = 0
+function onWheel(e: WheelEvent) {
+  const dy = e.deltaY
+  const top = topFromTarget(e.target as EventTarget)
+  if (dy < -DIR_EPS) {
+    clearHideTimer()
+    ensureVisible(top)
+  } else if (dy > DIR_EPS) {
+    // only schedule hide; actual hide occurs after delay and offset logic in scroll handler
+    scheduleHide(top)
+  }
+}
+function onTouchStart(e: TouchEvent) {
+  if (e.touches && e.touches.length) lastTouchY = e.touches[0].clientY
+}
+function onTouchMove(e: TouchEvent) {
+  if (!(e.touches && e.touches.length)) return
+  const y = e.touches[0].clientY
+  const dy = y - lastTouchY
+  lastTouchY = y
+  const top = topFromTarget(e.target as EventTarget)
+  if (dy > DIR_EPS) {
+    clearHideTimer()
+    ensureVisible(top)
+  } else if (dy < -DIR_EPS) {
+    scheduleHide(top)
+  }
+}
+let mo: MutationObserver | null = null
+
+const SCROLL_TARGET_SELECTORS = [
+  '.el-scrollbar__wrap',
+  '.el-main',
+  '.app-main',
+  'main'
+]
+
+function scanAndAttachScrollableTargets() {
+  try {
+    SCROLL_TARGET_SELECTORS.forEach((sel) => {
+      document.querySelectorAll(sel).forEach((el) => addListener(el))
+    })
+  } catch {}
+}
+
 function clearHideTimer() {
   if (hideTimer !== null) {
     clearTimeout(hideTimer)
@@ -28,17 +74,15 @@ function clearHideTimer() {
 }
 
 function getScrollTop(): number {
-  // Get the largest value across common scroll containers
-  const a = window.pageYOffset || 0
-  const b = document.documentElement ? document.documentElement.scrollTop : 0
-  const c = document.body ? document.body.scrollTop : 0
-  const main = document.querySelector('main') as HTMLElement | null
-  const appMain = document.querySelector('.app-main') as HTMLElement | null
-  const app = document.querySelector('#app') as HTMLElement | null
-  const d = main ? main.scrollTop : 0
-  const e = appMain ? appMain.scrollTop : 0
-  const f = app ? app.scrollTop : 0
-  return Math.max(a, b, c, d, e, f)
+  // Use window scroll position primarily to avoid mixing different containers
+  // Mixing multiple containers with Math.max can cause the value to only drop to 0 at the very top,
+  // which prevents detecting upward scrolling and delays the show animation.
+  return (
+    window.pageYOffset ||
+    (document.documentElement ? document.documentElement.scrollTop : 0) ||
+    (document.body ? document.body.scrollTop : 0) ||
+    0
+  )
 }
 
 function ensureVisible(top: number) {
@@ -64,8 +108,38 @@ function scheduleHide(top: number) {
   }, BG_DELAY)
 }
 
-function applyScrollState() {
-  const top = getScrollTop()
+function topFromTarget(target: EventTarget | null | undefined): number {
+  try {
+    if (!target) return getScrollTop()
+    // Window
+    if ((target as any).window === (target as any)) {
+      return (
+        window.pageYOffset ||
+        (document.documentElement ? document.documentElement.scrollTop : 0) ||
+        (document.body ? document.body.scrollTop : 0) ||
+        0
+      )
+    }
+    // Document
+    if ((target as any).nodeType === 9) {
+      const doc = target as Document
+      return (
+        doc.scrollingElement?.scrollTop ||
+        (doc.documentElement ? doc.documentElement.scrollTop : 0) ||
+        (doc.body ? (doc.body as any).scrollTop : 0) ||
+        0
+      )
+    }
+    // Elements with scrollTop
+    if (typeof (target as any).scrollTop === 'number') {
+      return (target as any).scrollTop as number
+    }
+  } catch {}
+  return getScrollTop()
+}
+
+function applyScrollState(passedTop?: number) {
+  const top = typeof passedTop === 'number' ? passedTop : getScrollTop()
   const delta = top - lastScrollTop.value
 
   // At very top: reset to visible+light background
@@ -93,27 +167,19 @@ function applyScrollState() {
     scrollDown.value = false
     scrollUp.value = true
 
-    // cancel pending hide when user reverses direction
+    // cancel pending hide when user reverses direction and show immediately
     clearHideTimer()
-
-    if (state === 'hidden') {
-      // show only after scrolled up sufficiently from the anchor
-      if (anchorTop - top >= SHOW_OFFSET) {
-        ensureVisible(top)
-      }
-    } else {
-      // already visible: update anchor to make hiding require a fresh downward travel
-      anchorTop = Math.min(anchorTop, top)
-    }
+    ensureVisible(top)
   }
 
   lastScrollTop.value = Math.max(top, 0)
 }
 
-const handleScroll = () => {
+const handleScroll = (e?: Event) => {
   if (!ticking) {
     requestAnimationFrame(() => {
-      applyScrollState()
+      const top = e ? topFromTarget(e.target as EventTarget) : getScrollTop()
+      applyScrollState(top)
       ticking = false
     })
     ticking = true
@@ -146,6 +212,23 @@ export const initScrollListener = () => {
   addListener(document.querySelector('#app'))
   addListener(document.querySelector('main'))
   addListener(document.querySelector('.app-main'))
+
+  // attach to typical scrollable wrappers (Element Plus etc.)
+  scanAndAttachScrollableTargets()
+
+  // NOTE: We intentionally DO NOT listen to wheel/touch intent here.
+  // The navbar show/hide should be driven strictly by actual scroll events,
+  // so that when the scrollbar is already at the bottom/top and cannot move,
+  // wheel gestures do not trigger animations erroneously.
+
+  // observe DOM changes to attach listeners for dynamically created scroll containers
+  try {
+    if (mo) mo.disconnect()
+    mo = new MutationObserver(() => {
+      scanAndAttachScrollableTargets()
+    })
+    mo.observe(document.body, { childList: true, subtree: true })
+  } catch {}
 }
 
 export const removeScrollListener = () => {
