@@ -53,7 +53,7 @@
     roleName?: string
     roleCode?: string
     enabled?: boolean
-    daterange?: [string, string] | null
+    daterange?: [string, string]
   }
 
   interface Props {
@@ -83,7 +83,7 @@
       roleName: undefined,
       roleCode: undefined,
       enabled: undefined,
-      daterange: null
+      daterange: undefined
     }
     emit('update:modelValue', resetForm)
     emit('reset')

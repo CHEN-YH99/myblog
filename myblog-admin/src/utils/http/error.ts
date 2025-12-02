@@ -36,7 +36,7 @@ export { HttpError, isHttpError }
  * @returns 错误对象
  */
 export function handleError(error: AxiosError<ErrorResponse>): never {
-  return baseHandleError(error, true, $t)
+  return baseHandleError(error as any, true, $t)
 }
 
 /**

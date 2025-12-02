@@ -23,6 +23,7 @@ interface ExtendedAxiosRequestConfig extends AxiosRequestConfig {
 
 const { VITE_API_URL, VITE_WITH_CREDENTIALS } = import.meta.env
 
+
 /** Axios实例 */
 const axiosInstance = axios.create({
   timeout: REQUEST_TIMEOUT,
@@ -133,14 +134,16 @@ function logOut() {
 }
 
 /** 是否需要重试 */
+const RETRIABLE_STATUS_CODES = [
+  ApiStatus.requestTimeout,
+  ApiStatus.internalServerError,
+  ApiStatus.badGateway,
+  ApiStatus.serviceUnavailable,
+  ApiStatus.gatewayTimeout
+] as const
+
 function shouldRetry(statusCode: number) {
-  return [
-    ApiStatus.requestTimeout,
-    ApiStatus.internalServerError,
-    ApiStatus.badGateway,
-    ApiStatus.serviceUnavailable,
-    ApiStatus.gatewayTimeout
-  ].includes(statusCode)
+  return (RETRIABLE_STATUS_CODES as readonly number[]).includes(statusCode)
 }
 
 /** 请求重试逻辑 */

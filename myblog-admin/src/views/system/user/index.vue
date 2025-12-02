@@ -239,6 +239,12 @@
           }
         },
         {
+          prop: 'nickName',
+          label: '昵称',
+          width: 140,
+          formatter: (row) => row.nickName || '-'
+        },
+        {
           prop: 'registerSource',
           label: '注册来源',
           width: 100,
