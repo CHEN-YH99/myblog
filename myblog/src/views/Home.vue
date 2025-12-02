@@ -618,3 +618,18 @@ const retryLoadData = async () => {
   }
 }
 </script>
+
+<style scoped>
+/* 居中空状态 */
+.empty {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  padding: 40px 0;
+}
+/* 保证 Element Plus 的 el-empty 不被外边距拉偏 */
+.empty :deep(.el-empty) {
+  margin: 0 auto;
+}
+</style>

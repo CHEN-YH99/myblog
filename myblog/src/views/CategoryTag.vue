@@ -199,7 +199,7 @@ const goToArticle = (article: Api.Article.ArticleItem) => {
   }
 
   const from = mapPathToMenu(route.path)
-  const fromPath = route.fullPath
+  const fromPath = route.path
   router.push({ name: 'ArticleDetail', params: { id: String(article._id) }, query: { from, fromPath } })
 }
 

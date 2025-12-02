@@ -523,37 +523,8 @@ const shareArticle = async () => {
   }
 }
 
-// 处理浏览器后退等离开场景：根据 from 参数定向到稳定路径并强制重建，避免白屏
-onBeforeRouteLeave((to, _from, next) => {
-  try {
-    const fromParam = typeof route.query.from === 'string' ? route.query.from : ''
-    // 仅当要离开详情页且目标不是另一个详情页时处理
-    const goingToAnotherArticle = to.name === 'ArticleDetail' || (typeof to.path === 'string' && to.path.startsWith('/article/'))
-    if (!goingToAnotherArticle && fromParam) {
-      const mapFromToPath = (m: string): string => {
-        switch (m) {
-          case 'home': return '/'
-          case 'timeline': return '/timeline'
-          case 'frontend': return '/frontend'
-          case 'backend': return '/backend'
-          case 'category': return '/category'
-          case 'photos': return '/photoAlbum'
-          case 'talk': return '/talk'
-          default: return '/'
-        }
-      }
-      const target = mapFromToPath(fromParam)
-      // 若目标与即将前往的一致，则直接放行；否则重定向并强制刷新 key
-      if (to.path === target) {
-        next()
-      } else {
-        next({ path: target, replace: true, query: { _r: String(Date.now()) } })
-      }
-      return
-    }
-  } catch (e) {
-    // ignore and fallback to default navigation
-  }
+// 不再拦截离开详情页的导航，避免覆盖用户从导航栏主动跳转的意图
+onBeforeRouteLeave((_to, _from, next) => {
   next()
 })
 

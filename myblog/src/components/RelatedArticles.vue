@@ -161,7 +161,7 @@ const navigateToArticle = async (article) => {
 
     // 使用push进行导航，这是标准的Vue Router导航方式
     const from = mapPathToMenu(route.path)
-    const fromPath = route.fullPath
+    const fromPath = route.path // 仅使用路径，避免嵌套叠加
     await router.push({ name: 'ArticleDetail', params: { id: String(articleId) }, query: { from, fromPath } })
     void 0 && console.log('RelatedArticles: 路由跳转成功')
   } catch (error) {

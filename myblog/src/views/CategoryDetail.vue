@@ -247,7 +247,7 @@ const goToArticleDetail = (articleId: string) => {
   }
 
   const from = mapPathToMenu(route.path)
-  const fromPath = route.fullPath
+  const fromPath = route.path
   router.push({ name: 'ArticleDetail', params: { id: String(articleId) }, query: { from, fromPath } })
 }
 
