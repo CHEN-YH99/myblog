@@ -21,9 +21,21 @@
           <el-avatar :size="120" :src="displayAvatar" />
         </div>
         <div class="user-details">
-          <h2 class="username">
-            {{ userInfo?.nickname || userInfo?.username || '用户' }}
+          <h2 class="display-name">
+            {{ displayName }}
           </h2>
+          <div class="name-meta" aria-label="用户名与昵称">
+            <div class="meta-item">
+              <span class="meta-label">用户名</span>
+              <span class="meta-value">{{ username || '—' }}</span>
+              <el-icon class="meta-copy" title="复制用户名" @click="copyToClipboard(username)"><DocumentCopy /></el-icon>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">昵称</span>
+              <span class="meta-value">{{ nickname || '—' }}</span>
+              <el-icon class="meta-copy" title="复制昵称" @click="copyToClipboard(nickname)"><DocumentCopy /></el-icon>
+            </div>
+          </div>
           <p class="user-email" v-if="userInfo?.email">{{ userInfo.email }}</p>
           <div class="user-stats">
             <div class="stat-item">
@@ -250,7 +262,7 @@
 import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Star, Setting, Loading } from '@element-plus/icons-vue'
+import { Star, Setting, Loading, DocumentCopy } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
 import { useArticlesStore } from '@/stores/getarticles'
 import { useTalksStore } from '@/stores/talks'
@@ -290,6 +302,33 @@ const changingPassword = ref(false)
 
 // 用户信息
 const userInfo = computed(() => userStore.userInfo)
+
+// 用户名/昵称显示
+const username = computed(() => userInfo.value?.username || '')
+const nickname = computed(() => userInfo.value?.nickname || '')
+const displayName = computed(() => nickname.value || username.value || '用户')
+
+// 复制到剪贴板
+const copyToClipboard = async (text?: string) => {
+  if (!text) return
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(text)
+    } else {
+      const ta = document.createElement('textarea')
+      ta.value = text
+      ta.style.position = 'fixed'
+      ta.style.left = '-9999px'
+      document.body.appendChild(ta)
+      ta.select()
+      document.execCommand('copy')
+      document.body.removeChild(ta)
+    }
+    ElMessage.success('已复制到剪贴板')
+  } catch (e) {
+    ElMessage.error('复制失败，请重试')
+  }
+}
 
 // 用户统计数据（使用 getter/可枚举数组确保响应式更新）
 const userStats = computed(() => ({
@@ -1129,6 +1168,68 @@ onBeforeUnmount(() => {
   to {
     transform: rotate(360deg);
   }
+}
+
+/* 高级用户信息样式增强 */
+.display-name {
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: .2px;
+  margin: 0 0 6px 0;
+  color: var(--text-color);
+}
+.name-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px 16px;
+  margin: 4px 0 12px;
+}
+.name-meta .meta-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px dashed var(--border-color);
+  border-radius: 10px;
+}
+.name-meta .meta-label {
+  font-size: 12px;
+  color: var(--text-color-secondary);
+}
+.name-meta .meta-value {
+  font-weight: 600;
+  color: var(--text-color);
+}
+.name-meta .meta-copy {
+  cursor: pointer;
+  color: var(--text-color-secondary);
+  transition: color .2s, transform .2s;
+}
+.name-meta .meta-copy:hover {
+  color: var(--primary-color);
+  transform: translateY(-1px);
+}
+.user-avatar :deep(.el-avatar) {
+  box-shadow: 0 0 0 3px rgba(255,255,255,.12), 0 8px 24px rgba(0,0,0,.18);
+  border: 1px solid var(--border-color);
+}
+.user-info-card {
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  box-shadow: 0 12px 28px rgba(0,0,0,.08);
+  backdrop-filter: saturate(140%) blur(4px);
+}
+.user-stats {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+.stat-item {
+  min-width: 120px;
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
 }
 
 /* 响应式设计 */

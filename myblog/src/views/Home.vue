@@ -467,7 +467,7 @@ const { confirmAndOpen } = useExternalLinkConfirm()
 
 // 打开外部链接（带确认）
 const openGitee = () => {
-  confirmAndOpen('https://gitee.com/')
+  confirmAndOpen('https://gitee.com/xanxus99')
 }
 
 const openLink = (type: string) => {
