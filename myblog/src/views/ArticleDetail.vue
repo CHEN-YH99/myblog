@@ -139,7 +139,7 @@
         </div>
 
         <!-- 文章正文 -->
-        <div class="article-content markdown-body" v-html="renderedContent"></div>
+        <div ref="contentRef" class="article-content markdown-body" v-html="renderedContent"></div>
 
         <!-- 文章底部操作 -->
         <div class="article-actions">
@@ -202,13 +202,21 @@
     </el-empty>
   </div>
 
+  <!-- 图片查看器（点击正文图片放大预览） -->
+  <el-image-viewer
+    v-if="imageViewer.visible"
+    :url-list="imageViewer.urls"
+    :initial-index="imageViewer.index"
+    @close="closeViewer"
+  />
+
   <!-- 页脚 -->
   <Footer />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick, watch } from 'vue'
+import { ref, computed, onMounted, nextTick, watch, reactive, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import {
@@ -245,6 +253,63 @@ const article = ref<Api.Article.ArticleItem | null>(null)
 const loading = ref(true)
 const error = ref<string>('')
 const tocRef = ref<InstanceType<typeof TableOfContents> | null>(null)
+const contentRef = ref<HTMLElement | null>(null)
+
+const imageViewer = reactive({
+  visible: false,
+  urls: [] as string[],
+  index: 0,
+})
+
+const closeViewer = () => {
+  imageViewer.visible = false
+}
+
+const contentClickHandler = ref<((e: Event) => void) | null>(null)
+
+const bindImagePreview = () => {
+  const container = contentRef.value
+  if (!container) return
+
+  // remove previous to avoid duplicate bindings
+  if (contentClickHandler.value) {
+    container.removeEventListener('click', contentClickHandler.value)
+  }
+
+  contentClickHandler.value = (e: Event) => {
+    const target = e.target as HTMLElement | null
+    if (!target) return
+    const img = (target.tagName === 'IMG' ? (target as HTMLImageElement) : target.closest('img')) as HTMLImageElement | null
+    if (!img) return
+
+    const imgs = Array.from(container.querySelectorAll('img')) as HTMLImageElement[]
+    const urls = imgs.map((i) => i.getAttribute('data-src') || i.src).filter(Boolean) as string[]
+    let index = imgs.findIndex((i) => i === img)
+    if (index < 0) index = 0
+
+    imageViewer.urls = urls
+    imageViewer.index = index
+    imageViewer.visible = true
+
+    // 如果图片被包裹在链接里，阻止默认跳转
+    const a = img.closest('a')
+    if (a) e.preventDefault()
+  }
+
+  container.addEventListener('click', contentClickHandler.value)
+}
+
+const unbindImagePreview = () => {
+  const container = contentRef.value
+  if (container && contentClickHandler.value) {
+    container.removeEventListener('click', contentClickHandler.value)
+  }
+  contentClickHandler.value = null
+}
+
+onBeforeUnmount(() => {
+  unbindImagePreview()
+})
 
 // 使用全局点赞状态管理
 const articlesStore = useArticlesStore()
@@ -347,6 +412,11 @@ const fetchArticle = async () => {
         handleError(error, { showMessage: false, logToConsole: false })
       }
     }, 300)
+    // 初始化正文图片点击放大预览
+    try {
+      bindImagePreview()
+    } catch {}
+
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : '获取文章失败'
     error.value = errorMessage
@@ -739,6 +809,26 @@ onMounted(async () => {
   line-height: 1.8;
   font-size: 16px;
   color: var(--el-text-color-regular);
+}
+
+/* 让正文中的图片不超过容器宽度，超出时等比例缩放 */
+.article-content :deep(img) {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 16px auto;
+  cursor: zoom-in;
+}
+
+/* 兼容某些 markdown 渲染为 figure 的情况 */
+.article-content :deep(figure) {
+  max-width: 100%;
+  overflow: hidden;
+}
+
+/* 如果图片外层是链接，避免默认样式影响布局 */
+.article-content :deep(a img) {
+  border: 0;
 }
 
 /* 代码块容器样式 */
