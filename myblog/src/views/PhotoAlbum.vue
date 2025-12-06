@@ -42,13 +42,27 @@
     <div v-else class="empty">
       <el-empty description="暂无相册分类" :image-size="200" />
     </div>
+    <!-- 回到顶部控件（带入场/离场动画） -->
+    <transition
+      appear
+      enter-active-class="animate__animated animate__slideInUp"
+      leave-active-class="animate__animated animate__slideOutDown"
+    >
+      <el-backtop
+        v-show="backTopVisible"
+        :visibility-height="0"
+        class="backtop"
+        target="body"
+      />
+    </transition>
     <Footer />
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, computed, onUnmounted, onActivated } from 'vue'
+import { ref, onMounted, computed, onUnmounted, onActivated } from 'vue'
 import { ElMessage } from 'element-plus'
+
 import { usePhotoCategories } from '@/composables/usePhotoCategories' // 引入图片分类数据文件
 import WaveContainer from '@/components/WaveContainer.vue'
 import Footer from '@/components/Footer.vue'
@@ -140,6 +154,47 @@ onActivated(async () => {
 
 // 组件卸载时清理
 // cleanup函数在组件卸载时调用，但usePhotoCategories没有cleanup函数，所以只清理articles
+// 回到顶部-动画可见性控制（增强版：同时监听 window/document/body/html + wheel/touchmove）
+const backTopVisible = ref(false)
+const backTopThreshold = 200
+const getScrollTop = () => {
+  try {
+    return (
+      (document.documentElement && document.documentElement.scrollTop) ||
+      (document.body && document.body.scrollTop) ||
+      window.pageYOffset ||
+      0
+    )
+  } catch {
+    return 0
+  }
+}
+const updateBackTopVisibility = () => {
+  backTopVisible.value = getScrollTop() > backTopThreshold
+}
+
+let _backTopScrollTargets: EventTarget[] = []
+
+onMounted(() => {
+  const bodyEl = document.body
+  const docEl = document.documentElement
+  _backTopScrollTargets = [window, document, bodyEl, docEl].filter(Boolean) as EventTarget[]
+  _backTopScrollTargets.forEach((t) => {
+    t.addEventListener?.('scroll', updateBackTopVisibility as any, { passive: true })
+    t.addEventListener?.('wheel', updateBackTopVisibility as any, { passive: true })
+    t.addEventListener?.('touchmove', updateBackTopVisibility as any, { passive: true })
+  })
+  updateBackTopVisibility()
+})
+
+onUnmounted(() => {
+  _backTopScrollTargets.forEach((t) => {
+    t.removeEventListener?.('scroll', updateBackTopVisibility as any)
+    t.removeEventListener?.('wheel', updateBackTopVisibility as any)
+    t.removeEventListener?.('touchmove', updateBackTopVisibility as any)
+  })
+  _backTopScrollTargets = []
+})
 </script>
 
 <style scoped lang="scss">

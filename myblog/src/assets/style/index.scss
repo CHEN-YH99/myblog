@@ -133,11 +133,17 @@ p {
   z-index: 1; /* 确保压在海浪之上，避免被遮挡 */
 }
 
-/* 返回顶部按钮 */
+/* 返回顶部按钮（全局） */
+.backtop {
+  right: 30px;
+  bottom: 30px;
+  z-index: 1100;
+}
+/* Home页内的额外限定，保持兼容 */
 .main-content .backtop {
-    right: 30px ;
-    bottom: 30px ;
-  }
+  right: 30px;
+  bottom: 30px;
+}
 
 /* 内容列表 */
 .content-list {

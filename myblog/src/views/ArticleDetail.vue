@@ -48,7 +48,7 @@
         <div class="breadcrumb-container">
           <el-breadcrumb separator=" - " class="breadcrumb">
             <el-breadcrumb-item :to="{ path: '/category' }">分类</el-breadcrumb-item>
-            <el-breadcrumb-item v-if="article.category" :to="{ path: `/category/${article.category}` }">
+            <el-breadcrumb-item v-if="article.category" :to="{ path: `/category/${encodeURIComponent(article.category)}` }">
               {{ article.category }}
             </el-breadcrumb-item>
             <el-breadcrumb-item>{{ truncateText(article.title || '无标题', 30) }}</el-breadcrumb-item>

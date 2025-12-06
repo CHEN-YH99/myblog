@@ -25,8 +25,19 @@
     </div>
     <!-- 内容区域 -->
     <div class="main-content">
-      <!-- 回到顶部控件 -->
-      <el-backtop class="backtop animate__animated animate__slideInUp" target="body" />
+      <!-- 回到顶部控件（带入场/离场动画；交由 v-show 控制，组件内部始终可见） -->
+      <transition
+        appear
+        enter-active-class="animate__animated animate__slideInUp"
+        leave-active-class="animate__animated animate__slideOutDown"
+      >
+        <el-backtop
+          v-show="backTopVisible"
+          :visibility-height="-1"
+          class="backtop"
+          target="body"
+        />
+      </transition>
 
       <!-- 加载状态 -->
       <div v-if="loading" class="loading-container">
@@ -604,6 +615,40 @@ onBeforeUnmount(() => {
   } catch (error) {
     console.error('组件清理失败:', error)
   }
+})
+
+// 回到顶部-动画可见性控制（增强版：同时监听 window/document/body/html）
+const backTopVisible = ref(false)
+const backTopThreshold = 200
+const getScrollTop = () => {
+  try {
+    return (
+      (document.documentElement && document.documentElement.scrollTop) ||
+      (document.body && document.body.scrollTop) ||
+      window.pageYOffset ||
+      0
+    )
+  } catch {
+    return 0
+  }
+}
+const updateBackTopVisibility = () => {
+  backTopVisible.value = getScrollTop() > backTopThreshold
+}
+
+let _backTopScrollTargets: EventTarget[] = []
+
+onMounted(() => {
+  const bodyEl = document.body
+  const docEl = document.documentElement
+  _backTopScrollTargets = [window, document, bodyEl, docEl].filter(Boolean) as EventTarget[]
+  _backTopScrollTargets.forEach((t) => t.addEventListener('scroll', updateBackTopVisibility as any, { passive: true }))
+  updateBackTopVisibility()
+})
+
+onBeforeUnmount(() => {
+  _backTopScrollTargets.forEach((t) => t.removeEventListener?.('scroll', updateBackTopVisibility as any))
+  _backTopScrollTargets = []
 })
 
 // 重新加载数据
