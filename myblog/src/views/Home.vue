@@ -275,6 +275,7 @@ const Footer = defineAsyncComponent(() => import('@/components/Footer.vue'))
 // 已全局引入 index.scss 于 main.ts，无需重复引入
 import bgImage from '@/assets/images/shunsea1.jpg'
 import { useExternalLinkConfirm } from '@/composables/useExternalLinkConfirm'
+import { debounce } from '@/utils/debounce'
 
 // 路由
 const router = useRouter()
@@ -632,9 +633,11 @@ const getScrollTop = () => {
     return 0
   }
 }
-const updateBackTopVisibility = () => {
+const setBackTopVisibility = () => {
   backTopVisible.value = getScrollTop() > backTopThreshold
 }
+// 统一防抖：避免频繁进入/离开动画
+const onBackTopScroll = debounce(setBackTopVisibility, 150)
 
 let _backTopScrollTargets: EventTarget[] = []
 
@@ -642,12 +645,20 @@ onMounted(() => {
   const bodyEl = document.body
   const docEl = document.documentElement
   _backTopScrollTargets = [window, document, bodyEl, docEl].filter(Boolean) as EventTarget[]
-  _backTopScrollTargets.forEach((t) => t.addEventListener('scroll', updateBackTopVisibility as any, { passive: true }))
-  updateBackTopVisibility()
+  _backTopScrollTargets.forEach((t) => {
+    t.addEventListener?.('scroll', onBackTopScroll as any, { passive: true })
+    t.addEventListener?.('wheel', onBackTopScroll as any, { passive: true })
+    t.addEventListener?.('touchmove', onBackTopScroll as any, { passive: true })
+  })
+  setBackTopVisibility()
 })
 
 onBeforeUnmount(() => {
-  _backTopScrollTargets.forEach((t) => t.removeEventListener?.('scroll', updateBackTopVisibility as any))
+  _backTopScrollTargets.forEach((t) => {
+    t.removeEventListener?.('scroll', onBackTopScroll as any)
+    t.removeEventListener?.('wheel', onBackTopScroll as any)
+    t.removeEventListener?.('touchmove', onBackTopScroll as any)
+  })
   _backTopScrollTargets = []
 })
 
@@ -673,8 +684,38 @@ const retryLoadData = async () => {
   width: 100%;
   padding: 40px 0;
 }
-/* 保证 Element Plus 的 el-empty 不被外边距拉偏 */
+/* 保证 Element距拉偏 */
 .empty :deep(.el-empty) {
   margin: 0 auto;
+}
+
+/* 文章卡片悬停扫光动画 */
+.article-card {
+  position: relative;
+  overflow: hidden; /* 隐藏伪元素溢出部分 */
+}
+
+.article-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%; /* 初始位置在卡片左侧外部 */
+  width: 75%;
+  height: 100%;
+  background: linear-gradient(
+    100deg,
+    rgba(96, 165, 250, 0) 0%,
+    rgba(96, 165, 250, 0.3) 20%,
+    rgba(255, 255, 255, 0.5) 50%,
+    rgba(96, 165, 250, 0.3) 80%,
+    rgba(96, 165, 250, 0) 100%
+  );
+  transform: skewX(-25deg); /* 倾斜光效 */
+  transition: left 0.8s cubic-bezier(0.23, 1, 0.32, 1); /* 平滑过渡效果 */
+  pointer-events: none; /* 确保不影响鼠标事件 */
+}
+
+.article-card:hover::before {
+  left: 100%; /* 鼠标悬停时，移动到卡片右侧外部 */
 }
 </style>

@@ -796,6 +796,166 @@ onBeforeUnmount(() => {
 :root.dark .navbar-submenu-popper .el-menu-item {
   color: var(--el-text-color-primary, #e5eaf3) !important;
 }
+/* 高级质感微调 */
+.navbar {
+  border-bottom: 1px solid rgba(180, 220, 255, 0.16);
+}
+.navbar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0));
+  pointer-events: none;
+}
+.navbar.scroll-down {
+  backdrop-filter: blur(12px) saturate(130%);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
+}
+
+/* 菜单项：圆角毛玻璃 + 激活下划线动画 */
+:deep(.el-menu--horizontal > .el-menu-item),
+:deep(.el-menu--horizontal > .el-sub-menu > .el-sub-menu__title) {
+  position: relative;
+  border-radius: 10px;
+  margin: 0 2px;
+}
+:deep(.el-menu--horizontal > .el-menu-item.is-active::after),
+:deep(.el-menu--horizontal > .el-sub-menu.is-active > .el-sub-menu__title::after) {
+  content: '';
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 4px;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #7dd3fc, #60a5fa, #a78bfa);
+  box-shadow: 0 0 8px rgba(80, 160, 255, 0.55);
+  transform-origin: left center;
+  animation: navbar-underline 0.36s ease both;
+}
+@keyframes navbar-underline {
+  from { transform: scaleX(0); opacity: .45; }
+  to   { transform: scaleX(1); opacity: 1; }
+}
+/* 悬浮态：轻微浮起与图标增强 */
+:deep(.el-menu-item:hover),
+:deep(.el-sub-menu__title:hover) {
+  transform: translateY(-1px);
+}
+:deep(.el-menu-item .el-icon),
+:deep(.el-sub-menu__title .el-icon) {
+  transition: transform .2s ease, color .2s ease, opacity .2s ease;
+}
+:deep(.el-menu-item:hover .el-icon),
+:deep(.el-sub-menu__title:hover .el-icon) {
+  transform: translateY(-1px) scale(1.02);
+}
+:deep(.el-menu-item.is-active .menu-text) {
+  text-shadow: 0 1px 6px rgba(56, 189, 248, .55);
+}
+
+/* 头像光环：不影响点击区域 */
+.navbar__avatar { position: relative; }
+.navbar__avatar::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    rgba(99,102,241,.55),
+    rgba(59,130,246,.55),
+    rgba(56,189,248,.55),
+    rgba(99,102,241,.55)
+  );
+  -webkit-mask: radial-gradient(circle calc(50% - 2px), transparent 99%, #000 100%);
+          mask: radial-gradient(circle calc(50% - 2px), transparent 99%, #000 100%);
+  filter: blur(.4px);
+  opacity: .65;
+  pointer-events: none;
+}
+
+/* 用户弹层：圆角投影 + 小箭头 */
+.user-menu { border-radius: 10px; box-shadow: 0 18px 50px rgba(0,0,0,.35); }
+.user-menu::before {
+  content: '';
+  position: absolute;
+  top: -6px; right: 18px;
+  width: 12px; height: 12px;
+  background: rgba(10, 18, 34, 0.95);
+  border-left: 1px solid rgba(200, 230, 255, 0.12);
+  border-top: 1px solid rgba(200, 230, 255, 0.12);
+  transform: rotate(45deg);
+}
+
+/* 子菜单弹层圆角与阴影（不改功能，仅视觉） */
+:deep(.navbar-submenu-popper) {
+  border-radius: 10px !important;
+  box-shadow: 0 20px 60px rgba(0,0,0,.35) !important;
+  overflow: hidden;
+}
+
+/* 进一步美化：高级渐变与激活胶囊 */
+:deep(.el-menu--horizontal > .el-menu-item),
+:deep(.el-menu--horizontal > .el-sub-menu > .el-sub-menu__title) {
+  position: relative;
+}
+:deep(.el-menu--horizontal > .el-menu-item)::before,
+:deep(.el-menu--horizontal > .el-sub-menu > .el-sub-menu__title)::before {
+  content: '';
+  position: absolute;
+  inset: 6px 6px 8px;
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,0));
+  opacity: 0;
+  transition: opacity .2s ease, background .2s ease, box-shadow .2s ease;
+  pointer-events: none;
+}
+:deep(.el-menu--horizontal > .el-menu-item:hover)::before,
+:deep(.el-menu--horizontal > .el-sub-menu > .el-sub-menu__title:hover)::before {
+  opacity: 1;
+}
+:deep(.el-menu--horizontal > .el-menu-item.is-active)::before,
+:deep(.el-menu--horizontal > .el-sub-menu.is-active > .el-sub-menu__title)::before {
+  opacity: 1;
+  background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.04));
+  box-shadow: 0 6px 22px rgba(59,130,246,.22);
+}
+
+/* 激活项渐变文本（不改变结构） */
+:deep(.el-menu-item.is-active .menu-text),
+:deep(.el-sub-menu.is-active > .el-sub-menu__title .menu-text) {
+  background: linear-gradient(90deg, #7dd3fc, #60a5fa, #a78bfa);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* 可达性焦点可视化 */
+:deep(.el-menu-item:focus-visible),
+:deep(.el-sub-menu__title:focus-visible),
+.navbar__switch :deep(.el-switch__core:focus-visible),
+.icon-btn:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--el-color-primary) 60%, #fff);
+  outline-offset: 2px;
+  border-radius: 10px;
+}
+
+/* 开关毛玻璃细化 */
+.navbar__switch :deep(.el-switch__core) {
+  background: rgba(255,255,255,.12);
+  backdrop-filter: blur(8px);
+}
+
+/* 顶部流光边 */
+.navbar::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: -1px; height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(125,211,252,.65) 20%, rgba(96,165,250,.65) 50%, rgba(167,139,250,.65) 80%, transparent 100%);
+  pointer-events: none;
+}
+
 </style>
 
 <!-- 全局样式：确保挂载到 body 的弹出层也能生效 -->

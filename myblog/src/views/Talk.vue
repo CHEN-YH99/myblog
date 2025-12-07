@@ -451,7 +451,7 @@ import { useTalksStore } from '@/stores/talks'
 import WaveContainer from '@/components/WaveContainer.vue'
 import '@/assets/style/common/headpicture.scss'
 import Footer from '@/components/Footer.vue'
-import { debounceAsync } from '@/utils/debounce'
+import { debounce, debounceAsync } from '@/utils/debounce'
 
 // ==================== 类型定义 ====================
 interface Talk {
@@ -1302,9 +1302,11 @@ const getScrollTop = () => {
     return 0
   }
 }
-const updateBackTopVisibility = () => {
+const setBackTopVisibility = () => {
   backTopVisible.value = getScrollTop() > backTopThreshold
 }
+// 统一防抖，避免滚动频繁触发动画
+const onBackTopScroll = debounce(setBackTopVisibility, 150)
 
 let _backTopScrollTargets: EventTarget[] = []
 
@@ -1313,18 +1315,18 @@ onMounted(() => {
   const docEl = document.documentElement
   _backTopScrollTargets = [window, document, bodyEl, docEl].filter(Boolean) as EventTarget[]
   _backTopScrollTargets.forEach((t) => {
-    t.addEventListener?.('scroll', updateBackTopVisibility as any, { passive: true })
-    t.addEventListener?.('wheel', updateBackTopVisibility as any, { passive: true })
-    t.addEventListener?.('touchmove', updateBackTopVisibility as any, { passive: true })
+    t.addEventListener?.('scroll', onBackTopScroll as any, { passive: true })
+    t.addEventListener?.('wheel', onBackTopScroll as any, { passive: true })
+    t.addEventListener?.('touchmove', onBackTopScroll as any, { passive: true })
   })
-  updateBackTopVisibility()
+  setBackTopVisibility()
 })
 
 onUnmounted(() => {
   _backTopScrollTargets.forEach((t) => {
-    t.removeEventListener?.('scroll', updateBackTopVisibility as any)
-    t.removeEventListener?.('wheel', updateBackTopVisibility as any)
-    t.removeEventListener?.('touchmove', updateBackTopVisibility as any)
+    t.removeEventListener?.('scroll', onBackTopScroll as any)
+    t.removeEventListener?.('wheel', onBackTopScroll as any)
+    t.removeEventListener?.('touchmove', onBackTopScroll as any)
   })
   _backTopScrollTargets = []
 })

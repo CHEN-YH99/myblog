@@ -66,6 +66,7 @@ import { ElMessage } from 'element-plus'
 import { usePhotoCategories } from '@/composables/usePhotoCategories' // 引入图片分类数据文件
 import WaveContainer from '@/components/WaveContainer.vue'
 import Footer from '@/components/Footer.vue'
+import { debounce } from '@/utils/debounce'
 
 const { photoCategories, initPhotoCategories } = usePhotoCategories()
 
@@ -169,9 +170,11 @@ const getScrollTop = () => {
     return 0
   }
 }
-const updateBackTopVisibility = () => {
+const setBackTopVisibility = () => {
   backTopVisible.value = getScrollTop() > backTopThreshold
 }
+// 统一防抖，避免频繁触发入/出场动画
+const onBackTopScroll = debounce(setBackTopVisibility, 150)
 
 let _backTopScrollTargets: EventTarget[] = []
 
@@ -180,18 +183,18 @@ onMounted(() => {
   const docEl = document.documentElement
   _backTopScrollTargets = [window, document, bodyEl, docEl].filter(Boolean) as EventTarget[]
   _backTopScrollTargets.forEach((t) => {
-    t.addEventListener?.('scroll', updateBackTopVisibility as any, { passive: true })
-    t.addEventListener?.('wheel', updateBackTopVisibility as any, { passive: true })
-    t.addEventListener?.('touchmove', updateBackTopVisibility as any, { passive: true })
+    t.addEventListener?.('scroll', onBackTopScroll as any, { passive: true })
+    t.addEventListener?.('wheel', onBackTopScroll as any, { passive: true })
+    t.addEventListener?.('touchmove', onBackTopScroll as any, { passive: true })
   })
-  updateBackTopVisibility()
+  setBackTopVisibility()
 })
 
 onUnmounted(() => {
   _backTopScrollTargets.forEach((t) => {
-    t.removeEventListener?.('scroll', updateBackTopVisibility as any)
-    t.removeEventListener?.('wheel', updateBackTopVisibility as any)
-    t.removeEventListener?.('touchmove', updateBackTopVisibility as any)
+    t.removeEventListener?.('scroll', onBackTopScroll as any)
+    t.removeEventListener?.('wheel', onBackTopScroll as any)
+    t.removeEventListener?.('touchmove', onBackTopScroll as any)
   })
   _backTopScrollTargets = []
 })
