@@ -64,12 +64,12 @@
 
         <el-menu-item index="links">
           <el-icon><LinkIcon /></el-icon>
-          <span class="menu-text">友链</span>
+          <span class="menu-text">友链<sup class="dev-tag">WIP</sup></span>
         </el-menu-item>
 
         <el-menu-item index="board">
           <el-icon><MessageIcon /></el-icon>
-          <span class="menu-text">留言</span>
+          <span class="menu-text">留言<sup class="dev-tag">WIP</sup></span>
         </el-menu-item>
 
         <!-- 用户登录状态显示 -->
@@ -192,11 +192,11 @@
         </el-menu-item>
         <el-menu-item index="m-links">
           <el-icon><LinkIcon /></el-icon>
-          <span>友链</span>
+          <span>友链<sup class="dev-tag">WIP</sup></span>
         </el-menu-item>
         <el-menu-item index="m-board">
           <el-icon><MessageIcon /></el-icon>
-          <span>留言</span>
+          <span>留言<sup class="dev-tag">WIP</sup></span>
         </el-menu-item>
 
         <!-- 移动端用户登录状态显示 -->

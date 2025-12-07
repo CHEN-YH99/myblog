@@ -485,7 +485,7 @@ const openGitee = () => {
 const openLink = (type: string) => {
   const links = {
     csdn: 'https://blog.csdn.net/',
-    github: 'https://github.com/',
+    github: 'https://github.com/CHEN-YH99',
     bilibili: 'https://www.bilibili.com/',
   }
 

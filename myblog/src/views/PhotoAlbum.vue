@@ -22,9 +22,12 @@
         <section class="tag-cloud">
           <ul>
             <li v-for="item in visiblePhotoCategories" :key="(item._id || item.id) + '-' + buildCategoryVersion(item)">
-              <router-link
-                :to="'/photo-category/' + (item._id || item.id)"
+              <div
                 class="photo-link"
+                role="button"
+                tabindex="0"
+                @click="openCategory(item)"
+                @keydown.enter="openCategory(item)"
               >
                 <div class="image-container">
                   <img :src="getCoverUrl(item.coverImage, buildCategoryVersion(item))" :alt="item.title" />
@@ -33,7 +36,7 @@
                     <span class="content">{{ item.description }}</span>
                   </div>
                 </div>
-              </router-link>
+              </div>
             </li>
           </ul>
         </section>
@@ -62,6 +65,8 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, onUnmounted, onActivated } from 'vue'
 import { ElMessage } from 'element-plus'
+import { useRouter } from 'vue-router'
+import { useUserStore } from '@/stores/user'
 
 import { usePhotoCategories } from '@/composables/usePhotoCategories' // 引入图片分类数据文件
 import WaveContainer from '@/components/WaveContainer.vue'
@@ -69,6 +74,10 @@ import Footer from '@/components/Footer.vue'
 import { debounce } from '@/utils/debounce'
 
 const { photoCategories, initPhotoCategories } = usePhotoCategories()
+
+// 路由与登录状态
+const router = useRouter()
+const userStore = useUserStore()
 
 // 根据分类的更新时间构建一个版本号用于 key 和图片缓存破除
 const buildCategoryVersion = (item: any) => {
@@ -112,6 +121,25 @@ const isPhotoCategoryVisible = (item: any): boolean => {
 const visiblePhotoCategories = computed(() =>
   photoCategories.value.filter(isPhotoCategoryVisible),
 )
+
+// 点击分类卡片：需要登录鉴权
+const openCategory = (item: any) => {
+  try {
+    const id = item?._id || item?.id
+    if (!id) return
+    const targetPath = `/photo-category/${id}`
+
+    if (!userStore.isLoggedIn) {
+      ElMessage.warning('请先登录后再访问相册分类')
+      router.push({ path: '/login', query: { redirect: targetPath } })
+      return
+    }
+
+    router.push({ path: targetPath })
+  } catch (e) {
+    console.warn('打开分类失败:', e)
+  }
+}
 
 // 组件挂载时初始化数据
 // 监听页面可见性变化，页面回到前台时强制刷新一次（需在 setup 同步阶段注册卸载钩子）
