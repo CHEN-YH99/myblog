@@ -4,6 +4,7 @@
     <div class="header">
       <!-- LCP/首图：使用 <img>，便于浏览器尽早发现与调度，并设置 fetchpriority -->
       <img
+        ref="headerBgRef"
         class="header-bg"
         :src="url"
         alt="首页头图"
@@ -14,7 +15,7 @@
         width="1920"
         height="1080"
       />
-      <div class="inner-header flex">
+      <div class="inner-header flex" ref="innerHeaderRef">
         <h1 v-typing="{ duration: 1000 }" v-once class="animate__animated animate__backInDown">小灰个人博客</h1>
       </div>
       <el-icon color="#ffffff" size="30px" class="turndown" @click="scrollDown"
@@ -276,6 +277,7 @@ const Footer = defineAsyncComponent(() => import('@/components/Footer.vue'))
 import bgImage from '@/assets/images/shunsea1.jpg'
 import { useExternalLinkConfirm } from '@/composables/useExternalLinkConfirm'
 import { debounce } from '@/utils/debounce'
+import { useParallax } from '@/composables/useParallax'
 
 // 路由
 const router = useRouter()
@@ -380,6 +382,13 @@ const totalViews = computed(() => {
 const startTime: number = new Date('2025-06-03').getTime()
 const url = ref(bgImage)
 const fit = ref('cover')
+const innerHeaderRef = ref<HTMLElement | null>(null)
+const headerBgRef = ref<HTMLElement | null>(null)
+
+// 标题视差：向上移动速度较快，保持清晰
+useParallax(innerHeaderRef, { speed: 0.8 })
+// 背景图视差：向后缩小并淡出
+useParallax(headerBgRef, { speed: 0.3, scale: true, opacity: true })
 
 // 格式化日期
 const formatTime = (ms: number): string => {

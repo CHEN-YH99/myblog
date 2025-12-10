@@ -67,7 +67,6 @@ p {
   margin: 0 !important;
   padding: 48px 0 calc(var(--wave-height) + 5px) 0 !important; /* 顶部留出导航栏空间 + 预留海浪高度（+5px缓冲） */
   overflow: hidden !important;
-  transform: translateZ(0);
   /* 视口高度兼容：优先使用动态视口单位，其次传统 100vh */
   height: 100vh;
   height: 100dvh;
@@ -75,7 +74,7 @@ p {
 }
 /* 头图作为 <img> 绝对定位铺满 */
 .header .header-bg {
-  position: absolute;
+  position: fixed;
   inset: 0;
   width: 100%;
   height: 100%;
@@ -131,6 +130,7 @@ p {
   padding: 40px 20px;
   margin-top: 0;
   z-index: 1; /* 确保压在海浪之上，避免被遮挡 */
+  background-color: var(--el-bg-color-page); /* 添加背景色，实现幕布遮盖效果 */
 }
 
 /* 返回顶部按钮（全局） */
@@ -511,6 +511,11 @@ p {
 
 /* 移动端（<=768px） */
 @media (max-width: 768px) {
+  /* 移动端恢复 absolute，避免兼容性问题 */
+  .header .header-bg {
+    position: absolute;
+  }
+
   /* 修复移动端 100vh 抖动与覆盖问题 */
   .header {
     background-attachment: scroll; /* iOS/Safari 避免 fixed 导致视口高度不准 */
