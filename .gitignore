@@ -1,4 +1,3 @@
-```gitignore
 # 依赖
 node_modules
 .pnpm-store
