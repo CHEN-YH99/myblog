@@ -58,19 +58,41 @@
     <!-- 照片详情弹窗 -->
     <el-dialog
       v-model="dialogVisible"
-      :title="selectedPhoto?.title"
+      :title="dialogPhoto?.title"
       width="80%"
       class="photo-dialog"
+      @close="resetPreview"
     >
-      <div v-if="selectedPhoto" class="photo-dialog-content">
-        <img :src="selectedPhoto.imageUrl" :alt="selectedPhoto.title" class="photo-preview" />
+      <div v-if="dialogPhoto" class="photo-dialog-content">
+        <div class="preview-toolbar">
+          <el-button
+            size="small"
+            class="nav-btn prev"
+            @click="prevPhoto"
+            :disabled="!hasPrev"
+          >
+            ← 上一张
+          </el-button>
+          <span class="preview-counter">
+            {{ selectedIndex + 1 }} / {{ photos.length }}
+          </span>
+          <el-button
+            size="small"
+            class="nav-btn next"
+            @click="nextPhoto"
+            :disabled="!hasNext"
+          >
+            下一张 →
+          </el-button>
+        </div>
+        <img :src="getPhotoSrc(dialogPhoto)" :alt="dialogPhoto.title" class="photo-preview" />
         <div class="photo-details">
-          <h3>{{ selectedPhoto.title }}</h3>
-          <p>{{ selectedPhoto.description }}</p>
+          <h3>{{ dialogPhoto.title }}</h3>
+          <p>{{ dialogPhoto.description }}</p>
           <div class="photo-meta">
-            <span>上传时间: {{ formatDate(selectedPhoto.uploadDate) }}</span>
-            <span>浏览次数: {{ selectedPhoto.viewCount }}</span>
-            <span>点赞数: {{ selectedPhoto.likeCount }}</span>
+            <span>上传时间: {{ formatDate(dialogPhoto.uploadDate) }}</span>
+            <span>浏览次数: {{ dialogPhoto.viewCount }}</span>
+            <span>点赞数: {{ dialogPhoto.likeCount }}</span>
           </div>
         </div>
       </div>
@@ -105,6 +127,16 @@ const currentCategory = ref<Api.PhotoCategory.PhotoCategoryItem | null>(null)
 // 照片详情弹窗
 const dialogVisible = ref(false)
 const selectedPhoto = ref<Api.Photo.PhotoItem | null>(null)
+const selectedIndex = ref<number>(-1)
+const dialogPhoto = computed(() => {
+  const list = photos.value
+  if (selectedIndex.value >= 0 && selectedIndex.value < list.length) {
+    return list[selectedIndex.value]
+  }
+  return selectedPhoto.value
+})
+const hasPrev = computed(() => selectedIndex.value > 0)
+const hasNext = computed(() => selectedIndex.value < photos.value.length - 1)
 
 // 刷新控制
 let isRefreshing = false
@@ -172,6 +204,25 @@ const formatDate = (dateInput?: string | Date) => {
 const showPhotoDetail = (photo: Api.Photo.PhotoItem) => {
   selectedPhoto.value = photo
   dialogVisible.value = true
+  const idx = photos.value.findIndex((p) => p._id === photo._id)
+  selectedIndex.value = idx >= 0 ? idx : 0
+}
+
+const getPhotoSrc = (photo: Api.Photo.PhotoItem) => photo.imageUrl || photo.thumbnailUrl || ''
+
+const prevPhoto = () => {
+  if (!hasPrev.value) return
+  selectedIndex.value -= 1
+}
+
+const nextPhoto = () => {
+  if (!hasNext.value) return
+  selectedIndex.value += 1
+}
+
+const resetPreview = () => {
+  selectedIndex.value = -1
+  selectedPhoto.value = null
 }
 
 /**
@@ -379,6 +430,61 @@ onUnmounted(() => {
 
   .photo-dialog {
     .photo-dialog-content {
+      .preview-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 14px;
+        margin-bottom: 16px;
+        padding: 10px 14px;
+        border-radius: 999px;
+        background: rgba(0, 0, 0, 0.06);
+        backdrop-filter: blur(6px);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+
+        .preview-counter {
+          font-size: 13px;
+          color: #444;
+          font-weight: 700;
+          letter-spacing: 0.5px;
+        }
+
+        .nav-btn {
+          min-width: 96px;
+          border: none;
+          border-radius: 999px;
+          color: #fff;
+          background: linear-gradient(135deg, #4f46e5, #06b6d4);
+          box-shadow: 0 10px 24px rgba(79, 70, 229, 0.25);
+          font-weight: 600;
+          letter-spacing: 0.5px;
+          transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+
+          &:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 14px 28px rgba(79, 70, 229, 0.35);
+            filter: brightness(1.05);
+          }
+
+          &:active:not(:disabled) {
+            transform: translateY(0);
+            box-shadow: 0 8px 18px rgba(79, 70, 229, 0.25);
+            filter: brightness(0.96);
+          }
+
+          &.prev {
+            background: linear-gradient(135deg, #06b6d4, #3b82f6);
+          }
+
+          &:disabled {
+            background: #cbd5e1;
+            color: #fff;
+            box-shadow: none;
+            filter: grayscale(0.3);
+          }
+        }
+      }
+
       .photo-preview {
         width: 100%;
         max-height: 60vh;

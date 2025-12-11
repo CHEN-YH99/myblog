@@ -1561,9 +1561,46 @@ onUnmounted(() => {
 .toggle-replies-btn { display:inline-flex; align-items:center; gap:0.4rem; padding:0.4rem 0.8rem; border:none; background: linear-gradient(135deg, var(--accent-1), var(--accent-2)); color:#fff; border-radius: 9999px; cursor:pointer; box-shadow: 0 8px 18px rgba(99,102,241,0.3); transition: transform 0.25s ease, box-shadow 0.25s ease; }
 .toggle-replies-btn:hover { transform: translateY(-1px); box-shadow: 0 12px 24px rgba(99,102,241,0.4); }
 
-.replies-content { margin-top: 0.5rem; }
-.replies-list { display:flex; flex-direction: column; gap: 0.75rem; }
-.reply-item { background: rgba(255,255,255,0.5); border:1px solid rgba(148,163,184,0.25); border-radius: 12px; padding: 0.9rem; transition: transform 0.25s ease, background 0.25s ease; }
+.replies-content {
+  margin-top: 0.5rem;
+  max-height: 480px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-right: 4px;
+
+  /* 自定义滚动条 */
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background-color: rgba(148, 163, 184, 0.3);
+    border-radius: 99px;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(148, 163, 184, 0.5);
+  }
+}
+
+.replies-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.reply-item {
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 12px;
+  padding: 0.9rem;
+  transition: transform 0.25s ease, background 0.25s ease;
+  flex-shrink: 0; /* 防止压缩 */
+}
 .reply-item:hover { transform: translateX(4px); background: rgba(255,255,255,0.65); }
 .reply-header { display:flex; justify-content: space-between; align-items:center; margin-bottom: 0.6rem; }
 .reply-author { display:flex; align-items:center; gap: 0.6rem; }
