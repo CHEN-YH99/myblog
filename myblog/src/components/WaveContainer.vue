@@ -36,9 +36,8 @@
   width: 100%;
   overflow: hidden;
   line-height: 0;
-  transform: translateZ(0);
-  will-change: transform;
   pointer-events: none;
+  z-index: 1; /* 确保波浪位于背景之上 */
 }
 
 .waves {

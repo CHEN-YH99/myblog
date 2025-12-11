@@ -4,7 +4,7 @@
       <!-- 页面头部 -->
       <div class="page_header">
         <div class="large-img">
-          <img src="../assets/images/chat.jpeg" alt="说说页面头图" />
+          <img src="../assets/images/chat.jpg" alt="说说页面头图" />
           <div class="inner-header flex">
             <h1 v-typing="{ duration: 1000 }" class="animate__animated animate__backInDown">说说</h1>
           </div>
@@ -1371,6 +1371,9 @@ onUnmounted(() => {
 }
 
 .talk-container {
+  position: relative;
+  z-index: 2;
+  margin-top: -1px; /* 消除缝隙 */
   max-width: 1100px;
   margin: 0 auto;
   padding: 2rem 1rem 3rem;

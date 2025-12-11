@@ -128,8 +128,8 @@ p {
   position: relative;
   width: 100%;
   padding: 40px 20px;
-  margin-top: 0;
-  z-index: 1; /* 确保压在海浪之上，避免被遮挡 */
+  margin-top: -1px; /* 消除 header 与 content 之间的缝隙 */
+  z-index: 2; /* 确保压在海浪之上，避免被遮挡 */
   background-color: var(--el-bg-color-page); /* 添加背景色，实现幕布遮盖效果 */
 }
 
@@ -424,19 +424,40 @@ p {
   font-family: inherit;
   outline: none;
   margin: 8px auto;
-  transition: background-color 0.3s ease-in-out;
+  transition: color 0.3s ease-in-out, border-color 0.3s ease-in-out;
   display: flex;
   align-items: center;
   justify-content: center;
   text-align: center;
   line-height: 1;
+  position: relative;
+  overflow: hidden;
 }
 .custom-gitee-btn .icon {
   margin: 0 4px;
 }
-.custom-gitee-btn:hover {
+.custom-gitee-btn::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 0;
   background: #f56c6c;
+  transition: width 0.4s ease;
+  z-index: 0;
+}
+.custom-gitee-btn span,
+.custom-gitee-btn .icon {
+  position: relative;
+  z-index: 1;
+}
+.custom-gitee-btn:hover {
   color: white;
+  border-color: #f56c6c;
+}
+.custom-gitee-btn:hover::before {
+  width: 100%;
 }
 
 /* 个人数据区 */

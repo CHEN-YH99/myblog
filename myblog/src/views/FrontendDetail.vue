@@ -334,6 +334,9 @@ html.dark .frontend-detail-wrapper {
 }
 
 .end_content {
+  position: relative;
+  z-index: 2;
+  margin-top: -1px; /* 消除缝隙 */
   padding: 2rem 0;
 }
 

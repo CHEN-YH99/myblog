@@ -14,6 +14,7 @@
         sizes="100vw"
         width="1920"
         height="1080"
+      :style="heroStyle"
       />
       <div class="inner-header flex" ref="innerHeaderRef">
         <h1 v-typing="{ duration: 1000 }" v-once class="animate__animated animate__backInDown">小灰个人博客</h1>
@@ -192,7 +193,7 @@
                       />
                     </svg>
                   </el-icon>
-                  My Gitee
+                  <span>My Gitee</span>
                 </button>
               </div>
               <div class="my-links">
@@ -384,11 +385,46 @@ const url = ref(bgImage)
 const fit = ref('cover')
 const innerHeaderRef = ref<HTMLElement | null>(null)
 const headerBgRef = ref<HTMLElement | null>(null)
+const heroProgress = ref(0)
+const heroStyle = computed(() => {
+  const p = Math.min(Math.max(heroProgress.value, 0), 1)
+  const translateY = p * window.innerHeight * 0.5
+  const scale = 1 - p * 0.2
+  const blur = p * 20
+  const brightness = Math.max(0.4, 1 - p * 0.6)
+  const opacity = Math.max(0, 1 - p * 1.2)
+  return {
+    transform: `translate3d(0, ${translateY}px, 0) scale(${scale.toFixed(3)})`,
+    filter: `blur(${blur.toFixed(2)}px) brightness(${brightness.toFixed(2)})`,
+    opacity: opacity.toFixed(3),
+    willChange: 'transform, filter, opacity',
+  }
+})
+let heroRaf = 0
+const safeScrollTop = () => {
+  try {
+    return (
+      (document.documentElement && document.documentElement.scrollTop) ||
+      (document.body && document.body.scrollTop) ||
+      window.pageYOffset ||
+      0
+    )
+  } catch {
+    return 0
+  }
+}
+const updateHeroProgress = () => {
+  const viewportHeight = Math.max(window.innerHeight, 1)
+  const top = safeScrollTop()
+  heroProgress.value = Math.min(top / viewportHeight, 1)
+}
+const onHeroScroll = () => {
+  cancelAnimationFrame(heroRaf)
+  heroRaf = requestAnimationFrame(updateHeroProgress)
+}
 
 // 标题视差：向上移动速度较快，保持清晰
 useParallax(innerHeaderRef, { speed: 0.8 })
-// 背景图视差：向后缩小并淡出
-useParallax(headerBgRef, { speed: 0.3, scale: true, opacity: true })
 
 // 格式化日期
 const formatTime = (ms: number): string => {
@@ -595,6 +631,8 @@ onMounted(async () => {
     scheduleIdle(() => {
       sidebarReady.value = true
     })
+    window.addEventListener('scroll', onHeroScroll, { passive: true })
+    updateHeroProgress()
   } catch (error) {
     console.error('组件初始化失败:', error)
   }
@@ -622,6 +660,8 @@ onBeforeUnmount(() => {
     if (stopWatchingPagination) {
       stopWatchingPagination()
     }
+    window.removeEventListener('scroll', onHeroScroll)
+    cancelAnimationFrame(heroRaf)
   } catch (error) {
     console.error('组件清理失败:', error)
   }

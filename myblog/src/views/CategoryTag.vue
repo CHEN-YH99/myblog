@@ -272,6 +272,8 @@ onMounted(async () => {
 
 // 外层容器样式：宽度固定60%
 .content-wrapper {
+  position: relative;
+  z-index: 2;
   width: 60%;
   margin: 50px auto;
 

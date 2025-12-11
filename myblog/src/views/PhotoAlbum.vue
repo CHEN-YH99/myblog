@@ -229,6 +229,13 @@ onUnmounted(() => {
 </script>
 
 <style scoped lang="scss">
+// 修复海浪跳动与缝隙：提升内容层级
+.timeline_content,
+.empty {
+  position: relative;
+  z-index: 2;
+}
+
 .tags-info {
   .tag-cloud {
     width: 60%;

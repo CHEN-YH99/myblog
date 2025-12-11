@@ -255,6 +255,14 @@ onUnmounted(() => {
 
 <style scoped lang="scss">
 .photo-category-detail {
+  // 修复海浪跳动与缝隙：提升内容层级
+  .category-info,
+  .photo-list,
+  .empty {
+    position: relative;
+    z-index: 2;
+  }
+
   .category-info {
     width: 80%;
     margin: 50px auto;

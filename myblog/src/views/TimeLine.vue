@@ -333,6 +333,10 @@ onBeforeUnmount(() => {
   --tl-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
   --tl-shadow-hover: 0 16px 40px rgba(0, 0, 0, 0.25);
 
+  // 修复海浪跳动与缝隙：提升层级
+  position: relative;
+  z-index: 2;
+
   // 类暗色开关（html 或 body 上添加 .dark）
   :global(html.dark) &,
   :global(.dark) & {
