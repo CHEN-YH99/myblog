@@ -4,6 +4,11 @@
       <div class="meta">
         <p>© 小灰的个人博客</p>
         <p>Powered by Vue3</p>
+        <p class="icp">
+          <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">
+            粤ICP备2025506377号-1
+          </a>
+        </p>
       </div>
       <div class="badges" aria-label="技术栈与服务徽章">
         <a
@@ -68,11 +73,31 @@ const footlist = reactive([
 .meta {
   text-align: center;
   line-height: 1.6;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
 }
 .meta p {
   margin: 0;
   font-size: 12px;
-  color: #aeaeae;
+  color: rgba(255, 255, 255, 0.82); /* 灰白色 */
+}
+.icp {
+  display: inline-block;
+  margin-top: 2px;
+}
+.icp a {
+  color: rgba(255, 255, 255, 0.82); /* 灰白色 */
+  text-decoration: none;
+}
+.icp a:hover {
+  text-decoration: underline;
+}
+
+/* 深色模式下稍微提亮透明底色，提升可读性 */
+@media (prefers-color-scheme: dark) {
+  /* 已去除背景色：深色模式无需额外处理 */
 }
 .badges {
   /* 水平布局 */
