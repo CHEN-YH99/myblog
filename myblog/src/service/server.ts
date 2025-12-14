@@ -10,19 +10,19 @@ import bcrypt from 'bcrypt';
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// 创建上传目录 - 修正路径到myblog项目的uploads文件�?
+// 创建上传目录 - 修正路径到myblog项目的uploads文件夹
 const uploadDir = path.join(process.cwd(), 'uploads');
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-// 配置 multer 中间�?
+// 配置 multer 中间件
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => {
     cb(null, uploadDir);
   },
   filename: (_req, file, cb) => {
-    // 生成唯一文件�?
+    // 生成唯一文件名
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     const ext = path.extname(file.originalname);
     cb(null, file.fieldname + '-' + uniqueSuffix + ext);
@@ -105,9 +105,9 @@ const ArticleSchema = new mongoose.Schema({
   views: { type: mongoose.Schema.Types.Mixed, default: 0 },
   excerpt: { type: String },
   image: { type: String },
-  p_date: { type: Number }, // p_date 字段存储年份数字（如 2024�?
+  p_date: { type: Number }, // p_date 字段存储年份数字（如 2024）
   isTop: { type: Boolean, default: false }, // 文章置顶状态，默认不置顶
-  visible: { type: Boolean, default: true } // 文章可见性，默认为可�?
+  visible: { type: Boolean, default: true } // 文章可见性，默认为可见
 });
 
 const Article = mongoose.model('Article', ArticleSchema);
@@ -190,7 +190,7 @@ const TalkSchema = new mongoose.Schema({
   mood: { type: String, default: '' }, // 心情
   weather: { type: String, default: '' }, // 天气
   tags: [{ type: String }], // 标签
-  deleteDate: { type: Date }, // 删除时间（软删除�?
+  deleteDate: { type: Date }, // 删除时间（软删除）
   sort: { type: Number, default: 0 } // 排序权重
 });
 
@@ -250,12 +250,12 @@ const UserSchema = new mongoose.Schema({
   userId: { type: Number, required: true, unique: true },
   username: { type: String, required: true, unique: true },
   nickname: { type: String, required: true },
-  password: { type: String, required: true }, // 实际应用中应该加密存�?
+  password: { type: String, required: true }, // 实际应用中应该加密存储
   avatar: { type: String, default: '' },
   email: { type: String, default: '' },
   phone: { type: String, default: '' },
   roleId: { type: Number, ref: 'Role', required: true },
-  roleName: { type: String, required: true }, // 冗余字段，便于查�?
+  roleName: { type: String, required: true }, // 冗余字段，便于查询
   enabled: { type: Boolean, default: true },
   lastLoginTime: { type: Date },
   lastLoginIp: { type: String, default: '' },
@@ -376,7 +376,7 @@ app.get('/api/articles', async (req: Request, res: Response) => {
       console.log('年份筛选(p_date):', year, '筛选条件:', { p_date: yearNum });
     }
     
-    // 分页处理 - 使用 publishDate 字段精确排序（最新发布的在前�?
+    // 分页处理 - 使用 publishDate 字段精确排序（最新发布的在前）
     let articlesQuery = Article.find(query).sort({ publishDate: -1 });
     
     if (page && size) {
@@ -396,7 +396,7 @@ app.get('/api/articles', async (req: Request, res: Response) => {
     const articles = await articlesQuery.exec();
     const total = await Article.countDocuments(query);
     
-    console.log('�?文章列表查询成功:', { query, total, articlesCount: articles.length });
+    console.log('文章列表查询成功:', { query, total, articlesCount: articles.length });
     
     // 调试：检查返回的文章是否包含 p_date 字段
     if (articles.length > 0) {
@@ -411,7 +411,7 @@ app.get('/api/articles', async (req: Request, res: Response) => {
       pageSize: size ? Number(size) : articles.length
     }, '获取文章列表成功'));
   } catch (error) {
-    console.error('�?获取文章列表失败:', error);
+    console.error('获取文章列表失败:', error);
     res.status(500).json(createErrorResponse('获取文章列表失败', 500));
   }
 });
@@ -962,7 +962,7 @@ app.get('/api/categories', async (req: Request, res: Response) => {
         pageSize: Number(size)
       }, '获取分类列表成功'));
     } else {
-      // 不分页时返回简单格式（兼容原有接口�?
+      // 不分页时返回简单格式（兼容原有接口）
       const simpleCategoriesWithCount = await Promise.all(
         (await Category.find({ status: 'active' }).sort({ sort: 1 }))
         .map(async (category) => ({
@@ -1304,7 +1304,7 @@ app.put('/api/photo-categories/:id', async (req: Request, res: Response) => {
     const { id } = req.params;
     const updateData = req.body || {};
 
-    // 依次尝试�?id(字符�? -> id(数字) -> _id(ObjectId) 查找
+    // 依次尝试：id(字符串) -> id(数字) -> _id(ObjectId) 查找
     const candidates: any[] = [{ id }];
     if (/^\d+$/.test(id)) {
       candidates.push({ id: Number(id) });
@@ -1601,7 +1601,7 @@ app.get('/api/talks', async (req: Request, res: Response) => {
       query.isHidden = isHidden === 'true';
     }
 
-    // 关键词搜�?
+    // 关键词搜索
     if (keyword) {
       query.content = { $regex: keyword, $options: 'i' };
     }
@@ -1690,7 +1690,7 @@ app.put('/api/talks/:id', async (req: Request, res: Response) => {
   }
 });
 
-// 删除说说（软删除�?
+// 删除说说（软删除）
 app.delete('/api/talks/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -2107,7 +2107,7 @@ app.post('/api/talks/:id/replies', async (req: Request, res: Response) => {
       return res.status(400).json(createErrorResponse('回复内容和昵称不能为空', 400));
     }
 
-    // 检查说说是否存�?
+    // 检查说说是否存在
     const talk = await Talk.findById(id);
     if (!talk) {
       return res.status(404).json(createErrorResponse('说说不存在', 404));
@@ -2395,7 +2395,7 @@ app.get(['/api/auth/user-info', '/api/user/info'], async (req: Request, res: Res
  * 获取用户列表 - 支持多个路径
  */
 app.get(['/api/users', '/api/user/list'], async (req: Request, res: Response) => {
-  console.log('=== 用户列表接口被调�?===');
+  console.log('=== 用户列表接口被调用 ===');
   console.log('请求路径:', req.path);
   console.log('请求参数:', req.query);
   console.log('请求方法:', req.method);
@@ -2451,7 +2451,7 @@ app.get(['/api/users', '/api/user/list'], async (req: Request, res: Response) =>
       .sort({ createTime: -1 })
       .skip(skip)
       .limit(limit)
-      .select('-password'); // 不返回密码字�?
+      .select('-password'); // 不返回密码字段
 
     // 获取总数
     const total = await User.countDocuments(query);
@@ -2766,7 +2766,7 @@ app.put(['/api/users/:id', '/api/user/update/:id'], async (req: Request, res: Re
       return res.status(404).json(createErrorResponse('用户不存在', 404));
     }
 
-    // 如果更新角色，检查角色是否存�?
+    // 如果更新角色，检查角色是否存在
     if (roleId && roleId !== user.roleId) {
       const role = await Role.findOne({ roleId });
       if (!role) {
@@ -2785,7 +2785,7 @@ app.put(['/api/users/:id', '/api/user/update/:id'], async (req: Request, res: Re
 
     await user.save();
 
-    // 返回更新后的用户信息（不包含密码�?
+    // 返回更新后的用户信息（不包含密码）
     const userResponse = {
       userId: user.userId,
       username: user.username,
@@ -2854,7 +2854,7 @@ app.post('/api/auth/register', async (req: Request, res: Response) => {
       }
     }
 
-    // 查找普通用户角色（假设roleCode�?USER'�?
+    // 查找普通用户角色（假设 roleCode 为 'USER'）
     let userRole = await Role.findOne({ roleCode: 'USER' });
     if (!userRole) {
       // 如果没有普通用户角色，创建一个
