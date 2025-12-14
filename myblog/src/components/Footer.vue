@@ -3,7 +3,6 @@
     <div class="footer-inner">
       <div class="meta">
         <p>© 小灰的个人博客</p>
-        <p>Powered by Vue3</p>
         <p class="icp">
           <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">
             粤ICP备2025506377号-1
@@ -33,9 +32,9 @@ import { reactive } from 'vue'
 const footlist = reactive([
   {
     id: 1,
-    img: 'https://img.shields.io/badge/阿里云-Escalation-orange',
+    img: 'https://img.shields.io/badge/腾讯云-Server-orange',
     imgurl:
-      'https://help.aliyun.com/zh/ecs/?spm=5176.28507329.nav-v2-dropdown-menu-3.d_main_0_0.384a2868VFVVko&scm=20140722.M_9489640._.V_1',
+      'https://cloud.tencent.com/',
   },
   {
     id: 2,
@@ -49,8 +48,8 @@ const footlist = reactive([
   },
   {
     id: 4,
-    img: 'https://img.shields.io/badge/华为云-Escalation-yellow',
-    imgurl: 'https://www.huaweicloud.com/',
+    img: 'https://img.shields.io/badge/Vue3-Frontend-yellow',
+    imgurl: 'https://cn.vuejs.org/',
   },
 ])
 </script>
@@ -74,9 +73,9 @@ const footlist = reactive([
   text-align: center;
   line-height: 1.6;
   display: inline-flex;
-  flex-direction: column;
+  flex-direction: row; /* Changed to row for horizontal layout */
   align-items: center;
-  gap: 2px;
+  gap: 1rem; /* Increased gap for spacing */
 }
 .meta p {
   margin: 0;
@@ -84,8 +83,7 @@ const footlist = reactive([
   color: rgba(255, 255, 255, 0.82); /* 灰白色 */
 }
 .icp {
-  display: inline-block;
-  margin-top: 2px;
+  /* Styles are now handled by the flex container */
 }
 .icp a {
   color: rgba(255, 255, 255, 0.82); /* 灰白色 */

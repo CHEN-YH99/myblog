@@ -385,42 +385,32 @@ const url = ref(bgImage)
 const fit = ref('cover')
 const innerHeaderRef = ref<HTMLElement | null>(null)
 const headerBgRef = ref<HTMLElement | null>(null)
-const heroProgress = ref(0)
+const scrollTop = ref(0)
+
+// True parallax style effect
 const heroStyle = computed(() => {
-  const p = Math.min(Math.max(heroProgress.value, 0), 1)
-  const translateY = p * window.innerHeight * 0.5
-  const scale = 1 - p * 0.2
-  const blur = p * 20
-  const brightness = Math.max(0.4, 1 - p * 0.6)
-  const opacity = Math.max(0, 1 - p * 1.2)
+  // Move the background at half the scroll speed
+  const translateY = scrollTop.value * 0.5
+  // Fade out the background as it scrolls down, disappearing after 80% of the viewport height
+  const opacity = Math.max(0, 1 - scrollTop.value / (window.innerHeight * 0.8))
+
   return {
-    transform: `translate3d(0, ${translateY}px, 0) scale(${scale.toFixed(3)})`,
-    filter: `blur(${blur.toFixed(2)}px) brightness(${brightness.toFixed(2)})`,
+    transform: `translate3d(0, ${translateY}px, 0)`,
     opacity: opacity.toFixed(3),
-    willChange: 'transform, filter, opacity',
+    willChange: 'transform, opacity',
   }
 })
 let heroRaf = 0
-const safeScrollTop = () => {
-  try {
-    return (
-      (document.documentElement && document.documentElement.scrollTop) ||
-      (document.body && document.body.scrollTop) ||
-      window.pageYOffset ||
-      0
-    )
-  } catch {
-    return 0
-  }
-}
-const updateHeroProgress = () => {
-  const viewportHeight = Math.max(window.innerHeight, 1)
-  const top = safeScrollTop()
-  heroProgress.value = Math.min(top / viewportHeight, 1)
-}
 const onHeroScroll = () => {
   cancelAnimationFrame(heroRaf)
-  heroRaf = requestAnimationFrame(updateHeroProgress)
+  heroRaf = requestAnimationFrame(() => {
+    try {
+      scrollTop.value = window.pageYOffset || document.documentElement.scrollTop
+    } catch (e) {
+      // In some environments, accessing scrollTop can throw an error.
+      // We'll just ignore it and let the value remain unchanged.
+    }
+  })
 }
 
 // 标题视差：向上移动速度较快，保持清晰
@@ -632,7 +622,8 @@ onMounted(async () => {
       sidebarReady.value = true
     })
     window.addEventListener('scroll', onHeroScroll, { passive: true })
-    updateHeroProgress()
+    // Initial call to set position correctly on page load/navigation
+    onHeroScroll()
   } catch (error) {
     console.error('组件初始化失败:', error)
   }
