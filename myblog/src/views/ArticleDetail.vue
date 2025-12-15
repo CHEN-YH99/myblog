@@ -231,7 +231,7 @@ import {
 import ReadingProgress from '@/components/ReadingProgress.vue'
 import WaveContainer from '@/components/WaveContainer.vue'
 
-import { useArticlesStore } from '@/stores/getarticles'
+import { useArticlesStore } from '@/stores/articles'
 
 
 import { formatNumber } from '@/utils/format'

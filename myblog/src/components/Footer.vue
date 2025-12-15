@@ -48,8 +48,8 @@ const footlist = reactive([
   },
   {
     id: 4,
-    img: 'https://img.shields.io/badge/Vue3-Backend-yellow',
-    imgurl: 'https://cn.vuejs.org/',
+    img: 'https://img.shields.io/badge/华为云-Escalation-yellow',
+    imgurl: 'https://www.huaweicloud.com/',
   },
 ])
 </script>
@@ -71,12 +71,10 @@ const footlist = reactive([
 }
 .meta {
   line-height: 1.6;
-  display: flex;             /* 水平布局 */
-  flex-direction: row;
+  display: inline-flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center; /* 水平居中 */
-  gap: 12px;
-  width: 100%;
+  gap: 2px;
 }
 .meta p {
   margin: 0;
@@ -86,7 +84,7 @@ const footlist = reactive([
 }
 .icp {
   display: inline-block;
-  margin-top: 0;              /* 水平布局无需顶部外边距 */
+  margin-top: 2px;
 }
 .icp a {
   color: rgba(255, 255, 255, 0.82);

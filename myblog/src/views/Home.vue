@@ -14,14 +14,14 @@
         sizes="100vw"
         width="1920"
         height="1080"
-      :style="heroStyle"
+        :style="heroStyle"
       />
       <div class="inner-header flex" ref="innerHeaderRef">
         <h1 v-typing="{ duration: 1000 }" v-once class="animate__animated animate__backInDown">小灰个人博客</h1>
       </div>
-      <el-icon color="#ffffff" size="30px" class="turndown" @click="scrollDown"
-        ><arrow-down-bold
-      /></el-icon>
+      <el-icon color="#ffffff" size="30px" class="turndown" @click="scrollDown">
+        <arrow-down-bold />
+      </el-icon>
       <!-- 海水波浪 -->
       <WaveContainer />
     </div>
@@ -268,7 +268,7 @@ import { ElMessage } from 'element-plus'
 import { useArticles } from '@/composables/useArticles'
 // import { useLikes } from '@/composables/useLikes'
 import { useUserStore } from '@/stores/user'
-import { useArticlesStore } from '@/stores/getarticles'
+import { useArticlesStore } from '@/stores/articles'
 import { formatNumber } from '@/utils/format'
 import { getUserStats } from '@/api/user'
 
@@ -276,6 +276,9 @@ const WaveContainer = defineAsyncComponent(() => import('@/components/WaveContai
 const Footer = defineAsyncComponent(() => import('@/components/Footer.vue'))
 // 已全局引入 index.scss 于 main.ts，无需重复引入
 import bgImage from '@/assets/images/shunsea1.jpg'
+import csdnIcon from '@/assets/images/csdn.svg'
+import githubIcon from '@/assets/images/github.svg'
+import bilibiliIcon from '@/assets/images/哔哩哔哩.svg'
 import { useExternalLinkConfirm } from '@/composables/useExternalLinkConfirm'
 import { debounce } from '@/utils/debounce'
 import { useParallax } from '@/composables/useParallax'
@@ -385,23 +388,19 @@ const url = ref(bgImage)
 const fit = ref('cover')
 const innerHeaderRef = ref<HTMLElement | null>(null)
 const headerBgRef = ref<HTMLElement | null>(null)
-const headerRef = ref<HTMLElement | null>(null)
 const heroProgress = ref(0)
-const headerHeight = ref(0)
-const heroScrollY = ref(0)
-const parallaxReady = ref(false)
-let initialParallaxTimer: number | null = null
 const heroStyle = computed(() => {
-  // 初次激活/返回时，先稳定为 0，待同步完成后再启用视差
-  if (!parallaxReady.value) {
-    return { transform: 'translate3d(0, 0, 0)', willChange: 'transform' }
-  }
-  const baseH = headerHeight.value || window.innerHeight || 1
-  const y = Math.min(Math.max(0, heroScrollY.value), baseH) // 限制在首屏高度内
-  const translateY = y * 0.4 // 视差系数，略增强调可见度
+  const p = Math.min(Math.max(heroProgress.value, 0), 1)
+  const translateY = p * window.innerHeight * 0.5
+  const scale = 1 - p * 0.2
+  const blur = p * 20
+  const brightness = Math.max(0.4, 1 - p * 0.6)
+  const opacity = Math.max(0, 1 - p * 1.2)
   return {
-    transform: `translate3d(0, ${translateY.toFixed(2)}px, 0)`,
-    willChange: 'transform',
+    transform: `translate3d(0, ${translateY}px, 0) scale(${scale.toFixed(3)})`,
+    filter: `blur(${blur.toFixed(2)}px) brightness(${brightness.toFixed(2)})`,
+    opacity: opacity.toFixed(3),
+    willChange: 'transform, filter, opacity',
   }
 })
 let heroRaf = 0
@@ -417,88 +416,82 @@ const safeScrollTop = () => {
     return 0
   }
 }
-const updateHeaderHeight = () => {
-  // 以视口高度作为基准，避免容器 padding/布局变化引起的高度测量误差
-  headerHeight.value = window.innerHeight || 1
-}
 const updateHeroProgress = () => {
-  const baseH = headerHeight.value || (headerRef.value?.getBoundingClientRect().height || window.innerHeight || 1)
+  const viewportHeight = Math.max(window.innerHeight, 1)
   const top = safeScrollTop()
-  heroProgress.value = Math.min(top / baseH, 1)
-}
-const updateHeroScrollY = () => {
-  // 使用 header 的几何信息计算在视口内的偏移，更稳健地反映真实显示位置
-  try {
-    const el = headerRef.value as HTMLElement | null
-    if (el) {
-      const rect = el.getBoundingClientRect()
-      headerHeight.value = rect.height || headerHeight.value || (window.innerHeight || 1)
-      heroScrollY.value = Math.max(0, -rect.top)
-    } else {
-      headerHeight.value = window.innerHeight || 1
-      heroScrollY.value = safeScrollTop()
-    }
-  } catch {
-    headerHeight.value = window.innerHeight || 1
-    heroScrollY.value = safeScrollTop()
-  }
+  heroProgress.value = Math.min(top / viewportHeight, 1)
 }
 const onHeroScroll = () => {
   cancelAnimationFrame(heroRaf)
-  heroRaf = requestAnimationFrame(() => {
-    updateHeroScrollY()
-    updateHeroProgress()
-  })
-}
-
-// 在返回/恢复/激活时强制同步一次，避免浏览器滚动位置恢复在我们挂监听之前完成而导致视差不同步
-const syncHeroProgressSoon = () => {
-  try {
-    updateHeroScrollY()
-    updateHeroProgress()
-    requestAnimationFrame(() => {
-      updateHeroScrollY()
-      updateHeroProgress()
-    })
-    setTimeout(() => {
-      updateHeroScrollY()
-      updateHeroProgress()
-    }, 0)
-  } catch {}
-}
-
-let heroScrollBound = false
-const bindHeroScroll = () => {
-  if (heroScrollBound) return
-  window.addEventListener('scroll', onHeroScroll, { passive: true })
-  heroScrollBound = true
-}
-const unbindHeroScroll = () => {
-  if (!heroScrollBound) return
-  window.removeEventListener('scroll', onHeroScroll as any)
-  heroScrollBound = false
-}
-
-// 浏览器后退使用 BFCache 恢复时触发，确保滚动位与视差同步
-const onPageShow = () => {
-  // 返回首页时强制回到顶部，彻底避免背景图偏移
-  try { window.scrollTo({ top: 0, behavior: 'auto' }) } catch {}
-  updateHeaderHeight()
-  parallaxReady.value = false
-  syncHeroProgressSoon()
-  requestAnimationFrame(() => {
-    parallaxReady.value = true
-  })
-}
-
-// 视口尺寸变化时（地址栏显隐或旋转），同步一次，避免 translate 误差
-const onResize = () => {
-  updateHeaderHeight()
-  syncHeroProgressSoon()
+  heroRaf = requestAnimationFrame(updateHeroProgress)
 }
 
 // 标题视差：向上移动速度较快，保持清晰
 useParallax(innerHeaderRef, { speed: 0.8 })
+
+// 视差就绪状态
+const parallaxReady = ref(false)
+
+// 更新头部高度
+const updateHeaderHeight = () => {
+  try {
+    const headerEl = document.querySelector('.header') as HTMLElement | null
+    if (headerEl) {
+      const height = headerEl.offsetHeight
+      document.documentElement.style.setProperty('--header-height', `${height}px`)
+    }
+  } catch (error) {
+    console.error('更新头部高度失败:', error)
+  }
+}
+
+// 绑定英雄滚动事件
+const bindHeroScroll = () => {
+  try {
+    window.addEventListener('scroll', onHeroScroll, { passive: true })
+  } catch (error) {
+    console.error('绑定滚动事件失败:', error)
+  }
+}
+
+// 解绑英雄滚动事件
+const unbindHeroScroll = () => {
+  try {
+    window.removeEventListener('scroll', onHeroScroll)
+  } catch (error) {
+    console.error('解绑滚动事件失败:', error)
+  }
+}
+
+// 同步英雄进度（延迟）
+const syncHeroProgressSoon = () => {
+  try {
+    cancelAnimationFrame(heroRaf)
+    heroRaf = requestAnimationFrame(updateHeroProgress)
+  } catch (error) {
+    console.error('同步英雄进度失败:', error)
+  }
+}
+
+// 页面显示事件处理
+const onPageShow = () => {
+  try {
+    updateHeroProgress()
+    setBackTopVisibility()
+  } catch (error) {
+    console.error('页面显示处理失败:', error)
+  }
+}
+
+// 窗口大小变化处理
+const onResize = debounce(() => {
+  try {
+    updateHeaderHeight()
+    updateHeroProgress()
+  } catch (error) {
+    console.error('窗口大小变化处理失败:', error)
+  }
+}, 300)
 
 // 格式化日期
 const formatTime = (ms: number): string => {
@@ -707,19 +700,14 @@ onMounted(async () => {
     scheduleIdle(() => {
       sidebarReady.value = true
     })
-    parallaxReady.value = false
+    
+    // 绑定事件监听
     bindHeroScroll()
-    updateHeaderHeight()
-    updateHeroScrollY()
-    syncHeroProgressSoon()
-    requestAnimationFrame(() => {
-      updateHeroScrollY()
-      requestAnimationFrame(() => {
-        parallaxReady.value = true
-      })
-    })
+    initBackTopListeners()
     window.addEventListener('pageshow', onPageShow as any)
     window.addEventListener('resize', onResize as any)
+    updateHeaderHeight()
+    updateHeroProgress()
   } catch (error) {
     console.error('组件初始化失败:', error)
   }
@@ -765,6 +753,12 @@ onBeforeUnmount(() => {
     unbindHeroScroll()
     window.removeEventListener('pageshow', onPageShow as any)
     window.removeEventListener('resize', onResize as any)
+    _backTopScrollTargets.forEach((t) => {
+      t.removeEventListener?.('scroll', onBackTopScroll as any)
+      t.removeEventListener?.('wheel', onBackTopScroll as any)
+      t.removeEventListener?.('touchmove', onBackTopScroll as any)
+    })
+    _backTopScrollTargets = []
     cancelAnimationFrame(heroRaf)
   } catch (error) {
     console.error('组件清理失败:', error)
@@ -794,26 +788,22 @@ const onBackTopScroll = debounce(setBackTopVisibility, 150)
 
 let _backTopScrollTargets: EventTarget[] = []
 
-onMounted(() => {
-  const bodyEl = document.body
-  const docEl = document.documentElement
-  _backTopScrollTargets = [window, document, bodyEl, docEl].filter(Boolean) as EventTarget[]
-  _backTopScrollTargets.forEach((t) => {
-    t.addEventListener?.('scroll', onBackTopScroll as any, { passive: true })
-    t.addEventListener?.('wheel', onBackTopScroll as any, { passive: true })
-    t.addEventListener?.('touchmove', onBackTopScroll as any, { passive: true })
-  })
-  setBackTopVisibility()
-})
-
-onBeforeUnmount(() => {
-  _backTopScrollTargets.forEach((t) => {
-    t.removeEventListener?.('scroll', onBackTopScroll as any)
-    t.removeEventListener?.('wheel', onBackTopScroll as any)
-    t.removeEventListener?.('touchmove', onBackTopScroll as any)
-  })
-  _backTopScrollTargets = []
-})
+// 初始化回到顶部事件监听
+const initBackTopListeners = () => {
+  try {
+    const bodyEl = document.body
+    const docEl = document.documentElement
+    _backTopScrollTargets = [window, document, bodyEl, docEl].filter(Boolean) as EventTarget[]
+    _backTopScrollTargets.forEach((t) => {
+      t.addEventListener?.('scroll', onBackTopScroll as any, { passive: true })
+      t.addEventListener?.('wheel', onBackTopScroll as any, { passive: true })
+      t.addEventListener?.('touchmove', onBackTopScroll as any, { passive: true })
+    })
+    setBackTopVisibility()
+  } catch (error) {
+    console.error('初始化回到顶部监听失败:', error)
+  }
+}
 
 // 重新加载数据
 const retryLoadData = async () => {
