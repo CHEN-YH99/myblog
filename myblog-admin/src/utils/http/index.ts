@@ -1,222 +1,77 @@
-import axios, { AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig } from 'axios'
+import { createHttpClient } from '../../../../shared/utils/http/client'
+import { ApiStatus } from './status'
+import { HttpError } from './error'
 import { useUserStore } from '@/store/modules/user'
-import { ApiStatus } from '@/utils/http/status'
-import { HttpError, handleError, showError, showSuccess } from '@/utils/http/error'
+import { ElMessage } from 'element-plus'
 import { $t } from '@/locales'
-
-/** 请求配置常量 */
-const REQUEST_TIMEOUT = 15000
-const LOGOUT_DELAY = 500
-const MAX_RETRIES = 0
-const RETRY_DELAY = 1000
-const UNAUTHORIZED_DEBOUNCE_TIME = 3000
-
-/** 401防抖状态 */
-let isUnauthorizedErrorShown = false
-let unauthorizedTimer: NodeJS.Timeout | null = null
-
-/** 扩展 AxiosRequestConfig */
-interface ExtendedAxiosRequestConfig extends AxiosRequestConfig {
-  showErrorMessage?: boolean
-  showSuccessMessage?: boolean
-}
 
 const { VITE_API_URL, VITE_WITH_CREDENTIALS } = import.meta.env
 
-
-/** Axios实例 */
-const axiosInstance = axios.create({
-  timeout: REQUEST_TIMEOUT,
-  baseURL: VITE_API_URL,
-  withCredentials: VITE_WITH_CREDENTIALS === 'true',
-  validateStatus: (status) => status >= 200 && status < 300,
-  transformResponse: [
-    (data, headers) => {
-      const contentType = headers['content-type']
-      if (contentType?.includes('application/json')) {
-        try {
-          return JSON.parse(data)
-        } catch {
-          return data
-        }
-      }
-      return data
-    }
-  ]
-})
-
-/** 请求拦截器 */
-axiosInstance.interceptors.request.use(
-  (request: InternalAxiosRequestConfig) => {
-    const userStore = useUserStore()
-    const { accessToken, isReadOnly } = userStore
-    
-    console.log('[HTTP拦截器] 请求方法:', request.method?.toUpperCase())
-    console.log('[HTTP拦截器] isReadOnly:', isReadOnly)
-    console.log('[HTTP拦截器] userStore.info:', userStore.info)
-    
-    // 只读用户拦截写操作
-    const method = request.method?.toUpperCase() || ''
-    const isWriteMethod = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)
-    
-    console.log('[HTTP拦截器] isWriteMethod:', isWriteMethod)
-    console.log('[HTTP拦截器] 是否应该拦截:', isWriteMethod && isReadOnly)
-    
-    if (isWriteMethod && isReadOnly) {
-      const err = createHttpError('当前账号为只读，禁止写操作', ApiStatus.forbidden)
-      console.error('[HTTP拦截器] 拦截写操作:', err)
-      return Promise.reject(err)
-    }
-    if (accessToken) request.headers.set('Authorization', accessToken)
-
-    if (request.data && !(request.data instanceof FormData) && !request.headers['Content-Type']) {
-      request.headers.set('Content-Type', 'application/json')
-      request.data = JSON.stringify(request.data)
-    }
-
-    return request
-  },
-  (error) => {
-    showError(createHttpError($t('httpMsg.requestConfigError'), ApiStatus.error))
-    return Promise.reject(error)
-  }
-)
-
-/** 响应拦截器 */
-axiosInstance.interceptors.response.use(
-  (response: AxiosResponse<Http.BaseResponse>) => {
-    const { code, msg } = response.data
-    // 支持200和201状态码
-    if (code === ApiStatus.success || code === 201) return response
-    if (code === ApiStatus.unauthorized) handleUnauthorizedError(msg)
-    throw createHttpError(msg || $t('httpMsg.requestFailed'), code)
-  },
-  (error) => {
-    if (error.response?.status === ApiStatus.unauthorized) handleUnauthorizedError()
-    return Promise.reject(handleError(error))
-  }
-)
-
-/** 统一创建HttpError */
-function createHttpError(message: string, code: number) {
-  return new HttpError(message, code)
+function getAuthHeader() {
+  const { accessToken } = useUserStore()
+  return accessToken ? { Authorization: accessToken } : undefined
 }
 
-/** 处理401错误（带防抖） */
-function handleUnauthorizedError(message?: string): never {
-  const error = createHttpError(message || $t('httpMsg.unauthorized'), ApiStatus.unauthorized)
+async function beforeRequest(config: any) {
+  const userStore = useUserStore()
+  const method = String(config.method || '').toUpperCase()
+  const isWrite = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)
+  if (isWrite && userStore.isReadOnly) {
+    throw new HttpError($t('httpMsg.forbidden') || '当前账号为只读，禁止写操作', ApiStatus.forbidden)
+  }
+}
 
-  if (!isUnauthorizedErrorShown) {
-    isUnauthorizedErrorShown = true
-    logOut()
-
-    unauthorizedTimer = setTimeout(resetUnauthorizedError, UNAUTHORIZED_DEBOUNCE_TIME)
-
-    showError(error, true)
-    throw error
+function parseResponse(response: any) {
+  const data = response?.data
+  const url: string = response?.config?.url || ''
+  const isAbsolute = /^https?:\/\//i.test(url)
+  
+  // 优先处理标准格式
+  if (data && typeof data === 'object' && 'code' in data) {
+    const code = data.code
+    const msg = data.msg
+    const payload = data.data
+    if (code === ApiStatus.success || code === 201) {
+      return { ok: true, code, msg, data: payload }
+    }
+    if (code === ApiStatus.unauthorized) {
+      return { ok: false, code, msg: $t('httpMsg.unauthorized') }
+    }
+    return { ok: false, code, msg: msg || $t('httpMsg.requestFailed'), data: payload }
+  }
+  
+  // 对外部绝对地址（非本服务）放宽：无 code 也视为成功直返
+  if (isAbsolute && !(VITE_API_URL && url.startsWith(String(VITE_API_URL)))) {
+    return { ok: true, data }
   }
 
-  throw error
+  // 管理端严格：无 code 视为错误
+  return { ok: false, code: ApiStatus.error, msg: $t('httpMsg.requestFailed') }
 }
 
-/** 重置401防抖状态 */
-function resetUnauthorizedError() {
-  isUnauthorizedErrorShown = false
-  if (unauthorizedTimer) clearTimeout(unauthorizedTimer)
-  unauthorizedTimer = null
-}
-
-/** 退出登录函数 */
-function logOut() {
+function onUnauthorized() {
   setTimeout(() => {
     useUserStore().logOut()
-  }, LOGOUT_DELAY)
+  }, 500)
 }
 
-/** 是否需要重试 */
-const RETRIABLE_STATUS_CODES = [
-  ApiStatus.requestTimeout,
-  ApiStatus.internalServerError,
-  ApiStatus.badGateway,
-  ApiStatus.serviceUnavailable,
-  ApiStatus.gatewayTimeout
-] as const
-
-function shouldRetry(statusCode: number) {
-  return (RETRIABLE_STATUS_CODES as readonly number[]).includes(statusCode)
-}
-
-/** 请求重试逻辑 */
-async function retryRequest<T>(
-  config: ExtendedAxiosRequestConfig,
-  retries: number = MAX_RETRIES
-): Promise<T> {
-  try {
-    return await request<T>(config)
-  } catch (error) {
-    if (retries > 0 && error instanceof HttpError && shouldRetry(error.code)) {
-      await delay(RETRY_DELAY)
-      return retryRequest<T>(config, retries - 1)
-    }
-    throw error
-  }
-}
-
-/** 延迟函数 */
-function delay(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms))
-}
-
-/** 请求函数 */
-async function request<T = any>(config: ExtendedAxiosRequestConfig): Promise<T> {
-  // POST | PUT 参数自动填充
-  if (
-    ['POST', 'PUT'].includes(config.method?.toUpperCase() || '') &&
-    config.params &&
-    !config.data
-  ) {
-    config.data = config.params
-    config.params = undefined
-  }
-
-  try {
-    const res = await axiosInstance.request<Http.BaseResponse<T>>(config)
-
-    // 显示成功消息
-    if (config.showSuccessMessage && res.data.msg) {
-      showSuccess(res.data.msg)
-    }
-
-    return res.data.data as T
-  } catch (error) {
-    if (error instanceof HttpError && error.code !== ApiStatus.unauthorized) {
-      const showMsg = config.showErrorMessage !== false
-      showError(error, showMsg)
-    }
-    return Promise.reject(error)
-  }
-}
-
-/** API方法集合 */
-const api = {
-  get<T>(config: ExtendedAxiosRequestConfig) {
-    return retryRequest<T>({ ...config, method: 'GET' })
+const api = createHttpClient({
+  baseURL: VITE_API_URL,
+  timeout: 15000,
+  withCredentials: VITE_WITH_CREDENTIALS === 'true',
+  getAuthHeader,
+  beforeRequest,
+  parseResponse,
+  onUnauthorized,
+  messages: {
+    showError: (error) => ElMessage.error(error.message),
+    showSuccess: (message) => ElMessage.success(message),
   },
-  post<T>(config: ExtendedAxiosRequestConfig) {
-    return retryRequest<T>({ ...config, method: 'POST' })
+  retry: {
+    max: 0,
+    delay: 1000,
   },
-  put<T>(config: ExtendedAxiosRequestConfig) {
-    return retryRequest<T>({ ...config, method: 'PUT' })
-  },
-  patch<T>(config: ExtendedAxiosRequestConfig) {
-    return retryRequest<T>({ ...config, method: 'PATCH' })
-  },
-  del<T>(config: ExtendedAxiosRequestConfig) {
-    return retryRequest<T>({ ...config, method: 'DELETE' })
-  },
-  request<T>(config: ExtendedAxiosRequestConfig) {
-    return retryRequest<T>(config)
-  }
-}
+  unauthorizedDebounceMs: 3000,
+})
 
 export default api

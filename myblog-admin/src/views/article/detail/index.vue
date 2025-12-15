@@ -12,7 +12,7 @@
   import '@/assets/styles/markdown.scss'
   import '@/assets/styles/one-dark-pro.scss'
   import { useCommon } from '@/composables/useCommon'
-  import axios from 'axios'
+  import api from '@/utils/http'
   // import 'highlight.js/styles/atom-one-dark.css';
   // import 'highlight.js/styles/vs2015.css';
 
@@ -31,11 +31,12 @@
 
   const getArticleDetail = async () => {
     if (articleId.value) {
-      const res = await axios.get('https://www.qiniu.lingchen.kim/blog_detail.json')
-      if (res.data.code === 200) {
-        articleTitle.value = res.data.data.title
-        articleHtml.value = res.data.data.html_content
-      }
+      const data = await api.get<{ title: string; html_content: string }>({
+        url: 'https://www.qiniu.lingchen.kim/blog_detail.json',
+      })
+      // 统一客户端已返回 data 字段内容
+      articleTitle.value = data.title
+      articleHtml.value = data.html_content
     }
   }
 </script>
