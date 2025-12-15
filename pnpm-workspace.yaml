@@ -1,0 +1,5 @@
+packages:
+  - 'myblog'
+  - 'myblog-admin'
+  - 'shared'
+
