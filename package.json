@@ -5,11 +5,11 @@
   "description": "统一后端API的全栈博客系统",
   "packageManager": "pnpm@9",
   "scripts": {
-    "dev": "concurrently \"pnpm -C myblog dev:server\" \"pnpm -C myblog dev\" \"pnpm -C myblog-admin dev\"",
-    "dev:api": "pnpm -C myblog dev:server",
+    "dev": "concurrently \"pnpm -C api dev\" \"pnpm -C myblog dev\" \"pnpm -C myblog-admin dev\"",
+    "dev:api": "pnpm -C api dev",
     "dev:frontend": "pnpm -C myblog dev",
     "dev:admin": "pnpm -C myblog-admin dev",
-    "build": "pnpm -C myblog build && pnpm -C myblog-admin build"
+    "build": "pnpm -C api build && pnpm -C myblog build && pnpm -C myblog-admin build"
   },
   "devDependencies": {
     "@eslint/js": "^9.37.0",
