@@ -1,7 +1,7 @@
 <!-- path: src/views/Home.vue -->
 <template>
   <div class="home-page">
-    <div class="header">
+    <div class="header" ref="headerRef">
       <!-- LCP/首图：使用 <img>，便于浏览器尽早发现与调度，并设置 fetchpriority -->
       <img
         ref="headerBgRef"
@@ -261,7 +261,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick, defineAsyncComponent } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, onActivated, onDeactivated, watch, nextTick, defineAsyncComponent } from 'vue'
 import { ArrowDownBold, Loading, Picture } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
@@ -385,19 +385,23 @@ const url = ref(bgImage)
 const fit = ref('cover')
 const innerHeaderRef = ref<HTMLElement | null>(null)
 const headerBgRef = ref<HTMLElement | null>(null)
+const headerRef = ref<HTMLElement | null>(null)
 const heroProgress = ref(0)
+const headerHeight = ref(0)
+const heroScrollY = ref(0)
+const parallaxReady = ref(false)
+let initialParallaxTimer: number | null = null
 const heroStyle = computed(() => {
-  const p = Math.min(Math.max(heroProgress.value, 0), 1)
-  const translateY = p * window.innerHeight * 0.5
-  const scale = 1 - p * 0.2
-  const blur = p * 20
-  const brightness = Math.max(0.4, 1 - p * 0.6)
-  const opacity = Math.max(0, 1 - p * 1.2)
+  // 初次激活/返回时，先稳定为 0，待同步完成后再启用视差
+  if (!parallaxReady.value) {
+    return { transform: 'translate3d(0, 0, 0)', willChange: 'transform' }
+  }
+  const baseH = headerHeight.value || window.innerHeight || 1
+  const y = Math.min(Math.max(0, heroScrollY.value), baseH) // 限制在首屏高度内
+  const translateY = y * 0.4 // 视差系数，略增强调可见度
   return {
-    transform: `translate3d(0, ${translateY}px, 0) scale(${scale.toFixed(3)})`,
-    filter: `blur(${blur.toFixed(2)}px) brightness(${brightness.toFixed(2)})`,
-    opacity: opacity.toFixed(3),
-    willChange: 'transform, filter, opacity',
+    transform: `translate3d(0, ${translateY.toFixed(2)}px, 0)`,
+    willChange: 'transform',
   }
 })
 let heroRaf = 0
@@ -413,14 +417,84 @@ const safeScrollTop = () => {
     return 0
   }
 }
+const updateHeaderHeight = () => {
+  // 以视口高度作为基准，避免容器 padding/布局变化引起的高度测量误差
+  headerHeight.value = window.innerHeight || 1
+}
 const updateHeroProgress = () => {
-  const viewportHeight = Math.max(window.innerHeight, 1)
+  const baseH = headerHeight.value || (headerRef.value?.getBoundingClientRect().height || window.innerHeight || 1)
   const top = safeScrollTop()
-  heroProgress.value = Math.min(top / viewportHeight, 1)
+  heroProgress.value = Math.min(top / baseH, 1)
+}
+const updateHeroScrollY = () => {
+  // 使用 header 的几何信息计算在视口内的偏移，更稳健地反映真实显示位置
+  try {
+    const el = headerRef.value as HTMLElement | null
+    if (el) {
+      const rect = el.getBoundingClientRect()
+      headerHeight.value = rect.height || headerHeight.value || (window.innerHeight || 1)
+      heroScrollY.value = Math.max(0, -rect.top)
+    } else {
+      headerHeight.value = window.innerHeight || 1
+      heroScrollY.value = safeScrollTop()
+    }
+  } catch {
+    headerHeight.value = window.innerHeight || 1
+    heroScrollY.value = safeScrollTop()
+  }
 }
 const onHeroScroll = () => {
   cancelAnimationFrame(heroRaf)
-  heroRaf = requestAnimationFrame(updateHeroProgress)
+  heroRaf = requestAnimationFrame(() => {
+    updateHeroScrollY()
+    updateHeroProgress()
+  })
+}
+
+// 在返回/恢复/激活时强制同步一次，避免浏览器滚动位置恢复在我们挂监听之前完成而导致视差不同步
+const syncHeroProgressSoon = () => {
+  try {
+    updateHeroScrollY()
+    updateHeroProgress()
+    requestAnimationFrame(() => {
+      updateHeroScrollY()
+      updateHeroProgress()
+    })
+    setTimeout(() => {
+      updateHeroScrollY()
+      updateHeroProgress()
+    }, 0)
+  } catch {}
+}
+
+let heroScrollBound = false
+const bindHeroScroll = () => {
+  if (heroScrollBound) return
+  window.addEventListener('scroll', onHeroScroll, { passive: true })
+  heroScrollBound = true
+}
+const unbindHeroScroll = () => {
+  if (!heroScrollBound) return
+  window.removeEventListener('scroll', onHeroScroll as any)
+  heroScrollBound = false
+}
+
+// 浏览器后退使用 BFCache 恢复时触发，确保滚动位与视差同步
+const onPageShow = () => {
+  // 返回首页时强制回到顶部，彻底避免背景图偏移
+  try { window.scrollTo({ top: 0, behavior: 'auto' }) } catch {}
+  updateHeaderHeight()
+  parallaxReady.value = false
+  syncHeroProgressSoon()
+  requestAnimationFrame(() => {
+    parallaxReady.value = true
+  })
+}
+
+// 视口尺寸变化时（地址栏显隐或旋转），同步一次，避免 translate 误差
+const onResize = () => {
+  updateHeaderHeight()
+  syncHeroProgressSoon()
 }
 
 // 标题视差：向上移动速度较快，保持清晰
@@ -617,6 +691,8 @@ let stopWatchingPagination: (() => void) | null = null
 
 onMounted(async () => {
   try {
+    // 返回或首次进入首页时，强制回到顶部，避免首图因浏览器滚动恢复而出现偏移
+    try { window.scrollTo({ top: 0, behavior: 'auto' }) } catch {}
     await initArticles()
 
     if (userStore.isLoggedIn && !articlesStore.likeStatusInitialized) {
@@ -631,8 +707,19 @@ onMounted(async () => {
     scheduleIdle(() => {
       sidebarReady.value = true
     })
-    window.addEventListener('scroll', onHeroScroll, { passive: true })
-    updateHeroProgress()
+    parallaxReady.value = false
+    bindHeroScroll()
+    updateHeaderHeight()
+    updateHeroScrollY()
+    syncHeroProgressSoon()
+    requestAnimationFrame(() => {
+      updateHeroScrollY()
+      requestAnimationFrame(() => {
+        parallaxReady.value = true
+      })
+    })
+    window.addEventListener('pageshow', onPageShow as any)
+    window.addEventListener('resize', onResize as any)
   } catch (error) {
     console.error('组件初始化失败:', error)
   }
@@ -654,13 +741,30 @@ watch(
   },
 )
 
+onActivated(() => {
+  parallaxReady.value = false
+  updateHeaderHeight()
+  bindHeroScroll()
+  syncHeroProgressSoon()
+  requestAnimationFrame(() => {
+    parallaxReady.value = true
+  })
+})
+
+onDeactivated(() => {
+  unbindHeroScroll()
+  cancelAnimationFrame(heroRaf)
+})
+
 onBeforeUnmount(() => {
   try {
     cleanup()
     if (stopWatchingPagination) {
       stopWatchingPagination()
     }
-    window.removeEventListener('scroll', onHeroScroll)
+    unbindHeroScroll()
+    window.removeEventListener('pageshow', onPageShow as any)
+    window.removeEventListener('resize', onResize as any)
     cancelAnimationFrame(heroRaf)
   } catch (error) {
     console.error('组件清理失败:', error)
