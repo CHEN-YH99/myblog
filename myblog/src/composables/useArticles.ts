@@ -1,6 +1,6 @@
 import { ref, computed, watch, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { useArticlesStore } from '@/stores/getarticles'
+import { useArticlesStore } from '@/stores/articles'
 import { useUserStore } from '@/stores/user'
 import { ElMessage } from 'element-plus'
 import { nanoid } from 'nanoid'

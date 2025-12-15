@@ -268,7 +268,7 @@ import { ElMessage } from 'element-plus'
 import { useArticles } from '@/composables/useArticles'
 // import { useLikes } from '@/composables/useLikes'
 import { useUserStore } from '@/stores/user'
-import { useArticlesStore } from '@/stores/getarticles'
+import { useArticlesStore } from '@/stores/articles'
 import { formatNumber } from '@/utils/format'
 import { getUserStats } from '@/api/user'
 
@@ -276,6 +276,9 @@ const WaveContainer = defineAsyncComponent(() => import('@/components/WaveContai
 const Footer = defineAsyncComponent(() => import('@/components/Footer.vue'))
 // 已全局引入 index.scss 于 main.ts，无需重复引入
 import bgImage from '@/assets/images/shunsea1.jpg'
+import csdnIcon from '@/assets/images/csdn.svg'
+import githubIcon from '@/assets/images/github.svg'
+import bilibiliIcon from '@/assets/images/哔哩哔哩.svg'
 import { useExternalLinkConfirm } from '@/composables/useExternalLinkConfirm'
 import { debounce } from '@/utils/debounce'
 import { useParallax } from '@/composables/useParallax'
