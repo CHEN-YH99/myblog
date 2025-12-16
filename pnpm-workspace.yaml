@@ -1,5 +1,19 @@
 packages:
-  - 'api'
-  - 'myblog'
-  - 'myblog-admin'
-  - 'shared'
+  - api
+  - myblog
+  - myblog-admin
+  - shared
+
+ignoredBuiltDependencies:
+  - '@parcel/watcher'
+  - bcrypt
+  - core-js
+  - cwebp-bin
+  - es5-ext
+  - esbuild
+  - gifsicle
+  - jpegtran-bin
+  - mozjpeg
+  - optipng-bin
+  - pngquant-bin
+  - vue-demi

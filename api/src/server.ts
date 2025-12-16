@@ -713,6 +713,37 @@ app.put('/api/users/:id', async (req: Request, res: Response) => {
     const { id } = req.params
     const body = req.body || {}
 
+    // 解析当前登录用户
+    const authorization = req.get('Authorization') || ''
+    let currentUser: any = null
+    if (authorization.startsWith('mock-jwt-token-')) {
+      const parts = authorization.split('-')
+      if (parts.length >= 5) {
+        const currentUsername = decodeURIComponent(parts[3])
+        currentUser = await User.findOne({ username: currentUsername })
+      }
+    }
+
+    // 目标查询条件（兼容 _id 与 userId）
+    let query: any
+    let targetUserIdNum: number | null = null
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      query = { _id: id }
+    } else {
+      const num = Number(id)
+      if (Number.isNaN(num)) return res.status(400).json(createErrorResponse('无效的用户ID', 400))
+      query = { userId: num }
+      targetUserIdNum = num
+    }
+
+    // 是否在修改自己的账号
+    const isSelf = !!(
+      currentUser && (
+        (query._id && String(currentUser._id) === String(query._id)) ||
+        (targetUserIdNum !== null && currentUser.userId === targetUserIdNum)
+      )
+    )
+
     const updateData: any = { updateTime: new Date() }
 
     if (body.username ?? body.userName) updateData.username = body.username ?? body.userName
@@ -724,46 +755,50 @@ app.put('/api/users/:id', async (req: Request, res: Response) => {
     if (body.status !== undefined) updateData.enabled = String(body.status) === '1'
     else if (body.enabled !== undefined) updateData.enabled = !!body.enabled
 
-    // 角色映射：优先 roleId/roleName；否则从 roleIds/roleCode 推断
-    let targetRoleId: number | undefined = body.roleId
-    let targetRoleName: string | undefined = body.roleName
+    // 角色修改限制：不允许用户修改自己的角色
+    const wantChangeRole = (
+      body.roleId !== undefined || body.roleName !== undefined ||
+      (Array.isArray(body.roleIds) && body.roleIds.length > 0) ||
+      body.roleCode !== undefined
+    )
+    if (isSelf && wantChangeRole) {
+      return res.status(403).json(createErrorResponse('不允许修改自己的角色', 403))
+    }
 
-    if ((!targetRoleId || !targetRoleName) && Array.isArray(body.roleIds) && body.roleIds.length > 0) {
-      const rid = Number(body.roleIds[0])
-      if (!Number.isNaN(rid)) targetRoleId = rid
-    }
-    if (!targetRoleId && body.roleCode) {
-      const roleByCode = await Role.findOne({ roleCode: body.roleCode })
-      if (roleByCode) {
-        targetRoleId = roleByCode.roleId
-        targetRoleName = roleByCode.roleName
+    if (!isSelf) {
+      // 角色映射：优先 roleId/roleName；否则从 roleIds/roleCode 推断
+      let targetRoleId: number | undefined = body.roleId
+      let targetRoleName: string | undefined = body.roleName
+
+      if ((!targetRoleId || !targetRoleName) && Array.isArray(body.roleIds) && body.roleIds.length > 0) {
+        const rid = Number(body.roleIds[0])
+        if (!Number.isNaN(rid)) targetRoleId = rid
       }
-    }
-    if (targetRoleId && !targetRoleName) {
-      const roleDoc = await Role.findOne({ roleId: targetRoleId })
-      if (roleDoc) targetRoleName = roleDoc.roleName
-      else return res.status(400).json(createErrorResponse('角色不存在', 400))
-    }
-    if (targetRoleId) {
-      updateData.roleId = targetRoleId
-      updateData.roleName = targetRoleName
+      if (!targetRoleId && body.roleCode) {
+        const roleByCode = await Role.findOne({ roleCode: body.roleCode })
+        if (roleByCode) {
+          targetRoleId = roleByCode.roleId
+          targetRoleName = roleByCode.roleName
+        }
+      }
+      if (targetRoleId && !targetRoleName) {
+        const roleDoc = await Role.findOne({ roleId: targetRoleId })
+        if (roleDoc) targetRoleName = roleDoc.roleName
+        else return res.status(400).json(createErrorResponse('角色不存在', 400))
+      }
+      if (targetRoleId) {
+        updateData.roleId = targetRoleId
+        updateData.roleName = targetRoleName
+      }
     }
 
     if (body.password) {
       updateData.password = await bcrypt.hash(body.password, 10)
     }
 
-    // 清理无关字段
+    // 清理无关字段（后端不接收）
     const omitFields = ['id','userName','nickName','userEmail','userPhone','status','roleIds','roles','roleCode','permissions','createBy','updateBy']
     for (const k of omitFields) delete (updateData as any)[k]
-
-    let query: any
-    if (mongoose.Types.ObjectId.isValid(id)) query = { _id: id }
-    else {
-      const num = Number(id)
-      if (Number.isNaN(num)) return res.status(400).json(createErrorResponse('无效的用户ID', 400))
-      query = { userId: num }
-    }
 
     const user = await User.findOneAndUpdate(query, updateData, { new: true, runValidators: true }).select('-password')
     if (!user) return res.status(404).json(createErrorResponse('用户未找到', 404))
@@ -820,7 +855,14 @@ app.get('/api/roles', async (req: Request, res: Response) => {
 app.get('/api/roles/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params
-    const role = await Role.findById(id)
+    let query: any
+    if (mongoose.Types.ObjectId.isValid(id)) query = { _id: id }
+    else {
+      const num = Number(id)
+      if (Number.isNaN(num)) return res.status(400).json(createErrorResponse('无效的角色ID', 400))
+      query = { roleId: num }
+    }
+    const role = await Role.findOne(query)
     if (!role) return res.status(404).json(createErrorResponse('角色未找到', 404))
     res.json(createResponse(role, '获取角色成功'))
   } catch (error) {
@@ -843,11 +885,29 @@ app.post('/api/roles', async (req: Request, res: Response) => {
 app.put('/api/roles/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params
-    const updateData = { ...req.body, updateTime: new Date() }
-    const role = await Role.findByIdAndUpdate(id, updateData, { new: true, runValidators: true })
+    const body = req.body || {}
+
+    const updateData: any = { updateTime: new Date() }
+    if (body.roleName !== undefined) updateData.roleName = body.roleName
+    if (body.roleCode !== undefined) updateData.roleCode = body.roleCode
+    if (body.description !== undefined) updateData.description = body.description
+    if (body.permissions !== undefined) updateData.permissions = body.permissions
+    if (body.enabled !== undefined) updateData.enabled = !!body.enabled
+    if (body.status !== undefined) updateData.enabled = String(body.status) === '1'
+
+    let query: any
+    if (mongoose.Types.ObjectId.isValid(id)) query = { _id: id }
+    else {
+      const num = Number(id)
+      if (Number.isNaN(num)) return res.status(400).json(createErrorResponse('无效的角色ID', 400))
+      query = { roleId: num }
+    }
+
+    const role = await Role.findOneAndUpdate(query, updateData, { new: true, runValidators: true })
     if (!role) return res.status(404).json(createErrorResponse('角色未找到', 404))
     res.json(createResponse(role, '角色更新成功'))
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.code === 11000) return res.status(400).json(createErrorResponse('角色编码已存在', 400))
     res.status(500).json(createErrorResponse('更新角色失败', 500))
   }
 })
