@@ -233,7 +233,7 @@
     try {
       // 调用真实的API从数据库获取标签
       const response = await getTags()
-      console.log('获取标签API响应:', response)
+      // console.log('获取标签API响应:', response)
 
       // 处理API返回的数据
       let allTags: Array<{ name: string; count: number }> = []
@@ -243,7 +243,7 @@
         allTags = response
       }
 
-      console.log('处理后的标签数据:', allTags)
+      // console.log('处理后的标签数据:', allTags)
 
       // 过滤和搜索
       let filteredTags = allTags

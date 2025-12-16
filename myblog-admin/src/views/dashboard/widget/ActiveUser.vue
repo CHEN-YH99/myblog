@@ -60,14 +60,14 @@
   const handleRouteChange = () => {
     const fromEdit = sessionStorage.getItem('fromArticleEdit')
     if (fromEdit) {
-      console.log('ActiveUser.vue: 检测到从编辑页面返回，刷新统计数据')
+      // console.log('ActiveUser.vue: 检测到从编辑页面返回，刷新统计数据')
       sessionStorage.removeItem('fromArticleEdit')
       fetchArticleStats()
     }
   }
 
   onMounted(async () => {
-    console.log('ActiveUser.vue: 组件挂载，获取文章统计数据')
+    // console.log('ActiveUser.vue: 组件挂载，获取文章统计数据')
     await fetchArticleStats()
     
     // 监听路由变化

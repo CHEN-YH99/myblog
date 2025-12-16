@@ -407,7 +407,7 @@
       try {
         const content = JSON.parse(saved)
 
-        console.log('恢复新建文章草稿:', content)
+        // console.log('恢复新建文章草稿:', content)
         markdownContent.value = content.markdownContent || ''
         articleName.value = content.articleName || ''
         articleType.value = content.articleType || ''
@@ -523,7 +523,7 @@
         }
 
         const result = await response.json()
-        console.log('编辑器图片上传响应:', result)
+        // console.log('编辑器图片上传响应:', result)
 
         // 处理不同的响应格式
         let imageUrl = ''
@@ -668,15 +668,11 @@
       const { id } = route.query
       if (!id) return
 
-      console.log('开始加载文章详情, ID:', id)
+      // console.log('开始加载文章详情, ID:', id)
 
       const article = await fetchArticleDetail(id as string)
       if (article) {
-        console.log('文章详情加载成功:', {
-          title: article.title,
-          category: article.category,
-          contentLength: article.content?.length || 0
-        })
+        // console.log('文章详情加载成功:', { title: article.title, category: article.category, contentLength: article.content?.length || 0 })
 
         // 清除当前文章的本地草稿（避免草稿覆盖正式数据）
         const storageKey = `article-draft-${id}`
@@ -699,7 +695,7 @@
           }))
         }
 
-        console.log('文章数据已设置到表单')
+        // console.log('文章数据已设置到表单')
       }
     } catch (error) {
       console.error('获取文章详情失败:', error)
@@ -711,7 +707,7 @@
   const loadTags = async () => {
     try {
       const response = await getTags()
-      console.log('获取标签API响应:', response)
+      // // console.log('获取标签API响应:', response)
 
       let tags: Tag[] = []
       if (response && typeof response === 'object' && 'data' in response && Array.isArray((response as any).data)) {
@@ -724,10 +720,7 @@
       // 设置热门标签（按使用次数排序，取前8个）
       popularTags.value = [...tags].sort((a, b) => b.count - a.count).slice(0, 8)
 
-      console.log('标签数据加载完成:', {
-        total: allTags.value.length,
-        popular: popularTags.value.length
-      })
+      // console.log('标签数据加载完成:', { total: allTags.value.length, popular: popularTags.value.length })
     } catch (error) {
       console.error('加载标签失败:', error)
       ElMessage.warning('标签加载失败，请检查网络连接')
@@ -1007,20 +1000,14 @@
   }
 
   const onTopChange = async (value: boolean) => {
-    console.log('🔄 onTopChange被调用:', {
-      value,
-      pageMode: pageMode.value,
-      routeId: route.query.id,
-      isEditMode: pageMode.value === PageModeEnum.Edit,
-      hasId: !!route.query.id
-    })
+    // console.log('🔄 onTopChange被调用:', { value, pageMode: pageMode.value, routeId: route.query.id, isEditMode: pageMode.value === PageModeEnum.Edit, hasId: !!route.query.id })
     
     try {
       const { id } = route.query
       if (pageMode.value === PageModeEnum.Edit && id) {
-        console.log('📤 准备调用updateArticle:', { id, isTop: value })
+        // console.log('📤 准备调用updateArticle:', { id, isTop: value })
         const result = await updateArticle(id as string, { isTop: value })
-        console.log('📥 updateArticle结果:', result)
+        // console.log('📥 updateArticle结果:', result)
         
         if (result) {
           ElMessage.success(value ? `已置顶 ${EmojiText[200]}` : `已取消置顶 ${EmojiText[200]}`)
@@ -1030,7 +1017,7 @@
           articleEventBus.emit('article:stats:refresh')
         }
       } else {
-        console.log('📝 新建模式，保存到本地草稿')
+        // console.log('📝 新建模式，保存到本地草稿')
         // 新建模式下，仅更新本地草稿
         saveToLocal()
         ElMessage.success(value ? '已设置置顶（草稿已保存）' : '已取消置顶（草稿已保存）')
@@ -1047,7 +1034,7 @@
   const onSuccess = (response: UploadResponse) => {
     uploading.value = false
     uploadProgress.value = 0
-    console.log('上传响应:', response)
+    // console.log('上传响应:', response)
 
     if (response && response.data && response.data.url) {
       // 如果是相对路径，转换为完整URL

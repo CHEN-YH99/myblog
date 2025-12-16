@@ -381,13 +381,13 @@
    * 删除用户
    */
   const deleteUser = (row: UserListItem): void => {
-    console.log('=== 删除用户函数开始执行 ===')
-    console.log('函数调用栈:', new Error().stack)
-    console.log('删除用户被调用:', row)
-    console.log('row.id 的值:', row.id)
-    console.log('row.userId 的值:', row.userId)
-    console.log('row 对象的所有属性:', Object.keys(row))
-    console.log('row 对象完整内容:', JSON.stringify(row, null, 2))
+    // console.log('=== 删除用户函数开始执行 ===')
+    // console.log('函数调用栈:', new Error().stack)
+    // console.log('删除用户被调用:', row)
+    // console.log('row.id 的值:', row.id)
+    // console.log('row.userId 的值:', row.userId)
+    // console.log('row 对象的所有属性:', Object.keys(row))
+    // console.log('row 对象完整内容:', JSON.stringify(row, null, 2))
     
     // 检查 id 是否为空或未定义
     if (!row.id) {
@@ -396,19 +396,19 @@
       return
     }
     
-    console.log('准备显示确认弹窗...')
+    // console.log('准备显示确认弹窗...')
     ElMessageBox.confirm(`确定要删除用户 "${row.userName}" 吗？此操作不可恢复！`, '删除用户', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       type: 'error'
     }).then(async () => {
-      console.log('=== 用户点击了确认按钮 ===')
+      // console.log('=== 用户点击了确认按钮 ===')
       try {
-        console.log('准备调用 fetchDeleteUser，参数:', row.id)
-        console.log('fetchDeleteUser 函数类型:', typeof fetchDeleteUser)
+        // console.log('准备调用 fetchDeleteUser，参数:', row.id)
+        // console.log('fetchDeleteUser 函数类型:', typeof fetchDeleteUser)
         
         const result = await fetchDeleteUser(row.id) // 使用映射后的id字段
-        console.log('fetchDeleteUser 调用成功，返回结果:', result)
+        // console.log('fetchDeleteUser 调用成功，返回结果:', result)
         
         ElMessage.success('删除成功')
         // 刷新表格数据
@@ -422,8 +422,8 @@
         ElMessage.error('删除失败，请稍后重试')
       }
     }).catch((error) => {
-      console.log('=== 用户取消了删除操作或弹窗出错 ===')
-      console.log('取消原因:', error)
+      // console.log('=== 用户取消了删除操作或弹窗出错 ===')
+      // console.log('取消原因:', error)
     })
   }
 
@@ -432,7 +432,7 @@
    */
   const handleDialogSubmit = async (formData: any) => {
     try {
-      console.log('处理弹窗提交，数据:', formData)
+      // console.log('处理弹窗提交，数据:', formData)
       
       // 准备提交数据
       // 注意：后端使用 enabled、roleId（单个）字段，前端 status、roleIds 是表单字段
@@ -453,11 +453,11 @@
 
       // 如果是编辑模式，需要包含用户ID
       if (dialogType.value === 'edit' && formData.id) {
-        console.log('编辑用户，ID:', formData.id)
+        // console.log('编辑用户，ID:', formData.id)
         
         // 检查是否修改的是当前登录用户
         isCurrentUser = formData.id === currentUserId
-        console.log('是否为当前用户:', isCurrentUser, '当前用户ID:', currentUserId, '编辑用户ID:', formData.id)
+        // console.log('是否为当前用户:', isCurrentUser, '当前用户ID:', currentUserId, '编辑用户ID:', formData.id)
         
         // 调用更新用户API
         await fetchUpdateUser(formData.id, submitData)
@@ -486,11 +486,11 @@
 
         // 如果修改的是当前用户且修改了角色，需要重新加载权限
         if (isCurrentUser && formData.roleIds && formData.roleIds.length > 0) {
-          console.log('当前用户角色已修改，需要重新加载权限')
+          // console.log('当前用户角色已修改，需要重新加载权限')
           // 刷新用户信息以获取最新的角色和权限
           const refreshSuccess = await userStore.refreshUserInfo()
           if (refreshSuccess) {
-            console.log('用户信息已刷新，新的角色信息:', userStore.info.roles)
+            // console.log('用户信息已刷新，新的角色信息:', userStore.info.roles)
             
             // 重新加载菜单和路由权限
             try {
@@ -512,7 +512,7 @@
               })
               
               ElMessage.success('您的角色权限已更新，菜单已刷新')
-              console.log('权限和菜单已成功刷新')
+              // console.log('权限和菜单已成功刷新')
             } catch (error) {
               console.error('刷新权限失败:', error)
               ElMessage.warning('您的角色权限已修改，建议刷新页面以获得最新权限')
@@ -526,7 +526,7 @@
           }
         }
       } else {
-        console.log('新增用户')
+        // console.log('新增用户')
         // 调用创建用户API
         await fetchCreateUser({
           ...submitData,
@@ -552,7 +552,7 @@
    */
   const handleSelectionChange = (selection: UserListItem[]): void => {
     selectedRows.value = selection
-    console.log('选中行数据:', selectedRows.value)
+    // console.log('选中行数据:', selectedRows.value)
   }
 
   /**

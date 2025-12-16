@@ -84,7 +84,7 @@ function mapCategory(item: any): PhotoCategoryItem {
  * 获取图片分类列表
  */
 export function getPhotoCategories(params?: PhotoCategorySearchParams) {
-  console.log('调用getPhotoCategories API，参数:', params)
+  // console.log('调用getPhotoCategories API，参数:', params)
 
   return request
     .get({
@@ -92,11 +92,11 @@ export function getPhotoCategories(params?: PhotoCategorySearchParams) {
       params: { ...(params || {}), admin: true }
     })
     .then((res: any) => {
-      console.log('getPhotoCategories 原始响应:', res)
+      // console.log('getPhotoCategories 原始响应:', res)
 
       // 处理后端的响应格式
       if (res && res.data) {
-        console.log('res.data:', res.data)
+        // console.log('res.data:', res.data)
 
         // 如果是分页响应格式
         if (typeof res.data === 'object' && 'categories' in res.data) {
@@ -117,7 +117,7 @@ export function getPhotoCategories(params?: PhotoCategorySearchParams) {
       }
 
       // 如果没有data属性，直接返回响应
-      console.log('直接返回响应')
+      // console.log('直接返回响应')
       if (res && typeof res === 'object' && 'categories' in res) {
         const mapped = Array.isArray((res as any).categories)
           ? (res as any).categories.map(mapCategory)

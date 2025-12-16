@@ -52,7 +52,7 @@ export interface BatchOperateParams {
 
 // 获取说说列表
 export const getTalkList = async (params: any): Promise<TalkListResponse> => {
-  console.log('🚀 getTalkList API调用参数:', params)
+  // console.log('🚀 getTalkList API调用参数:', params)
   
   // 映射前端参数到后端期望的格式
   const backendParams = {
@@ -64,14 +64,14 @@ export const getTalkList = async (params: any): Promise<TalkListResponse> => {
     keyword: params.keyword
   }
   
-  console.log('🚀 映射后的后端参数:', backendParams)
+  // console.log('🚀 映射后的后端参数:', backendParams)
   
   try {
     const response = await api.get<BackendTalkListResponse>({
       url: '/api/talks',
       params: backendParams
     })
-    console.log('🚀 后端原始响应:', response)
+    // console.log('🚀 后端原始响应:', response)
     
     // 适配前端期望的数据格式
     const adaptedResponse: TalkListResponse = {
@@ -81,7 +81,7 @@ export const getTalkList = async (params: any): Promise<TalkListResponse> => {
       limit: response.size || 10
     }
     
-    console.log('🚀 适配后的响应:', adaptedResponse)
+    // console.log('🚀 适配后的响应:', adaptedResponse)
     return adaptedResponse
   } catch (error) {
     console.error('🚀 getTalkList API调用失败:', error)

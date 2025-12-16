@@ -54,13 +54,13 @@
   const handleRouteChange = () => {
     const fromEdit = sessionStorage.getItem('fromArticleEdit')
     if (fromEdit) {
-      console.log('SalesOverview.vue: 检测到从编辑页面返回，刷新统计数据')
+      // console.log('SalesOverview.vue: 检测到从编辑页面返回，刷新统计数据')
       fetchArticleStats()
     }
   }
 
   onMounted(async () => {
-    console.log('SalesOverview.vue: 组件挂载，获取访问量统计数据')
+    // console.log('SalesOverview.vue: 组件挂载，获取访问量统计数据')
     await fetchArticleStats()
     
     // 监听路由变化

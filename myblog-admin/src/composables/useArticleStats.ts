@@ -33,9 +33,9 @@ export function useArticleStats() {
    */
   const fetchArticleStats = async () => {
     try {
-      console.log('🔄 开始获取文章统计数据...')
+      // console.log('🔄 开始获取文章统计数据...')
       const response = await getArticleList()
-      console.log('📊 文章统计API响应:', response)
+      // console.log('📊 文章统计API响应:', response)
       
       // 处理不同的API响应格式，确保获取到数组
       let articles: any[] = []
@@ -54,7 +54,7 @@ export function useArticleStats() {
         articles = response
       }
       
-      console.log('📊 处理后的文章数组:', articles.length, '篇文章')
+      // console.log('📊 处理后的文章数组:', articles.length, '篇文章')
       
       // 确保articles是数组
       if (!Array.isArray(articles)) {
@@ -83,7 +83,7 @@ export function useArticleStats() {
         }
         
         totalViews += views
-      })
+      // })
       
       // 更新全局状态
       articleStats.value = {
@@ -98,12 +98,12 @@ export function useArticleStats() {
       // 触发组件重新渲染
       refreshKey.value++
       
-      console.log('📊 文章统计更新完成:', {
-        总文章数: articleStats.value.totalArticles,
-        本月发表: articleStats.value.currentMonthArticles,
-        总访问量: articleStats.value.totalViews,
-        月度发布统计: monthlyCount,
-        月度访问量统计: monthlyViews
+      // console.log('📊 文章统计更新完成:', {
+        // 总文章数: articleStats.value.totalArticles,
+        // 本月发表: articleStats.value.currentMonthArticles,
+        // 总访问量: articleStats.value.totalViews,
+        // 月度发布统计: monthlyCount,
+        // 月度访问量统计: monthlyViews
       })
       
       return articleStats.value
@@ -118,7 +118,7 @@ export function useArticleStats() {
    * 手动刷新统计数据
    */
   const refreshStats = async () => {
-    console.log('🔄 手动刷新文章统计数据')
+    // console.log('🔄 手动刷新文章统计数据')
     return await fetchArticleStats()
   }
   
@@ -126,7 +126,7 @@ export function useArticleStats() {
    * 监听文章发布事件，自动更新统计
    */
   const onArticlePublished = async () => {
-    console.log('📝 检测到文章发布事件，自动更新统计数据')
+    // console.log('📝 检测到文章发布事件，自动更新统计数据')
     await fetchArticleStats()
   }
   
@@ -134,7 +134,7 @@ export function useArticleStats() {
    * 监听文章更新事件，自动更新统计
    */
   const onArticleUpdated = async () => {
-    console.log('✏️ 检测到文章更新事件，自动更新统计数据')
+    // console.log('✏️ 检测到文章更新事件，自动更新统计数据')
     await fetchArticleStats()
   }
   
@@ -142,7 +142,7 @@ export function useArticleStats() {
    * 监听文章删除事件，自动更新统计
    */
   const onArticleDeleted = async () => {
-    console.log('🗑️ 检测到文章删除事件，自动更新统计数据')
+    // console.log('🗑️ 检测到文章删除事件，自动更新统计数据')
     await fetchArticleStats()
   }
   

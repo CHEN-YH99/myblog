@@ -263,7 +263,7 @@
     // 检查是否从编辑页面返回
     const fromEdit = sessionStorage.getItem('fromArticleEdit')
     if (fromEdit) {
-      console.log('组件激活：检测到从编辑页面返回，刷新图片缓存')
+      // console.log('组件激活：检测到从编辑页面返回，刷新图片缓存')
       // 强制刷新图片缓存
       forceRefreshKey.value = Date.now()
       // 刷新数据
@@ -280,7 +280,7 @@
     () => route.query.refresh,
     (newRefresh) => {
       if (newRefresh) {
-        console.log('检测到发布成功刷新参数，重新加载数据')
+        // console.log('检测到发布成功刷新参数，重新加载数据')
         // 重置到第一页并刷新数据
         currentPage.value = 1
         // 强制刷新图片显示
@@ -302,7 +302,7 @@
     (newPath, oldPath) => {
       // 如果从文章编辑页面返回到列表页面
       if (oldPath && oldPath.includes('/article/publish') && newPath.includes('/article/list')) {
-        console.log('从编辑页面返回，刷新图片缓存')
+        // console.log('从编辑页面返回，刷新图片缓存')
         // 强制刷新图片缓存
         forceRefreshKey.value = Date.now()
         // 延迟刷新数据，确保能获取到最新的文章信息
@@ -319,7 +319,7 @@
     (newName, oldName) => {
       // 当路由名称变化到文章列表页面时
       if (newName === 'ArticleList' && oldName && oldName.toString().includes('Publish')) {
-        console.log('路由激活检测：从编辑页面返回到列表页面')
+        // console.log('路由激活检测：从编辑页面返回到列表页面')
         // 强制刷新图片缓存
         forceRefreshKey.value = Date.now()
         // 延迟刷新数据
@@ -335,7 +335,7 @@
     () => route.query.refresh,
     (newRefresh) => {
       if (newRefresh) {
-        console.log('检测到refresh参数，刷新图片缓存和数据')
+        // console.log('检测到refresh参数，刷新图片缓存和数据')
         // 强制刷新图片缓存
         forceRefreshKey.value = Date.now()
         // 刷新数据
@@ -355,7 +355,7 @@
   // 监听年份变化，实现动态渲染
   watch(yearVal, (newYear, oldYear) => {
     if (newYear !== oldYear) {
-      console.log(`年份从 ${oldYear} 变更为 ${newYear}`)
+      // console.log(`年份从 ${oldYear} 变更为 ${newYear}`)
       currentPage.value = 1 // 重置分页
       getArticleListData({ backTop: false })
     }
@@ -369,7 +369,7 @@
 
   // 处理年份变化 - 动态渲染文章
   const handleYearChange = (selectedYear: string) => {
-    console.log('年份变化:', selectedYear)
+    // console.log('年份变化:', selectedYear)
     yearVal.value = selectedYear
     currentPage.value = 1 // 重置到第一页
     // 立即触发文章列表更新
@@ -470,7 +470,7 @@
 
         // 调试：显示原始数据结构
         if (articles.length > 0) {
-          console.log('原始文章数据示例:', articles[0])
+          // console.log('原始文章数据示例:', articles[0])
         }
 
         // 转换数据格式以适配现有UI
@@ -504,13 +504,13 @@
         
         // 调试信息：显示筛选结果
         if (yearVal.value && yearVal.value !== '全部') {
-          console.log(`年份 ${yearVal.value} 筛选结果: ${transformedArticles.length} 篇文章`)
+          // console.log(`年份 ${yearVal.value} 筛选结果: ${transformedArticles.length} 篇文章`)
           
           // 调试信息：显示文章的年份信息
           if (transformedArticles.length > 0) {
-            console.log('筛选后的文章年份信息:')
+            // console.log('筛选后的文章年份信息:')
             transformedArticles.slice(0, 5).forEach((item: Article) => {
-              console.log(`- ${item.title}: p_date=${item.p_date}, publishDate=${item.create_time}`)
+              // console.log(`- ${item.title}: p_date=${item.p_date}, publishDate=${item.create_time}`)
             })
           }
         }

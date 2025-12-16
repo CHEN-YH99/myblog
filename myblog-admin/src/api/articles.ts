@@ -96,15 +96,15 @@ export function getArticleList(params?: SearchParams) {
  * 获取文章详情（后台管理专用，不增加浏览量）
  */
 export function getArticleDetail(idOrSlug: string) {
-  console.log(`📱 后台管理调用 getArticleDetail: ${idOrSlug}`)
-  console.log('🔑 使用专用后台接口，不增加浏览量')
+  // console.log(`📱 后台管理调用 getArticleDetail: ${idOrSlug}`)
+  // console.log('🔑 使用专用后台接口，不增加浏览量')
 
   return request
     .get({
       url: `/api/admin/articles/${idOrSlug}` // 使用专用后台接口
     })
     .then((res: any) => {
-      console.log(`✅ 后台管理获取文章详情成功: ${idOrSlug}`)
+      // console.log(`✅ 后台管理获取文章详情成功: ${idOrSlug}`)
       return res && res.data ? res.data : res
     })
     .catch((error) => {
@@ -131,18 +131,12 @@ export function createArticle(data: CreateArticleParams) {
  * 更新文章
  */
 export function updateArticle(id: string, data: UpdateArticleParams) {
-  console.log('🔄 前端调用updateArticle:', {
-    id,
-    data,
-    isTop: data.isTop,
-    isTopType: typeof data.isTop
-  })
-  
+  // 调用更新文章接口
   return request.put({
     url: `/api/articles/${id}`,
     data
   }).then((res: any) => {
-    console.log('✅ updateArticle响应:', res)
+    // console.log('✅ updateArticle响应:', res)
     return res
   }).catch((error) => {
     console.error('❌ updateArticle失败:', error)
@@ -250,7 +244,7 @@ export interface CategorySearchParams {
  * 获取分类列表
  */
 export function getCategories(params?: CategorySearchParams) {
-  console.log('调用getCategories API，参数:', params)
+  // console.log('调用getCategories API，参数:', params)
 
   // 后台管理端：显式告知服务端是管理员请求，便于服务端返回所有状态
   const queryParams: any = { ...(params || {}), admin: true }
@@ -261,17 +255,17 @@ export function getCategories(params?: CategorySearchParams) {
       params: queryParams
     })
     .then((res: any) => {
-      console.log('getCategories 原始响应:', res)
+      // console.log('getCategories 原始响应:', res)
 
       // 处理后端的响应格式
       if (res && res.data) {
-        console.log('res.data:', res.data)
+        // console.log('res.data:', res.data)
 
         // 如果是分页响应格式
         if (typeof res.data === 'object' && 'categories' in res.data) {
-          console.log('返回分页格式')
-          console.log('categories数量:', res.data.categories?.length)
-          console.log('第一个分类:', res.data.categories?.[0])
+          // console.log('返回分页格式')
+          // console.log('categories数量:', res.data.categories?.length)
+          // console.log('第一个分类:', res.data.categories?.[0])
           return {
             categories: res.data.categories,
             total: res.data.total || res.data.categories.length
@@ -279,13 +273,13 @@ export function getCategories(params?: CategorySearchParams) {
         }
         // 如果是直接的数组格式
         else if (Array.isArray(res.data)) {
-          console.log('返回数组格式')
+          // console.log('返回数组格式')
           return res.data
         }
       }
 
       // 如果没有data属性，直接返回响应
-      console.log('直接返回响应')
+      // console.log('直接返回响应')
       return res || []
     })
     .catch((error) => {

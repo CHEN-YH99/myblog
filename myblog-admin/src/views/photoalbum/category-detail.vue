@@ -395,9 +395,9 @@ const loadPhotoList = async () => {
       })
     }
 
-    console.log('请求图片列表参数:', params)
+    // console.log('请求图片列表参数:', params)
     const response = await getPhotosByCategory(categoryId.value, params)
-    console.log('图片列表响应:', response)
+    // console.log('图片列表响应:', response)
 
     // 处理不同的响应格式
     if (response && typeof response === 'object') {
@@ -405,13 +405,13 @@ const loadPhotoList = async () => {
       if ('photos' in (response as any) && Array.isArray((response as any).photos)) {
         photoList.value = ((response as any).photos as Record<string, any>[]).map(normalizePhoto)
         pagination.total = (response as any).total ?? (response as any).photos.length
-        console.log('使用分页响应格式(photos)，图片数量:', (response as any).photos.length)
+        // console.log('使用分页响应格式(photos)，图片数量:', (response as any).photos.length)
       }
       // 2) 兼容 { records, total }
       else if ('records' in (response as any) && Array.isArray((response as any).records)) {
         photoList.value = ((response as any).records as Record<string, any>[]).map(normalizePhoto)
         pagination.total = (response as any).total ?? (response as any).records.length
-        console.log('使用分页响应格式(records)，图片数量:', (response as any).records.length)
+        // console.log('使用分页响应格式(records)，图片数量:', (response as any).records.length)
       }
       // 3) 兼容 data 包裹
       else if ((response as any).data) {
@@ -419,15 +419,15 @@ const loadPhotoList = async () => {
         if (Array.isArray(data)) {
           photoList.value = (data as Record<string, any>[]).map(normalizePhoto)
           pagination.total = data.length
-          console.log('使用 data 数组格式，图片数量:', data.length)
+          // console.log('使用 data 数组格式，图片数量:', data.length)
         } else if (Array.isArray(data.photos)) {
           photoList.value = (data.photos as Record<string, any>[]).map(normalizePhoto)
           pagination.total = data.total ?? data.photos.length
-          console.log('使用 data.photos 格式，图片数量:', data.photos.length)
+          // console.log('使用 data.photos 格式，图片数量:', data.photos.length)
         } else if (Array.isArray(data.records)) {
           photoList.value = (data.records as Record<string, any>[]).map(normalizePhoto)
           pagination.total = data.total ?? data.records.length
-          console.log('使用 data.records 格式，图片数量:', data.records.length)
+          // console.log('使用 data.records 格式，图片数量:', data.records.length)
         } else {
           photoList.value = []
           pagination.total = 0
@@ -437,7 +437,7 @@ const loadPhotoList = async () => {
       else if (Array.isArray(response)) {
         photoList.value = (response as Record<string, any>[]).map(normalizePhoto)
         pagination.total = (response as any).length
-        console.log('使用数组响应格式，图片数量:', (response as any).length)
+        // console.log('使用数组响应格式，图片数量:', (response as any).length)
       }
       else {
         photoList.value = []
@@ -561,7 +561,7 @@ const handleUploadError = (error: Error, uploadFile: UploadFile, _uploadFiles: U
 }
 
 const handleRemove = (uploadFile: UploadFile, uploadFiles: UploadFiles) => {
-  console.log('移除文件:', uploadFile)
+  // console.log('移除文件:', uploadFile)
   fileList.value = (uploadFiles as unknown) as UploadUserFile[]
 }
 
