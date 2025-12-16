@@ -56,6 +56,7 @@ const upload = multer({
 
 const app = express()
 app.set('trust proxy', true)
+app.set('etag', false)
 app.use(morgan('combined'))
 app.use(
   cors({
@@ -241,6 +242,48 @@ const User = mongoose.model('User', UserSchema)
 const createResponse = <T>(data: T, message: string = '操作成功', code: number = 200) => ({ code, msg: message, data })
 const createErrorResponse = (message: string = '操作失败', code: number = 500) => ({ code, msg: message, data: null })
 
+// 基于角色编码的默认权限（当数据库未填充 permissions 时兜底）
+function deriveDefaultPermissions(roleCode?: string): string[] {
+  const code = (roleCode || '').toUpperCase()
+  if (!code) return []
+  if (code === 'ADMIN' || code === 'SUPER_ADMIN' || code === 'ROOT') {
+    return [
+      'system:user:list','system:user:create','system:user:update','system:user:delete',
+      'system:role:list','system:role:create','system:role:update','system:role:delete',
+      'content:article:list','content:article:create','content:article:update','content:article:delete',
+      'content:category:list','content:category:create','content:category:update','content:category:delete',
+      'content:tag:list','content:tag:create','content:tag:update','content:tag:delete',
+      'upload:image',
+    ]
+  }
+  if (code === 'EDITOR') {
+    return [
+      // 文章全量权限
+      'content:article:list','content:article:create','content:article:update','content:article:delete','content:article:*',
+      // 同义码（可能被前端某些路由使用）
+      'article:list','article:add','article:edit','article:remove','article:*',
+      'blog:article:list','blog:article:add','blog:article:edit','blog:article:remove','blog:article:*',
+      // 分类管理
+      'content:category:list','content:category:create','content:category:update','content:category:delete',
+      // 菜单可见性（兜底）
+      'menu:article','menu:content','menu:article-manage',
+      // 资源操作
+      'upload:image',
+    ]
+  }
+  if (code === 'AUTHOR') {
+    return [
+      'content:article:list','content:article:create','content:article:update','upload:image'
+    ]
+  }
+  if (code === 'VIEWER' || code === 'READER') {
+    return [
+      'content:article:list','content:category:list','content:tag:list'
+    ]
+  }
+  return []
+}
+
 // ==================== 路由区（原实现拷贝，略去不必要注释） ====================
 
 // 热门文章
@@ -346,6 +389,18 @@ app.post('/api/talks/upload', upload.single('file'), async (req: Request, res: R
     res.json(createResponse({ url: fileUrl, filename: req.file.filename, originalName: req.file.originalname, size: req.file.size }, '上传成功'))
   } catch (error) {
     console.error('说说图片上传失败:', error)
+    res.status(500).json(createErrorResponse('上传失败', 500))
+  }
+})
+
+// 通用图片上传（用于编辑器、头像等）
+app.post('/api/uploads', upload.single('file'), async (req: Request, res: Response) => {
+  try {
+    if (!req.file) return res.status(400).json(createErrorResponse('没有上传文件', 400))
+    const fileUrl = `/uploads/${req.file.filename}`
+    res.json(createResponse({ url: fileUrl, filename: req.file.filename, originalName: req.file.originalname, size: req.file.size }, '上传成功'))
+  } catch (error) {
+    console.error('通用图片上传失败:', error)
     res.status(500).json(createErrorResponse('上传失败', 500))
   }
 })
@@ -560,7 +615,21 @@ app.get('/api/categories', async (req: Request, res: Response) => {
     const query: any = {}
     if (!admin || admin !== 'true') query.status = 'active'
     const categories = await Category.find(query).sort({ sort: 1 }).exec()
-    res.json(createResponse(categories, '获取分类列表成功'))
+    
+    // 为每个分类计算文章数量
+    const categoriesWithCount = await Promise.all(
+      categories.map(async (category) => {
+        const categoryObj = category.toObject({ virtuals: true })
+        // 根据分类名称统计文章数
+        const articleCount = await Article.countDocuments({ category: category.name })
+        return {
+          ...categoryObj,
+          articleCount
+        }
+      })
+    )
+    
+    res.json(createResponse(categoriesWithCount, '获取分类列表成功'))
   } catch (error) {
     console.error('获取分类列表失败:', error)
     res.status(500).json(createErrorResponse('获取分类列表失败', 500))
@@ -572,7 +641,12 @@ app.get('/api/categories/:id', async (req: Request, res: Response) => {
     const { id } = req.params
     const category = await Category.findById(id)
     if (!category) return res.status(404).json(createErrorResponse('分类未找到', 404))
-    res.json(createResponse(category, '获取分类成功'))
+    
+    // 计算该分类的文章数量
+    const articleCount = await Article.countDocuments({ category: category.name })
+    const categoryObj = category.toObject({ virtuals: true })
+    
+    res.json(createResponse({ ...categoryObj, articleCount }, '获取分类成功'))
   } catch (error) {
     res.status(500).json(createErrorResponse('获取分类失败', 500))
   }
@@ -974,8 +1048,14 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
     const safeUser = user.toObject() as any
     delete safeUser.password
     safeUser.roleCode = roleDoc?.roleCode || ''
-    safeUser.roles = roleDoc?.roleCode ? [roleDoc.roleCode] : []
-    safeUser.permissions = Array.isArray(roleDoc?.permissions) ? roleDoc!.permissions : []
+    safeUser.roles = roleDoc?.roleCode ? Array.from(new Set([
+      String(roleDoc.roleCode).toUpperCase(),
+      String(roleDoc.roleCode).toLowerCase(),
+      `R_${String(roleDoc.roleCode).toUpperCase()}`
+    ])) : []
+    safeUser.permissions = (Array.isArray(roleDoc?.permissions) && roleDoc!.permissions.length > 0)
+      ? roleDoc!.permissions
+      : deriveDefaultPermissions(roleDoc?.roleCode)
 
     res.json(createResponse({ token, user: safeUser }, '登录成功'))
   } catch (error) {
@@ -1004,8 +1084,14 @@ app.get('/api/auth/user-info', async (req: Request, res: Response) => {
     const safeUser = user.toObject() as any
     delete safeUser.password
     safeUser.roleCode = roleDoc?.roleCode || ''
-    safeUser.roles = roleDoc?.roleCode ? [roleDoc.roleCode] : []
-    safeUser.permissions = Array.isArray(roleDoc?.permissions) ? roleDoc!.permissions : []
+    safeUser.roles = roleDoc?.roleCode ? Array.from(new Set([
+      String(roleDoc.roleCode).toUpperCase(),
+      String(roleDoc.roleCode).toLowerCase(),
+      `R_${String(roleDoc.roleCode).toUpperCase()}`
+    ])) : []
+    safeUser.permissions = (Array.isArray(roleDoc?.permissions) && roleDoc!.permissions.length > 0)
+      ? roleDoc!.permissions
+      : deriveDefaultPermissions(roleDoc?.roleCode)
     res.json(createResponse(safeUser, '获取用户信息成功'))
   } catch (error) {
     console.error('获取用户信息失败:', error)
@@ -1024,16 +1110,40 @@ app.post('/api/auth/logout', async (req: Request, res: Response) => {
 // ==================== 说说路由 ====================
 app.get('/api/talks', async (req: Request, res: Response) => {
   try {
-    const { current = 1, size = 20 } = req.query
+    const { current = 1, size = 20, status, keyword } = req.query
     const pageNum = Number(current)
     const pageSize = Number(size)
     const skip = (pageNum - 1) * pageSize
-    const talks = await Talk.find({ status: 'public' })
+    
+    // 构建查询条件
+    const query: any = {}
+    
+    // 状态过滤：如果指定了status且不是'all'，则按status过滤；否则只显示public状态
+    if (status && status !== 'all') {
+      query.status = status
+      console.log(`[说说列表] 按状态过滤: ${status}`)
+    } else {
+      query.status = 'public'
+      console.log('[说说列表] 显示public状态的说说')
+    }
+    
+    // 关键词搜索
+    if (keyword) {
+      query.content = { $regex: keyword, $options: 'i' }
+      console.log(`[说说列表] 按关键词搜索: ${keyword}`)
+    }
+    
+    console.log('[说说列表] 查询条件:', query)
+    
+    const talks = await Talk.find(query)
       .skip(skip)
       .limit(pageSize)
-      .sort({ publishDate: -1 })
+      .sort({ isTop: -1, publishDate: -1 })
       .exec()
-    const total = await Talk.countDocuments({ status: 'public' })
+    const total = await Talk.countDocuments(query)
+    
+    console.log(`[说说列表] 返回${talks.length}条记录，总计${total}条`)
+    
     res.json(
       createResponse(
         { records: talks, total, current: pageNum, size: pageSize },
@@ -1143,8 +1253,92 @@ app.delete('/api/replies/:id', async (req: Request, res: Response) => {
 // ==================== 照片分类路由 ====================
 app.get('/api/photo-categories', async (req: Request, res: Response) => {
   try {
-    const categories = await PhotoCategory.find({ isVisible: true }).sort({ sortOrder: 1 }).exec()
-    res.json(createResponse(categories, '获取照片分类列表成功'))
+    // 管理端数据实时性优先：禁用缓存
+    res.set('Cache-Control', 'no-store')
+    const { admin, status, keyword, page, size } = req.query as {
+      admin?: string
+      status?: 'active' | 'inactive'
+      keyword?: string
+      page?: any
+      size?: any
+    }
+
+    const query: any = {}
+    // 前台仅返回可见，后台(admin=true)返回全部
+    if (!admin || admin !== 'true') query.isVisible = true
+    // 显式状态筛选（active -> isVisible=true, inactive -> isVisible=false）
+    if (status === 'active') query.isVisible = true
+    if (status === 'inactive') query.isVisible = false
+
+    // 关键词匹配 name/title
+    if (keyword && String(keyword).trim()) {
+      const kw = String(keyword).trim()
+      query.$or = [{ name: { $regex: kw, $options: 'i' } }, { title: { $regex: kw, $options: 'i' } }]
+    }
+
+    const baseFind = PhotoCategory.find(query).sort({ sortOrder: 1, createdAt: -1 })
+
+    const usePagination = page && size
+    if (usePagination) {
+      const pageNum = Number(page)
+      const pageSize = Number(size)
+      const skip = (pageNum - 1) * pageSize
+
+      const [total, categories] = await Promise.all([
+        PhotoCategory.countDocuments(query),
+        baseFind.skip(skip).limit(pageSize).exec(),
+      ])
+
+      // 统计图片数量（聚合，避免 N+1）
+      const ids = categories.map((c) => c.id).filter(Boolean)
+      const objIds = categories.map((c) => String(c._id)).filter(Boolean)
+      const matchIds = Array.from(new Set([...ids, ...objIds]))
+      let countMap = new Map<string, number>()
+      if (matchIds.length) {
+        const photoMatch: any = { categoryId: { $in: matchIds } }
+        if (!admin || admin !== 'true') photoMatch.isVisible = true
+        const agg = await Photo.aggregate([
+          { $match: photoMatch },
+          { $group: { _id: '$categoryId', count: { $sum: 1 } } },
+        ]).exec()
+        countMap = new Map<string, number>(agg.map((d: any) => [String(d._id), Number(d.count)]))
+      }
+
+      const categoriesWithCount = categories.map((c) => {
+        const obj = c.toObject()
+        return { ...obj, photoCount: (countMap.get(c.id) ?? countMap.get(String(c._id)) ?? 0) }
+      })
+
+      return res.json(
+        createResponse(
+          { categories: categoriesWithCount, total, currentPage: pageNum, pageSize },
+          '获取照片分类列表成功',
+        ),
+      )
+    }
+
+    // 不分页：返回数组
+    const categories = await baseFind.exec()
+    const ids = categories.map((c) => c.id).filter(Boolean)
+    const objIds = categories.map((c) => String(c._id)).filter(Boolean)
+    const matchIds = Array.from(new Set([...ids, ...objIds]))
+    let countMap = new Map<string, number>()
+    if (matchIds.length) {
+      const photoMatch: any = { categoryId: { $in: matchIds } }
+      if (!admin || admin !== 'true') photoMatch.isVisible = true
+      const agg = await Photo.aggregate([
+        { $match: photoMatch },
+        { $group: { _id: '$categoryId', count: { $sum: 1 } } },
+      ]).exec()
+      countMap = new Map<string, number>(agg.map((d: any) => [String(d._id), Number(d.count)]))
+    }
+
+    const categoriesWithCount = categories.map((c) => {
+      const obj = c.toObject()
+      return { ...obj, photoCount: (countMap.get(c.id) ?? countMap.get(String(c._id)) ?? 0) }
+    })
+
+    res.json(createResponse(categoriesWithCount, '获取照片分类列表成功'))
   } catch (error) {
     console.error('获取照片分类列表失败:', error)
     res.status(500).json(createErrorResponse('获取照片分类列表失败', 500))
@@ -1154,7 +1348,16 @@ app.get('/api/photo-categories', async (req: Request, res: Response) => {
 app.get('/api/photo-categories/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params
-    const category = await PhotoCategory.findOne({ id })
+    // 同时支持通过 id 字段和 _id 字段查询
+    let category
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      // 如果是有效的 ObjectId，先尝试通过 _id 查询
+      category = await PhotoCategory.findById(id)
+    }
+    // 如果没有找到或不是 ObjectId，尝试通过 id 字段查询
+    if (!category) {
+      category = await PhotoCategory.findOne({ id })
+    }
     if (!category) return res.status(404).json(createErrorResponse('照片分类未找到', 404))
     res.json(createResponse(category, '获取照片分类成功'))
   } catch (error) {
@@ -1162,12 +1365,146 @@ app.get('/api/photo-categories/:id', async (req: Request, res: Response) => {
   }
 })
 
+// 创建照片分类
+app.post('/api/photo-categories', async (req: Request, res: Response) => {
+  try {
+    const body = req.body || {}
+    if (!body.name && !body.title) return res.status(400).json(createErrorResponse('分类名称不能为空', 400))
+
+    const categoryData: any = {
+      id: body.id || new mongoose.Types.ObjectId().toString(),
+      name: body.name || body.title,
+      title: body.title || body.name,
+      description: body.description || '',
+      coverImage: body.coverImage || '',
+      sortOrder: typeof body.sortOrder === 'number' ? body.sortOrder : (typeof body.sort === 'number' ? body.sort : 0),
+      isVisible: typeof body.isVisible === 'boolean' ? body.isVisible : (typeof body.status === 'string' ? body.status === 'active' : true),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }
+
+    const exists = await PhotoCategory.findOne({ $or: [{ id: categoryData.id }, { name: categoryData.name }] })
+    if (exists) return res.status(400).json(createErrorResponse('分类已存在', 400))
+
+    const category = new PhotoCategory(categoryData)
+    const saved = await category.save()
+    res.status(201).json(createResponse(saved, '照片分类创建成功', 201))
+  } catch (error) {
+    console.error('创建照片分类失败:', error)
+    res.status(500).json(createErrorResponse('创建照片分类失败', 500))
+  }
+})
+
+// 更新照片分类（支持 _id 或 id）
+app.put('/api/photo-categories/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params
+    const updateBody = req.body || {}
+    const cond: any = mongoose.Types.ObjectId.isValid(id) ? { $or: [{ _id: id }, { id }] } : { id }
+
+    const mapped: any = { ...updateBody }
+    if (typeof updateBody.sortOrder === 'number') mapped.sortOrder = updateBody.sortOrder
+    else if (typeof updateBody.sort === 'number') mapped.sortOrder = updateBody.sort
+    if (typeof updateBody.status !== 'undefined') mapped.isVisible = updateBody.status === 'active'
+    if (typeof updateBody.name === 'string' && !updateBody.title) mapped.title = updateBody.name
+    mapped.updatedAt = new Date()
+
+    const category = await PhotoCategory.findOneAndUpdate(cond, mapped, { new: true, runValidators: true })
+    if (!category) return res.status(404).json(createErrorResponse('照片分类未找到', 404))
+    res.json(createResponse(category, '照片分类更新成功'))
+  } catch (error) {
+    console.error('更新照片分类失败:', error)
+    res.status(500).json(createErrorResponse('更新照片分类失败', 500))
+  }
+})
+
+// 删除照片分类（支持 _id 或 id），如有图片则禁止删除
+app.delete('/api/photo-categories/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params
+    const cond: any = mongoose.Types.ObjectId.isValid(id) ? { $or: [{ _id: id }, { id }] } : { id }
+    const category = await PhotoCategory.findOne(cond)
+    if (!category) return res.status(404).json(createErrorResponse('照片分类未找到', 404))
+
+    const count = await Photo.countDocuments({ categoryId: category.id })
+    if (count > 0) return res.status(400).json(createErrorResponse('该分类下还有图片，无法删除', 400))
+
+    await PhotoCategory.deleteOne({ _id: category._id })
+    res.json(createResponse(null, '照片分类删除成功'))
+  } catch (error) {
+    console.error('删除照片分类失败:', error)
+    res.status(500).json(createErrorResponse('删除照片分类失败', 500))
+  }
+})
+
+// 批量删除照片分类
+app.delete('/api/photo-categories', async (req: Request, res: Response) => {
+  try {
+    const ids = (req.body?.ids || []).map((v: any) => String(v)).filter(Boolean)
+    if (!Array.isArray(ids) || !ids.length) return res.status(400).json(createErrorResponse('缺少要删除的分类ID', 400))
+
+    const objectIds = ids.filter((s: string) => mongoose.Types.ObjectId.isValid(s))
+    const byId = await PhotoCategory.find({ id: { $in: ids } })
+    const byObjectId = objectIds.length ? await PhotoCategory.find({ _id: { $in: objectIds } }) : []
+    const all = new Map<string, any>()
+    ;[...byId, ...byObjectId].forEach((c: any) => all.set(String(c._id), c))
+
+    if (!all.size) return res.status(404).json(createErrorResponse('未找到要删除的分类', 404))
+
+    // 校验是否包含图片
+    for (const [, c] of all) {
+      const cnt = await Photo.countDocuments({ categoryId: c.id })
+      if (cnt > 0) return res.status(400).json(createErrorResponse('选中的分类中有包含图片的分类，无法删除', 400))
+    }
+
+    await PhotoCategory.deleteMany({ _id: { $in: Array.from(all.keys()) } })
+    res.json(createResponse({ deleted: Array.from(all.values()).map((c) => c.id) }, '批量删除成功'))
+  } catch (error) {
+    console.error('批量删除照片分类失败:', error)
+    res.status(500).json(createErrorResponse('批量删除照片分类失败', 500))
+  }
+})
+
+// 批量更新照片分类状态
+app.patch('/api/photo-categories/status', async (req: Request, res: Response) => {
+  try {
+    const { ids = [], status } = req.body || {}
+    if (!Array.isArray(ids) || !ids.length) return res.status(400).json(createErrorResponse('缺少分类ID', 400))
+    if (status !== 'active' && status !== 'inactive') return res.status(400).json(createErrorResponse('非法状态值', 400))
+
+    const idStrs = ids.map((v: any) => String(v)).filter(Boolean)
+    const objectIds = idStrs.filter((s: string) => mongoose.Types.ObjectId.isValid(s))
+    const filter: any = { $or: [{ id: { $in: idStrs } }] }
+    if (objectIds.length) filter.$or.push({ _id: { $in: objectIds } })
+
+    const result = await PhotoCategory.updateMany(filter, { $set: { isVisible: status === 'active', updatedAt: new Date() } })
+    res.json(createResponse({ matched: result.matchedCount ?? result.n, modified: result.modifiedCount ?? result.nModified }, '批量更新状态成功'))
+  } catch (error) {
+    console.error('批量更新照片分类状态失败:', error)
+    res.status(500).json(createErrorResponse('批量更新照片分类状态失败', 500))
+  }
+})
+
 // ==================== 照片路由 ====================
 app.get('/api/photos', async (req: Request, res: Response) => {
   try {
-    const { categoryId, current = 1, size = 20 } = req.query
-    const query: any = { isVisible: true }
-    if (categoryId) query.categoryId = categoryId
+    const { categoryId, current = 1, size = 20, admin } = req.query as any
+    const query: any = {}
+    if (!admin || admin !== 'true') query.isVisible = true
+    if (categoryId) {
+      const ids: string[] = [String(categoryId)]
+      try {
+        // 若传入 _id，则补充其对应的自定义 id；若传入 id，则补充其 _id 字符串
+        if (mongoose.Types.ObjectId.isValid(String(categoryId))) {
+          const cat = await PhotoCategory.findById(String(categoryId)).select('_id id').lean()
+          if (cat?.id) ids.push(String(cat.id))
+        } else {
+          const cat = await PhotoCategory.findOne({ id: String(categoryId) }).select('_id id').lean()
+          if (cat?._id) ids.push(String(cat._id))
+        }
+      } catch {}
+      query.categoryId = { $in: Array.from(new Set(ids)) }
+    }
     const pageNum = Number(current)
     const pageSize = Number(size)
     const skip = (pageNum - 1) * pageSize
@@ -1197,6 +1534,30 @@ app.get('/api/photos/:id', async (req: Request, res: Response) => {
     res.json(createResponse(photo, '获取照片成功'))
   } catch (error) {
     res.status(500).json(createErrorResponse('获取照片失败', 500))
+  }
+})
+
+// ==================== 标签路由 ====================
+app.get('/api/tags', async (req: Request, res: Response) => {
+  try {
+    const { admin, limit, q } = req.query as { admin?: string; limit?: any; q?: string }
+    const articleMatch: any = {}
+    if (!admin || admin !== 'true') articleMatch.visible = { $ne: false }
+
+    const pipeline: any[] = []
+    if (Object.keys(articleMatch).length) pipeline.push({ $match: articleMatch })
+    pipeline.push({ $unwind: { path: '$tags', preserveNullAndEmptyArrays: false } })
+    if (q && String(q).trim()) pipeline.push({ $match: { tags: { $regex: String(q).trim(), $options: 'i' } } })
+    pipeline.push({ $group: { _id: '$tags', count: { $sum: 1 } } })
+    pipeline.push({ $sort: { count: -1, _id: 1 } })
+    if (limit) pipeline.push({ $limit: Number(limit) })
+
+    const agg = await Article.aggregate(pipeline).exec()
+    const tags = agg.map((it: any) => ({ name: it._id, count: it.count }))
+    res.json(createResponse(tags, '获取标签列表成功'))
+  } catch (error) {
+    console.error('获取标签列表失败:', error)
+    res.status(500).json(createErrorResponse('获取标签列表失败', 500))
   }
 })
 

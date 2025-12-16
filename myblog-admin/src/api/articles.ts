@@ -67,9 +67,6 @@ export interface SearchParams {
   offset?: number
 }
 
-// 统一的API接口
-const API_BASE_URL = '/api'
-
 /**
  * 获取文章列表
  */
@@ -83,7 +80,7 @@ export function getArticleList(params?: SearchParams) {
 
   return request
     .get({
-      url: `${API_BASE_URL}/articles`,
+      url: `/api/articles`,
       params: queryParams
     })
     .then((res: any) => {
@@ -104,7 +101,7 @@ export function getArticleDetail(idOrSlug: string) {
 
   return request
     .get({
-      url: `${API_BASE_URL}/admin/articles/${idOrSlug}` // 使用专用后台接口
+      url: `/api/admin/articles/${idOrSlug}` // 使用专用后台接口
     })
     .then((res: any) => {
       console.log(`✅ 后台管理获取文章详情成功: ${idOrSlug}`)
@@ -122,7 +119,7 @@ export function getArticleDetail(idOrSlug: string) {
 export function createArticle(data: CreateArticleParams) {
   return request
     .post({
-      url: `${API_BASE_URL}/articles`,
+      url: `/api/articles`,
       data
     })
     .then((res: any) => {
@@ -142,7 +139,7 @@ export function updateArticle(id: string, data: UpdateArticleParams) {
   })
   
   return request.put({
-    url: `${API_BASE_URL}/articles/${id}`,
+    url: `/api/articles/${id}`,
     data
   }).then((res: any) => {
     console.log('✅ updateArticle响应:', res)
@@ -158,7 +155,7 @@ export function updateArticle(id: string, data: UpdateArticleParams) {
  */
 export function deleteArticle(id: string) {
   return request.del({
-    url: `${API_BASE_URL}/articles/${id}`
+    url: `/api/articles/${id}`
   })
 }
 
@@ -167,7 +164,7 @@ export function deleteArticle(id: string) {
  */
 export function likeArticle(id: string) {
   return request.post({
-    url: `${API_BASE_URL}/articles/${id}/like`
+    url: `/api/articles/${id}/like`
   })
 }
 
@@ -176,7 +173,7 @@ export function likeArticle(id: string) {
  */
 export function unlikeArticle(id: string) {
   return request.post({
-    url: `${API_BASE_URL}/articles/${id}/unlike`
+    url: `/api/articles/${id}/unlike`
   })
 }
 
@@ -185,7 +182,7 @@ export function unlikeArticle(id: string) {
  */
 export function getPopularArticles(limit: number = 10) {
   return request.get({
-    url: `${API_BASE_URL}/articles/popular`,
+    url: `/api/articles/popular`,
     params: { limit }
   })
 }
@@ -195,7 +192,7 @@ export function getPopularArticles(limit: number = 10) {
  */
 export function searchArticles(keyword: string, params?: SearchParams) {
   return request.get({
-    url: `${API_BASE_URL}/articles/search`,
+    url: `/api/articles/search`,
     params: { ...params, keyword }
   })
 }
@@ -260,7 +257,7 @@ export function getCategories(params?: CategorySearchParams) {
 
   return request
     .get({
-      url: `${API_BASE_URL}/categories`,
+      url: `/api/categories`,
       params: queryParams
     })
     .then((res: any) => {
@@ -303,7 +300,7 @@ export function getCategories(params?: CategorySearchParams) {
 export function getCategoryDetail(id: string) {
   return request
     .get({
-      url: `${API_BASE_URL}/categories/${id}`
+      url: `/api/categories/${id}`
     })
     .then((res: any) => {
       return res && res.data ? res.data : res
@@ -324,7 +321,7 @@ export function createCategory(data: CreateCategoryParams) {
   }
   return request
     .post({
-      url: `${API_BASE_URL}/categories`,
+      url: `/api/categories`,
       data: payload
     })
     .then((res: any) => {
@@ -346,7 +343,7 @@ export function updateCategory(id: string, data: UpdateCategoryParams) {
   }
   return request
     .put({
-      url: `${API_BASE_URL}/categories/${id}`,
+      url: `/api/categories/${id}`,
       data: payload
     })
     .then((res: any) => {
@@ -360,7 +357,7 @@ export function updateCategory(id: string, data: UpdateCategoryParams) {
 export function deleteCategory(id: string) {
   return request
     .del({
-      url: `${API_BASE_URL}/categories/${id}`
+      url: `/api/categories/${id}`
     })
     .then((res: any) => {
       return res && res.data ? res.data : res
@@ -373,7 +370,7 @@ export function deleteCategory(id: string) {
 export function batchDeleteCategories(ids: string[]) {
   return request
     .del({
-      url: `${API_BASE_URL}/categories`,
+      url: `/api/categories`,
       data: { ids }
     })
     .then((res: any) => {
@@ -387,7 +384,7 @@ export function batchDeleteCategories(ids: string[]) {
 export function batchUpdateCategoryStatus(ids: string[], status: 'active' | 'inactive') {
   return request
     .patch({
-      url: `${API_BASE_URL}/categories/status`,
+      url: `/api/categories/status`,
       data: { ids, status }
     })
     .then((res: any) => {
@@ -400,7 +397,7 @@ export function batchUpdateCategoryStatus(ids: string[], status: 'active' | 'ina
  */
 export function getTags() {
   return request.get({
-    url: `${API_BASE_URL}/tags`
+    url: `/api/tags`
   })
 }
 
@@ -409,7 +406,7 @@ export function getTags() {
  */
 export function uploadFile(data: FormData) {
   return request.post({
-    url: `${API_BASE_URL}/upload`,
+    url: `/api/upload`,
     data,
     headers: {
       'Content-Type': 'multipart/form-data'
@@ -426,7 +423,7 @@ export function uploadImage(file: File) {
   formData.append('type', 'image')
 
   return request.post({
-    url: `${API_BASE_URL}/upload/image`,
+    url: `/api/upload/image`,
     data: formData,
     headers: {
       'Content-Type': 'multipart/form-data'

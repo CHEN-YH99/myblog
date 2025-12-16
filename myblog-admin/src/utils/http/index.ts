@@ -56,7 +56,8 @@ function onUnauthorized() {
 }
 
 const api = createHttpClient({
-  baseURL: VITE_API_URL,
+  // 不设置 baseURL，让 Vite 代理处理 /api 前缀
+  baseURL: undefined,
   timeout: 15000,
   withCredentials: VITE_WITH_CREDENTIALS === 'true',
   getAuthHeader,

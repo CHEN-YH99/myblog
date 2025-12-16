@@ -288,11 +288,15 @@ const getApiParams = () => {
   // 只有当状态不是'all'时才添加status参数
   if (currentStatus.value && currentStatus.value !== 'all') {
     params.status = currentStatus.value
+    console.log('✅ 添加状态过滤参数:', currentStatus.value)
+  } else {
+    console.log('✅ 显示所有状态的说说')
   }
   
   // 只有当搜索关键词不为空时才添加keyword参数
   if (searchVal.value && searchVal.value.trim()) {
     params.keyword = searchVal.value.trim()
+    console.log('✅ 添加搜索关键词:', searchVal.value.trim())
   }
   
   console.log('🔍 后台管理系统API参数:', params)
@@ -429,21 +433,34 @@ const updateSearchParams = () => {
   // 添加新的搜索参数
   Object.assign(searchParams, params)
   console.log('🔄 更新后的searchParams:', { ...searchParams })
+  console.log('📊 完整的API请求参数:', {
+    ...searchParams,
+    status: params.status || 'all',
+    keyword: params.keyword || ''
+  })
 }
 
 // 搜索功能
 const searchTalk = () => {
+  console.log('🔍 执行搜索，关键词:', searchVal.value, '状态:', currentStatus.value)
+  currentPage.value = 1 // 搜索时回到第一页
   updateSearchParams()
   refreshTalkList()
 }
 
 const onSearchClear = () => {
+  console.log('🔍 清空搜索条件')
+  searchVal.value = ''
+  currentPage.value = 1 // 清空时回到第一页
   updateSearchParams()
   refreshTalkList()
 }
 
 const onSearchInput = (value: string) => {
+  // 当输入为空时，自动搜索
   if (!value.trim()) {
+    console.log('🔍 搜索输入为空，自动清空搜索')
+    currentPage.value = 1
     updateSearchParams()
     refreshTalkList()
   }
@@ -453,19 +470,33 @@ const onSearchInput = (value: string) => {
 const handleStatusChange = (status: string) => {
   console.log('🔄 状态切换:', status)
   currentStatus.value = status
-  selectedTalks.value = []
+  selectedTalks.value = [] // 清空已选择的项
+  
+  // 重置到第一页
+  currentPage.value = 1
+  
   // 更新搜索参数并刷新数据
+  console.log('📝 即将更新搜索参数，状态值:', currentStatus.value)
   updateSearchParams()
+  
+  console.log('🔄 开始刷新列表数据...')
   refreshTalkList() // 使用正确的刷新方法
 }
 
 // 重置筛选
 const resetFilters = () => {
+  console.log('🔄 重置所有筛选条件')
   searchVal.value = ''
   currentStatus.value = 'all'
   selectedTalks.value = []
+  currentPage.value = 1 // 回到第一页
+  
+  // 更新搜索参数
   updateSearchParams()
-  currentPage.value = 1 // 回到第一页并触发刷新
+  
+  // 刷新数据
+  console.log('🔄 重置后刷新列表数据...')
+  refreshTalkList()
 }
 
 // 分页处理

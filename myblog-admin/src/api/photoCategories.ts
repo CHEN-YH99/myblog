@@ -53,9 +53,6 @@ export interface PhotoCategorySearchParams {
   status?: 'active' | 'inactive'
 }
 
-// 统一的API接口
-const API_BASE_URL = '/api'
-
 // 将后端分类数据映射为前端使用的数据结构（补齐 status、id、sort）
 function mapCategory(item: any): PhotoCategoryItem {
   const status: 'active' | 'inactive' =
@@ -91,8 +88,8 @@ export function getPhotoCategories(params?: PhotoCategorySearchParams) {
 
   return request
     .get({
-      url: `${API_BASE_URL}/photo-categories`,
-      params
+      url: `/api/photo-categories`,
+      params: { ...(params || {}), admin: true }
     })
     .then((res: any) => {
       console.log('getPhotoCategories 原始响应:', res)
@@ -147,7 +144,7 @@ export function getPhotoCategories(params?: PhotoCategorySearchParams) {
 export function getPhotoCategoryDetail(id: string) {
   return request
     .get({
-      url: `${API_BASE_URL}/photo-categories/${id}`
+      url: `/api/photo-categories/${id}`
     })
     .then((res: any) => {
       const data = res && res.data ? res.data : res
@@ -170,7 +167,7 @@ export function createPhotoCategory(data: CreatePhotoCategoryParams) {
   }
   return request
     .post({
-      url: `${API_BASE_URL}/photo-categories`,
+      url: `/api/photo-categories`,
       data: payload
     })
     .then((res: any) => {
@@ -192,7 +189,7 @@ export function updatePhotoCategory(id: string, data: UpdatePhotoCategoryParams)
   }
   return request
     .put({
-      url: `${API_BASE_URL}/photo-categories/${id}`,
+      url: `/api/photo-categories/${id}`,
       data: payload
     })
     .then((res: any) => {
@@ -207,7 +204,7 @@ export function updatePhotoCategory(id: string, data: UpdatePhotoCategoryParams)
 export function deletePhotoCategory(id: string) {
   return request
     .del({
-      url: `${API_BASE_URL}/photo-categories/${id}`
+      url: `/api/photo-categories/${id}`
     })
     .then((res: any) => {
       return res && res.data ? res.data : res
@@ -220,7 +217,7 @@ export function deletePhotoCategory(id: string) {
 export function batchDeletePhotoCategories(ids: string[]) {
   return request
     .del({
-      url: `${API_BASE_URL}/photo-categories`,
+      url: `/api/photo-categories`,
       data: { ids }
     })
     .then((res: any) => {
@@ -234,7 +231,7 @@ export function batchDeletePhotoCategories(ids: string[]) {
 export function batchUpdatePhotoCategoryStatus(ids: string[], status: 'active' | 'inactive') {
   return request
     .patch({
-      url: `${API_BASE_URL}/photo-categories/status`,
+      url: `/api/photo-categories/status`,
       data: { ids, status }
     })
     .then((res: any) => {

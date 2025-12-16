@@ -338,7 +338,7 @@
           categoryList.value = response.categories.map((item: PhotoCategoryItem) => {
             const reactiveItem = reactive({
               _id: item._id,
-              id: item._id || item.id,
+              id: item.id || item._id,
               name: item.name || '',
               title: item.title || item.name || '',
               coverImage: item.coverImage || '',
@@ -360,7 +360,7 @@
           categoryList.value = response.map((item: PhotoCategoryItem) => {
             const reactiveItem = reactive({
               _id: item._id,
-              id: item._id || item.id,
+              id: item.id || item._id,
               name: item.name || '',
               title: item.title || item.name || '',
               coverImage: item.coverImage || '',
@@ -383,7 +383,7 @@
             categoryList.value = response.data.map((item: PhotoCategoryItem) => {
               const reactiveItem = reactive({
                 _id: item._id,
-                id: item._id || item.id,
+                id: item.id || item._id,
                 name: item.name || '',
                 title: item.title || item.name || '',
                 coverImage: item.coverImage || '',
@@ -403,7 +403,7 @@
             categoryList.value = response.data.categories.map((item: PhotoCategoryItem) => {
               const reactiveItem = reactive({
                 _id: item._id,
-                id: item._id || item.id,
+                id: item.id || item._id,
                 name: item.name || '',
                 title: item.title || item.name || '',
                 coverImage: item.coverImage || '',
@@ -730,7 +730,7 @@
   const handleRowClick = (row: PhotoCategoryItem) => {
     // 跳转到分类图片详情页
     router.push({
-      path: '/photoalbum/category/' + (row._id || row.id),
+      path: '/photoalbum/category/' + (row.id || row._id),
       query: {
         name: row.name
       }
@@ -776,7 +776,7 @@
 
   // 获取分类条目的ID（兼容 _id / id）
   const getCategoryIdFromItem = (item: PhotoCategoryItem | any): string | undefined => {
-    const id = (item && ((item as any)._id || (item as any).id))
+    const id = (item && ((item as any).id || (item as any)._id))
     return id ? String(id) : undefined
   }
 
@@ -785,13 +785,20 @@
     if (!response) return 0
     if (Array.isArray(response)) return response.length
     if (typeof response === 'object') {
+      // 兼容 photos 字段
       if ('photos' in response && Array.isArray((response as any).photos)) {
         return (response as any).total ?? (response as any).photos.length
       }
+      // 兼容 records 字段（当前后端返回 records）
+      if ('records' in response && Array.isArray((response as any).records)) {
+        return (response as any).total ?? (response as any).records.length
+      }
+      // 兼容 data 包裹
       if ((response as any).data) {
         const data = (response as any).data
         if (Array.isArray(data)) return data.length
         if (Array.isArray(data.photos)) return data.total ?? data.photos.length
+        if (Array.isArray((data as any).records)) return (data as any).total ?? (data as any).records.length
       }
     }
     return 0
@@ -809,13 +816,40 @@
       await Promise.all(
         ids.map(async (id) => {
           try {
-            // 使用 size=1 以获取总数（若后端支持分页返回 total），否则回退为数组长度
-            const resp = await getPhotosByCategory(id, { page: 1, size: 1 })
-            const total = parsePhotosTotalFromResponse(resp)
-            categoryPhotoCounts[id] = total
-            const idx = categoryList.value.findIndex((c) => getCategoryIdFromItem(c) === id)
-            if (idx !== -1) {
-              categoryList.value[idx].photoCount = total
+            const row = categoryList.value.find((c) => getCategoryIdFromItem(c) === id)
+            const candidates = Array.from(
+              new Set(
+                [
+                  id,
+                  row && (row as any)._id ? String((row as any)._id) : undefined,
+                  row && (row as any).id ? String((row as any).id) : undefined,
+                  row && (row as any).name ? String((row as any).name) : undefined,
+                  row && (row as any).title ? String((row as any).title) : undefined,
+                ].filter(Boolean) as string[]
+              )
+            )
+
+            let bestTotal = -1
+            for (const key of candidates) {
+              try {
+                const resp = await getPhotosByCategory(key, { page: 1, size: 1 })
+                const total = parsePhotosTotalFromResponse(resp)
+                if (total > bestTotal) bestTotal = total
+                if (bestTotal > 0) break
+              } catch (err) {
+                // 忽略单个 key 的失败，尝试下一个
+              }
+            }
+
+            // 仅在得到有效计数时覆盖（避免把服务端的正确计数刷成 0）
+            if (bestTotal >= 0) {
+              categoryPhotoCounts[id] = bestTotal
+              const idx = categoryList.value.findIndex((c) => getCategoryIdFromItem(c) === id)
+              if (idx !== -1) {
+                // 如果 bestTotal 为 0，但原有服务端计数大于 0，则保留服务端计数
+                const serverCount = categoryList.value[idx].photoCount || 0
+                categoryList.value[idx].photoCount = bestTotal > 0 ? bestTotal : serverCount
+              }
             }
           } catch (err) {
             console.warn('刷新分类照片数失败: ', id, err)

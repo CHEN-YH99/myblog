@@ -1,7 +1,10 @@
+/// <reference types="node" />
+// @ts-ignore
 import { defineConfig, loadEnv, type UserConfig } from 'vite'
+// @ts-ignore
 import vue from '@vitejs/plugin-vue'
+// @ts-ignore
 import { resolve } from 'path'
-import { fileURLToPath } from 'url'
 
 /**
  * 创建基础Vite配置

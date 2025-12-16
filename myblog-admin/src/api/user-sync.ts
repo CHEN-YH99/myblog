@@ -21,7 +21,7 @@ export interface UserSyncData {
 // 接收前台用户注册数据
 export const receiveUserRegistration = (userData: UserSyncData): Promise<Api.SystemManage.UserListItem> => {
   return request.post<Api.SystemManage.UserListItem>({
-    url: '/user/sync/register',
+    url: '/api/user/sync/register',
     data: userData
   })
 }
@@ -29,7 +29,7 @@ export const receiveUserRegistration = (userData: UserSyncData): Promise<Api.Sys
 // 同步用户数据到用户管理列表
 export const syncUserToManagement = (userData: UserSyncData): Promise<void> => {
   return request.post({
-    url: '/user/sync/to-management',
+    url: '/api/user/sync/to-management',
     data: userData
   })
 }
@@ -41,7 +41,7 @@ export const batchSyncUsers = (users: UserSyncData[]): Promise<{
   errors: string[]
 }> => {
   return request.post({
-    url: '/user/sync/batch',
+    url: '/api/user/sync/batch',
     data: { users }
   })
 }
@@ -49,14 +49,14 @@ export const batchSyncUsers = (users: UserSyncData[]): Promise<{
 // 获取待同步的用户列表
 export const getPendingSyncUsers = (): Promise<UserSyncData[]> => {
   return request.get({
-    url: '/user/sync/pending'
+    url: '/api/user/sync/pending'
   })
 }
 
 // 标记用户为已同步
 export const markUserAsSynced = (userId: number): Promise<void> => {
   return request.put({
-    url: `/user/sync/mark-synced/${userId}`
+    url: `/api/user/sync/mark-synced/${userId}`
   })
 }
 
@@ -69,7 +69,7 @@ export const getUserSyncStatus = (): Promise<{
   lastSyncTime: string
 }> => {
   return request.get({
-    url: '/user/sync/status'
+    url: '/api/user/sync/status'
   })
 }
 
@@ -79,6 +79,6 @@ export const triggerUserSync = (): Promise<{
   syncedCount: number
 }> => {
   return request.post({
-    url: '/user/sync/trigger'
+    url: '/api/user/sync/trigger'
   })
 }

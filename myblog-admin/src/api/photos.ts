@@ -1,8 +1,5 @@
 import request from '@/utils/request'
 
-// 统一 API 基础前缀，开发环境通过 Vite 代理到后端
-const API_BASE_URL = '/api'
-
 /** 图片项 */
 interface PhotoItem {
   id?: string
@@ -54,30 +51,30 @@ interface PhotoSearchParams {
 /** 获取图片列表 */
 export function getPhotos(params?: PhotoSearchParams) {
   return request.get<PhotoListResponse | PhotoItem[]>({
-    url: `${API_BASE_URL}/photos`,
-    params,
+    url: `/api/photos`,
+    params: { ...(params || {}), admin: true },
   })
 }
 
 /** 根据ID获取图片详情 */
 export function getPhotoById(id: string) {
   return request.get<PhotoItem>({
-    url: `${API_BASE_URL}/photos/${id}`,
+    url: `/api/photos/${id}`,
   })
 }
 
 /** 根据分类获取图片列表 */
 export function getPhotosByCategory(categoryId: string, params?: Omit<PhotoSearchParams, 'categoryId'>) {
   return request.get<PhotoListResponse | PhotoItem[]>({
-    url: `${API_BASE_URL}/photos`,
-    params: { ...params, categoryId },
+    url: `/api/photos`,
+    params: { ...(params || {}), categoryId, admin: true },
   })
 }
 
 /** 创建图片 */
 export function createPhoto(data: CreatePhotoParams) {
   return request.post<PhotoItem>({
-    url: `${API_BASE_URL}/photos`,
+    url: `/api/photos`,
     data,
   })
 }
@@ -87,7 +84,7 @@ export function uploadPhoto(file: File) {
   const formData = new FormData()
   formData.append('file', file)
   return request.post<{ url: string }>({
-    url: `${API_BASE_URL}/photos/upload`,
+    url: `/api/photos/upload`,
     headers: { 'Content-Type': 'multipart/form-data' },
     data: formData,
   })
@@ -98,7 +95,7 @@ export function batchUploadPhotos(files: File[]) {
   const formData = new FormData()
   files.forEach((file) => formData.append('files', file))
   return request.post<{ urls: string[] }>({
-    url: `${API_BASE_URL}/photos/batch-upload`,
+    url: `/api/photos/batch-upload`,
     headers: { 'Content-Type': 'multipart/form-data' },
     data: formData,
   })
@@ -107,7 +104,7 @@ export function batchUploadPhotos(files: File[]) {
 /** 更新图片 */
 export function updatePhoto(id: string, data: Partial<CreatePhotoParams>) {
   return request.put<PhotoItem>({
-    url: `${API_BASE_URL}/photos/${id}`,
+    url: `/api/photos/${id}`,
     data,
   })
 }
@@ -115,14 +112,14 @@ export function updatePhoto(id: string, data: Partial<CreatePhotoParams>) {
 /** 删除图片 */
 export function deletePhoto(id: string) {
   return request.del<void>({
-    url: `${API_BASE_URL}/photos/${id}`,
+    url: `/api/photos/${id}`,
   })
 }
 
 /** 批量删除图片 */
 export function batchDeletePhotos(ids: string[]) {
   return request.post<void>({
-    url: `${API_BASE_URL}/photos/batch-delete`,
+    url: `/api/photos/batch-delete`,
     data: { ids },
   })
 }
@@ -130,7 +127,7 @@ export function batchDeletePhotos(ids: string[]) {
 /** 将图片移动到另一个分类 */
 export function movePhotoToCategory(id: string, targetCategoryId: string) {
   return request.post<void>({
-    url: `${API_BASE_URL}/photos/${id}/move`,
+    url: `/api/photos/${id}/move`,
     data: { targetCategoryId },
   })
 }
@@ -138,7 +135,7 @@ export function movePhotoToCategory(id: string, targetCategoryId: string) {
 /** 批量移动图片到另一个分类 */
 export function batchMovePhotosToCategory(ids: string[], targetCategoryId: string) {
   return request.post<void>({
-    url: `${API_BASE_URL}/photos/batch-move`,
+    url: `/api/photos/batch-move`,
     data: { ids, targetCategoryId },
   })
 }
