@@ -48,8 +48,8 @@ const footlist = reactive([
   },
   {
     id: 4,
-    img: 'https://img.shields.io/badge/Vue3-Frontend-yellow',
-    imgurl: 'https://cn.vuejs.org/',
+    img: 'https://img.shields.io/badge/华为云-Escalation-yellow',
+    imgurl: 'https://www.huaweicloud.com/',
   },
 ])
 </script>
@@ -70,23 +70,24 @@ const footlist = reactive([
   gap: 10px;
 }
 .meta {
-  text-align: center;
   line-height: 1.6;
   display: inline-flex;
-  flex-direction: row; /* Changed to row for horizontal layout */
+  flex-direction: column;
   align-items: center;
-  gap: 1rem; /* Increased gap for spacing */
+  gap: 2px;
 }
 .meta p {
   margin: 0;
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.82); /* 灰白色 */
+  color: rgba(255, 255, 255, 0.82);
+  white-space: nowrap;        /* 避免断行 */
 }
 .icp {
-  /* Styles are now handled by the flex container */
+  display: inline-block;
+  margin-top: 2px;
 }
 .icp a {
-  color: rgba(255, 255, 255, 0.82); /* 灰白色 */
+  color: rgba(255, 255, 255, 0.82);
   text-decoration: none;
 }
 .icp a:hover {
