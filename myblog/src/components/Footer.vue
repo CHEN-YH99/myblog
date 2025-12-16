@@ -3,7 +3,6 @@
     <div class="footer-inner">
       <div class="meta">
         <p>© 小灰的个人博客</p>
-        <p>Powered by Vue3</p>
         <p class="icp">
           <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">
             粤ICP备2025506377号-1
@@ -33,9 +32,9 @@ import { reactive } from 'vue'
 const footlist = reactive([
   {
     id: 1,
-    img: 'https://img.shields.io/badge/阿里云-Escalation-orange',
+    img: 'https://img.shields.io/badge/腾讯云-Server-orange',
     imgurl:
-      'https://help.aliyun.com/zh/ecs/?spm=5176.28507329.nav-v2-dropdown-menu-3.d_main_0_0.384a2868VFVVko&scm=20140722.M_9489640._.V_1',
+      'https://cloud.tencent.com/',
   },
   {
     id: 2,
@@ -71,7 +70,6 @@ const footlist = reactive([
   gap: 10px;
 }
 .meta {
-  text-align: center;
   line-height: 1.6;
   display: inline-flex;
   flex-direction: column;
@@ -81,14 +79,15 @@ const footlist = reactive([
 .meta p {
   margin: 0;
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.82); /* 灰白色 */
+  color: rgba(255, 255, 255, 0.82);
+  white-space: nowrap;        /* 避免断行 */
 }
 .icp {
   display: inline-block;
   margin-top: 2px;
 }
 .icp a {
-  color: rgba(255, 255, 255, 0.82); /* 灰白色 */
+  color: rgba(255, 255, 255, 0.82);
   text-decoration: none;
 }
 .icp a:hover {

@@ -13,7 +13,7 @@ export default createViteConfig({
   additionalPlugins: [
     AutoImport({
       imports: ['vue', 'vue-router', '@vueuse/core', 'pinia'],
-      resolvers: [ElementPlusResolver()],
+      resolvers: [ElementPlusResolver({ importStyle: 'sass' })],
       dts: 'src/types/auto-imports.d.ts',
       eslintrc: {
         enabled: true,
@@ -25,7 +25,7 @@ export default createViteConfig({
       deep: true,
       extensions: ['vue'],
       dirs: ['src/components'],
-      resolvers: [ElementPlusResolver()],
+      resolvers: [ElementPlusResolver({ importStyle: 'sass' })],
       dts: 'src/types/components.d.ts',
     }),
     // 仅在生产构建时启用压缩，减小网络负载（gzip + brotli 均可按需开启）

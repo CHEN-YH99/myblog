@@ -1,7 +1,7 @@
 <!-- path: src/views/Home.vue -->
 <template>
   <div class="home-page">
-    <div class="header">
+    <div class="header" ref="headerRef">
       <!-- LCP/首图：使用 <img>，便于浏览器尽早发现与调度，并设置 fetchpriority -->
       <img
         ref="headerBgRef"
@@ -14,14 +14,14 @@
         sizes="100vw"
         width="1920"
         height="1080"
-      :style="heroStyle"
+        :style="heroStyle"
       />
       <div class="inner-header flex" ref="innerHeaderRef">
         <h1 v-typing="{ duration: 1000 }" v-once class="animate__animated animate__backInDown">小灰个人博客</h1>
       </div>
-      <el-icon color="#ffffff" size="30px" class="turndown" @click="scrollDown"
-        ><arrow-down-bold
-      /></el-icon>
+      <el-icon color="#ffffff" size="30px" class="turndown" @click="scrollDown">
+        <arrow-down-bold />
+      </el-icon>
       <!-- 海水波浪 -->
       <WaveContainer />
     </div>
@@ -261,14 +261,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick, defineAsyncComponent } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, onActivated, onDeactivated, watch, nextTick, defineAsyncComponent } from 'vue'
 import { ArrowDownBold, Loading, Picture } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useArticles } from '@/composables/useArticles'
 // import { useLikes } from '@/composables/useLikes'
 import { useUserStore } from '@/stores/user'
-import { useArticlesStore } from '@/stores/getarticles'
+import { useArticlesStore } from '@/stores/articles'
 import { formatNumber } from '@/utils/format'
 import { getUserStats } from '@/api/user'
 
@@ -276,6 +276,9 @@ const WaveContainer = defineAsyncComponent(() => import('@/components/WaveContai
 const Footer = defineAsyncComponent(() => import('@/components/Footer.vue'))
 // 已全局引入 index.scss 于 main.ts，无需重复引入
 import bgImage from '@/assets/images/shunsea1.jpg'
+import csdnIcon from '@/assets/images/csdn.svg'
+import githubIcon from '@/assets/images/github.svg'
+import bilibiliIcon from '@/assets/images/哔哩哔哩.svg'
 import { useExternalLinkConfirm } from '@/composables/useExternalLinkConfirm'
 import { debounce } from '@/utils/debounce'
 import { useParallax } from '@/composables/useParallax'
@@ -425,6 +428,70 @@ const onHeroScroll = () => {
 
 // 标题视差：向上移动速度较快，保持清晰
 useParallax(innerHeaderRef, { speed: 0.8 })
+
+// 视差就绪状态
+const parallaxReady = ref(false)
+
+// 更新头部高度
+const updateHeaderHeight = () => {
+  try {
+    const headerEl = document.querySelector('.header') as HTMLElement | null
+    if (headerEl) {
+      const height = headerEl.offsetHeight
+      document.documentElement.style.setProperty('--header-height', `${height}px`)
+    }
+  } catch (error) {
+    console.error('更新头部高度失败:', error)
+  }
+}
+
+// 绑定英雄滚动事件
+const bindHeroScroll = () => {
+  try {
+    window.addEventListener('scroll', onHeroScroll, { passive: true })
+  } catch (error) {
+    console.error('绑定滚动事件失败:', error)
+  }
+}
+
+// 解绑英雄滚动事件
+const unbindHeroScroll = () => {
+  try {
+    window.removeEventListener('scroll', onHeroScroll)
+  } catch (error) {
+    console.error('解绑滚动事件失败:', error)
+  }
+}
+
+// 同步英雄进度（延迟）
+const syncHeroProgressSoon = () => {
+  try {
+    cancelAnimationFrame(heroRaf)
+    heroRaf = requestAnimationFrame(updateHeroProgress)
+  } catch (error) {
+    console.error('同步英雄进度失败:', error)
+  }
+}
+
+// 页面显示事件处理
+const onPageShow = () => {
+  try {
+    updateHeroProgress()
+    setBackTopVisibility()
+  } catch (error) {
+    console.error('页面显示处理失败:', error)
+  }
+}
+
+// 窗口大小变化处理
+const onResize = debounce(() => {
+  try {
+    updateHeaderHeight()
+    updateHeroProgress()
+  } catch (error) {
+    console.error('窗口大小变化处理失败:', error)
+  }
+}, 300)
 
 // 格式化日期
 const formatTime = (ms: number): string => {
@@ -617,6 +684,8 @@ let stopWatchingPagination: (() => void) | null = null
 
 onMounted(async () => {
   try {
+    // 返回或首次进入首页时，强制回到顶部，避免首图因浏览器滚动恢复而出现偏移
+    try { window.scrollTo({ top: 0, behavior: 'auto' }) } catch {}
     await initArticles()
 
     if (userStore.isLoggedIn && !articlesStore.likeStatusInitialized) {
@@ -631,7 +700,13 @@ onMounted(async () => {
     scheduleIdle(() => {
       sidebarReady.value = true
     })
-    window.addEventListener('scroll', onHeroScroll, { passive: true })
+    
+    // 绑定事件监听
+    bindHeroScroll()
+    initBackTopListeners()
+    window.addEventListener('pageshow', onPageShow as any)
+    window.addEventListener('resize', onResize as any)
+    updateHeaderHeight()
     updateHeroProgress()
   } catch (error) {
     console.error('组件初始化失败:', error)
@@ -654,13 +729,36 @@ watch(
   },
 )
 
+onActivated(() => {
+  parallaxReady.value = false
+  updateHeaderHeight()
+  bindHeroScroll()
+  syncHeroProgressSoon()
+  requestAnimationFrame(() => {
+    parallaxReady.value = true
+  })
+})
+
+onDeactivated(() => {
+  unbindHeroScroll()
+  cancelAnimationFrame(heroRaf)
+})
+
 onBeforeUnmount(() => {
   try {
     cleanup()
     if (stopWatchingPagination) {
       stopWatchingPagination()
     }
-    window.removeEventListener('scroll', onHeroScroll)
+    unbindHeroScroll()
+    window.removeEventListener('pageshow', onPageShow as any)
+    window.removeEventListener('resize', onResize as any)
+    _backTopScrollTargets.forEach((t) => {
+      t.removeEventListener?.('scroll', onBackTopScroll as any)
+      t.removeEventListener?.('wheel', onBackTopScroll as any)
+      t.removeEventListener?.('touchmove', onBackTopScroll as any)
+    })
+    _backTopScrollTargets = []
     cancelAnimationFrame(heroRaf)
   } catch (error) {
     console.error('组件清理失败:', error)
@@ -690,26 +788,22 @@ const onBackTopScroll = debounce(setBackTopVisibility, 150)
 
 let _backTopScrollTargets: EventTarget[] = []
 
-onMounted(() => {
-  const bodyEl = document.body
-  const docEl = document.documentElement
-  _backTopScrollTargets = [window, document, bodyEl, docEl].filter(Boolean) as EventTarget[]
-  _backTopScrollTargets.forEach((t) => {
-    t.addEventListener?.('scroll', onBackTopScroll as any, { passive: true })
-    t.addEventListener?.('wheel', onBackTopScroll as any, { passive: true })
-    t.addEventListener?.('touchmove', onBackTopScroll as any, { passive: true })
-  })
-  setBackTopVisibility()
-})
-
-onBeforeUnmount(() => {
-  _backTopScrollTargets.forEach((t) => {
-    t.removeEventListener?.('scroll', onBackTopScroll as any)
-    t.removeEventListener?.('wheel', onBackTopScroll as any)
-    t.removeEventListener?.('touchmove', onBackTopScroll as any)
-  })
-  _backTopScrollTargets = []
-})
+// 初始化回到顶部事件监听
+const initBackTopListeners = () => {
+  try {
+    const bodyEl = document.body
+    const docEl = document.documentElement
+    _backTopScrollTargets = [window, document, bodyEl, docEl].filter(Boolean) as EventTarget[]
+    _backTopScrollTargets.forEach((t) => {
+      t.addEventListener?.('scroll', onBackTopScroll as any, { passive: true })
+      t.addEventListener?.('wheel', onBackTopScroll as any, { passive: true })
+      t.addEventListener?.('touchmove', onBackTopScroll as any, { passive: true })
+    })
+    setBackTopVisibility()
+  } catch (error) {
+    console.error('初始化回到顶部监听失败:', error)
+  }
+}
 
 // 重新加载数据
 const retryLoadData = async () => {

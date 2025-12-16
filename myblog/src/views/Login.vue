@@ -272,7 +272,7 @@ import {
 } from '@element-plus/icons-vue'
 import { loginApi, registerApi } from '@/api/auth'
 import { useUserStore } from '@/stores/user'
-import { useArticlesStore } from '@/stores/getarticles'
+import { useArticlesStore } from '@/stores/articles'
 import { useTalksStore } from '@/stores/talks'
 
 const router = useRouter()

@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { getUserInfoApi, logoutApi } from '@/api/auth'
-import { useArticlesStore } from '@/stores/getarticles'
+import { useArticlesStore } from '@/stores/articles'
 import { useTalksStore } from '@/stores/talks'
 
 // 客户端博客系统用户信息接口（简化版，不包含角色权限）
