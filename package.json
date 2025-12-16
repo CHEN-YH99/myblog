@@ -3,7 +3,6 @@
   "private": true,
   "version": "1.0.0",
   "description": "统一后端API的全栈博客系统",
-  "packageManager": "pnpm@9",
   "scripts": {
     "dev": "concurrently \"pnpm -C api dev\" \"pnpm -C myblog dev\" \"pnpm -C myblog-admin dev\"",
     "dev:api": "pnpm -C api dev",

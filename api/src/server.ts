@@ -553,8 +553,592 @@ app.post('/api/articles/batch-like-status', async (req: Request, res: Response) 
   }
 })
 
-// 其余：分类、图片分类、照片、说说、回复、认证、用户/角色等路由，保留原实现
-// 出于篇幅限制，这里不再重复粘贴；该文件在你的工作区已包含完整实现。
+// ==================== 分类路由 ====================
+app.get('/api/categories', async (req: Request, res: Response) => {
+  try {
+    const { admin } = req.query
+    const query: any = {}
+    if (!admin || admin !== 'true') query.status = 'active'
+    const categories = await Category.find(query).sort({ sort: 1 }).exec()
+    res.json(createResponse(categories, '获取分类列表成功'))
+  } catch (error) {
+    console.error('获取分类列表失败:', error)
+    res.status(500).json(createErrorResponse('获取分类列表失败', 500))
+  }
+})
+
+app.get('/api/categories/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params
+    const category = await Category.findById(id)
+    if (!category) return res.status(404).json(createErrorResponse('分类未找到', 404))
+    res.json(createResponse(category, '获取分类成功'))
+  } catch (error) {
+    res.status(500).json(createErrorResponse('获取分类失败', 500))
+  }
+})
+
+app.post('/api/categories', async (req: Request, res: Response) => {
+  try {
+    const categoryData = req.body
+    const category = new Category(categoryData)
+    const saved = await category.save()
+    res.status(201).json(createResponse(saved, '分类创建成功', 201))
+  } catch (error: any) {
+    if (error?.code === 11000) return res.status(400).json(createErrorResponse('分类名称或slug已存在', 400))
+    res.status(500).json(createErrorResponse('创建分类失败', 500))
+  }
+})
+
+app.put('/api/categories/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params
+    const updateData = { ...req.body, updateTime: new Date() }
+    const category = await Category.findByIdAndUpdate(id, updateData, { new: true, runValidators: true })
+    if (!category) return res.status(404).json(createErrorResponse('分类未找到', 404))
+    res.json(createResponse(category, '分类更新成功'))
+  } catch (error) {
+    res.status(500).json(createErrorResponse('更新分类失败', 500))
+  }
+})
+
+app.delete('/api/categories/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params
+    const category = await Category.findByIdAndDelete(id)
+    if (!category) return res.status(404).json(createErrorResponse('分类未找到', 404))
+    res.json(createResponse(null, '分类删除成功'))
+  } catch (error) {
+    res.status(500).json(createErrorResponse('删除分类失败', 500))
+  }
+})
+
+// ==================== 用户路由 ====================
+app.get('/api/users', async (req: Request, res: Response) => {
+  try {
+    const { current = 1, size = 20, enabled, startTime, endTime } = req.query
+    const query: any = {}
+    if (enabled !== undefined) query.enabled = enabled === 'true'
+    if (startTime || endTime) {
+      query.createTime = {}
+      if (startTime) query.createTime.$gte = new Date(startTime as string)
+      if (endTime) query.createTime.$lte = new Date(endTime as string)
+    }
+    const pageNum = Number(current)
+    const pageSize = Number(size)
+    const skip = (pageNum - 1) * pageSize
+    const users = await User.find(query)
+      .skip(skip)
+      .limit(pageSize)
+      .select('-password')
+      .sort({ createTime: -1 })
+      .exec()
+    const total = await User.countDocuments(query)
+    res.json(
+      createResponse(
+        { records: users, total, current: pageNum, size: pageSize },
+        '获取用户列表成功',
+      ),
+    )
+  } catch (error) {
+    console.error('获取用户列表失败:', error)
+    res.status(500).json(createErrorResponse('获取用户列表失败', 500))
+  }
+})
+
+app.get('/api/users/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params
+    let query: any
+    if (mongoose.Types.ObjectId.isValid(id)) query = { _id: id }
+    else {
+      const num = Number(id)
+      if (Number.isNaN(num)) return res.status(400).json(createErrorResponse('无效的用户ID', 400))
+      query = { userId: num }
+    }
+    const user = await User.findOne(query).select('-password')
+    if (!user) return res.status(404).json(createErrorResponse('用户未找到', 404))
+    res.json(createResponse(user, '获取用户成功'))
+  } catch (error) {
+    res.status(500).json(createErrorResponse('获取用户失败', 500))
+  }
+})
+
+app.post('/api/users', async (req: Request, res: Response) => {
+  try {
+    const body = req.body || {}
+    const userData: any = {
+      userId: body.userId ?? body.id,
+      username: body.username ?? body.userName,
+      nickname: body.nickname ?? body.nickName,
+      email: body.email ?? body.userEmail ?? '',
+      phone: body.phone ?? body.userPhone ?? '',
+      enabled: typeof body.enabled === 'boolean' ? body.enabled : body.status !== undefined ? String(body.status) === '1' : true,
+      roleId: body.roleId,
+      roleName: body.roleName,
+      password: body.password,
+      avatar: body.avatar,
+    }
+
+    // 兼容 roleIds: [number]
+    if ((!userData.roleId || !userData.roleName) && Array.isArray(body.roleIds) && body.roleIds.length > 0) {
+      const rid = Number(body.roleIds[0])
+      if (!Number.isFinite(rid)) return res.status(400).json(createErrorResponse('无效的角色ID', 400))
+      const roleDoc = await Role.findOne({ roleId: rid })
+      if (!roleDoc) return res.status(400).json(createErrorResponse('角色不存在', 400))
+      userData.roleId = rid
+      userData.roleName = roleDoc.roleName
+    }
+
+    if (!userData.username) return res.status(400).json(createErrorResponse('用户名不能为空', 400))
+    if (!userData.roleId || !userData.roleName) return res.status(400).json(createErrorResponse('角色不能为空', 400))
+
+    if (userData.password) {
+      userData.password = await bcrypt.hash(userData.password, 10)
+    }
+
+    const user = new User(userData)
+    const saved = await user.save()
+    const result = saved.toObject()
+    delete result.password
+    res.status(201).json(createResponse(result, '用户创建成功', 201))
+  } catch (error: any) {
+    if (error?.code === 11000) return res.status(400).json(createErrorResponse('用户名已存在', 400))
+    res.status(500).json(createErrorResponse('创建用户失败', 500))
+  }
+})
+
+app.put('/api/users/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params
+    const body = req.body || {}
+
+    const updateData: any = { updateTime: new Date() }
+
+    if (body.username ?? body.userName) updateData.username = body.username ?? body.userName
+    if (body.nickname ?? body.nickName) updateData.nickname = body.nickname ?? body.nickName
+    if (body.email ?? body.userEmail) updateData.email = body.email ?? body.userEmail
+    if (body.phone ?? body.userPhone) updateData.phone = body.phone ?? body.userPhone
+    if (body.avatar) updateData.avatar = body.avatar
+
+    if (body.status !== undefined) updateData.enabled = String(body.status) === '1'
+    else if (body.enabled !== undefined) updateData.enabled = !!body.enabled
+
+    // 角色映射：优先 roleId/roleName；否则从 roleIds/roleCode 推断
+    let targetRoleId: number | undefined = body.roleId
+    let targetRoleName: string | undefined = body.roleName
+
+    if ((!targetRoleId || !targetRoleName) && Array.isArray(body.roleIds) && body.roleIds.length > 0) {
+      const rid = Number(body.roleIds[0])
+      if (!Number.isNaN(rid)) targetRoleId = rid
+    }
+    if (!targetRoleId && body.roleCode) {
+      const roleByCode = await Role.findOne({ roleCode: body.roleCode })
+      if (roleByCode) {
+        targetRoleId = roleByCode.roleId
+        targetRoleName = roleByCode.roleName
+      }
+    }
+    if (targetRoleId && !targetRoleName) {
+      const roleDoc = await Role.findOne({ roleId: targetRoleId })
+      if (roleDoc) targetRoleName = roleDoc.roleName
+      else return res.status(400).json(createErrorResponse('角色不存在', 400))
+    }
+    if (targetRoleId) {
+      updateData.roleId = targetRoleId
+      updateData.roleName = targetRoleName
+    }
+
+    if (body.password) {
+      updateData.password = await bcrypt.hash(body.password, 10)
+    }
+
+    // 清理无关字段
+    const omitFields = ['id','userName','nickName','userEmail','userPhone','status','roleIds','roles','roleCode','permissions','createBy','updateBy']
+    for (const k of omitFields) delete (updateData as any)[k]
+
+    let query: any
+    if (mongoose.Types.ObjectId.isValid(id)) query = { _id: id }
+    else {
+      const num = Number(id)
+      if (Number.isNaN(num)) return res.status(400).json(createErrorResponse('无效的用户ID', 400))
+      query = { userId: num }
+    }
+
+    const user = await User.findOneAndUpdate(query, updateData, { new: true, runValidators: true }).select('-password')
+    if (!user) return res.status(404).json(createErrorResponse('用户未找到', 404))
+    res.json(createResponse(user, '用户更新成功'))
+  } catch (error) {
+    res.status(500).json(createErrorResponse('更新用户失败', 500))
+  }
+})
+
+app.delete('/api/users/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params
+    let query: any
+    if (mongoose.Types.ObjectId.isValid(id)) query = { _id: id }
+    else {
+      const num = Number(id)
+      if (Number.isNaN(num)) return res.status(400).json(createErrorResponse('无效的用户ID', 400))
+      query = { userId: num }
+    }
+    const user = await User.findOneAndDelete(query)
+    if (!user) return res.status(404).json(createErrorResponse('用户未找到', 404))
+    res.json(createResponse(null, '用户删除成功'))
+  } catch (error: any) {
+    if (error?.name === 'CastError') return res.status(400).json(createErrorResponse('无效的用户ID', 400))
+    res.status(500).json(createErrorResponse('删除用户失败', 500))
+  }
+})
+
+// ==================== 角色路由 ====================
+app.get('/api/roles', async (req: Request, res: Response) => {
+  try {
+    const { current = 1, size = 20 } = req.query
+    const pageNum = Number(current)
+    const pageSize = Number(size)
+    const skip = (pageNum - 1) * pageSize
+    const roles = await Role.find()
+      .skip(skip)
+      .limit(pageSize)
+      .sort({ createTime: -1 })
+      .exec()
+    const total = await Role.countDocuments()
+    res.json(
+      createResponse(
+        { records: roles, total, current: pageNum, size: pageSize },
+        '获取角色列表成功',
+      ),
+    )
+  } catch (error) {
+    console.error('获取角色列表失败:', error)
+    res.status(500).json(createErrorResponse('获取角色列表失败', 500))
+  }
+})
+
+app.get('/api/roles/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params
+    const role = await Role.findById(id)
+    if (!role) return res.status(404).json(createErrorResponse('角色未找到', 404))
+    res.json(createResponse(role, '获取角色成功'))
+  } catch (error) {
+    res.status(500).json(createErrorResponse('获取角色失败', 500))
+  }
+})
+
+app.post('/api/roles', async (req: Request, res: Response) => {
+  try {
+    const roleData = req.body
+    const role = new Role(roleData)
+    const saved = await role.save()
+    res.status(201).json(createResponse(saved, '角色创建成功', 201))
+  } catch (error: any) {
+    if (error?.code === 11000) return res.status(400).json(createErrorResponse('角色编码已存在', 400))
+    res.status(500).json(createErrorResponse('创建角色失败', 500))
+  }
+})
+
+app.put('/api/roles/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params
+    const updateData = { ...req.body, updateTime: new Date() }
+    const role = await Role.findByIdAndUpdate(id, updateData, { new: true, runValidators: true })
+    if (!role) return res.status(404).json(createErrorResponse('角色未找到', 404))
+    res.json(createResponse(role, '角色更新成功'))
+  } catch (error) {
+    res.status(500).json(createErrorResponse('更新角色失败', 500))
+  }
+})
+
+app.delete('/api/roles/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params
+    const role = await Role.findByIdAndDelete(id)
+    if (!role) return res.status(404).json(createErrorResponse('角色未找到', 404))
+    res.json(createResponse(null, '角色删除成功'))
+  } catch (error) {
+    res.status(500).json(createErrorResponse('删除角色失败', 500))
+  }
+})
+
+// ==================== 认证路由 ====================
+// 登录：校验用户名/密码（兼容明文或bcrypt哈希），可选校验角色。
+app.post('/api/auth/login', async (req: Request, res: Response) => {
+  try {
+    const { username, password, roleId, roleName, roleCode } = (req.body || {}) as {
+      username?: string
+      password?: string
+      roleId?: number
+      roleName?: string
+      roleCode?: string
+    }
+    if (!username || !password) return res.status(400).json(createErrorResponse('用户名和密码不能为空', 400))
+
+    // 1) 查找用户
+    const user = await User.findOne({ username })
+    if (!user) return res.status(401).json(createErrorResponse('用户名或密码错误', 401))
+    if (user.enabled === false) return res.status(403).json(createErrorResponse('用户已被禁用', 403))
+
+    // 2) 可选：校验角色
+    if (roleId !== undefined && user.roleId !== roleId) {
+      return res.status(403).json(createErrorResponse('角色不匹配', 403))
+    }
+    if (roleName && user.roleName !== roleName) {
+      return res.status(403).json(createErrorResponse('角色不匹配', 403))
+    }
+    if (roleCode) {
+      const role = await Role.findOne({ roleCode })
+      if (!role || role.roleId !== user.roleId) return res.status(403).json(createErrorResponse('角色不匹配', 403))
+    }
+
+    // 3) 校验密码：先尝试bcrypt.compare，失败时再与明文比较（兼容历史数据）
+    let passOK = false
+    try {
+      passOK = await bcrypt.compare(password, user.password)
+    } catch {
+      passOK = false
+    }
+    if (!passOK) {
+      // 如果库里存的是明文，直接比较
+      if (user.password === password) passOK = true
+    }
+    if (!passOK) return res.status(401).json(createErrorResponse('用户名或密码错误', 401))
+
+    // 4) 生成 mock token（前端按该格式读取用户名）
+    const token = `mock-jwt-token-${encodeURIComponent(username)}-${Date.now()}`
+
+    // 组装权限与角色码
+    const roleDoc = await Role.findOne({ roleId: user.roleId }).lean()
+    const safeUser = user.toObject() as any
+    delete safeUser.password
+    safeUser.roleCode = roleDoc?.roleCode || ''
+    safeUser.roles = roleDoc?.roleCode ? [roleDoc.roleCode] : []
+    safeUser.permissions = Array.isArray(roleDoc?.permissions) ? roleDoc!.permissions : []
+
+    res.json(createResponse({ token, user: safeUser }, '登录成功'))
+  } catch (error) {
+    console.error('登录失败:', error)
+    res.status(500).json(createErrorResponse('登录失败', 500))
+  }
+})
+
+app.get('/api/auth/user-info', async (req: Request, res: Response) => {
+  try {
+    const authorization = req.get('Authorization') || ''
+    if (!authorization.startsWith('mock-jwt-token-')) {
+      return res.status(401).json(createErrorResponse('未授权', 401))
+    }
+    // 从 token 中提取用户信息
+    const tokenParts = authorization.split('-')
+    if (tokenParts.length < 5) {
+      return res.status(401).json(createErrorResponse('无效的token', 401))
+    }
+    const username = decodeURIComponent(tokenParts[3])
+    const user = await User.findOne({ username })
+    if (!user) {
+      return res.status(404).json(createErrorResponse('用户不存在', 404))
+    }
+    const roleDoc = await Role.findOne({ roleId: user.roleId }).lean()
+    const safeUser = user.toObject() as any
+    delete safeUser.password
+    safeUser.roleCode = roleDoc?.roleCode || ''
+    safeUser.roles = roleDoc?.roleCode ? [roleDoc.roleCode] : []
+    safeUser.permissions = Array.isArray(roleDoc?.permissions) ? roleDoc!.permissions : []
+    res.json(createResponse(safeUser, '获取用户信息成功'))
+  } catch (error) {
+    console.error('获取用户信息失败:', error)
+    res.status(500).json(createErrorResponse('获取用户信息失败', 500))
+  }
+})
+
+app.post('/api/auth/logout', async (req: Request, res: Response) => {
+  try {
+    res.json(createResponse(null, '登出成功'))
+  } catch (error) {
+    res.status(500).json(createErrorResponse('登出失败', 500))
+  }
+})
+
+// ==================== 说说路由 ====================
+app.get('/api/talks', async (req: Request, res: Response) => {
+  try {
+    const { current = 1, size = 20 } = req.query
+    const pageNum = Number(current)
+    const pageSize = Number(size)
+    const skip = (pageNum - 1) * pageSize
+    const talks = await Talk.find({ status: 'public' })
+      .skip(skip)
+      .limit(pageSize)
+      .sort({ publishDate: -1 })
+      .exec()
+    const total = await Talk.countDocuments({ status: 'public' })
+    res.json(
+      createResponse(
+        { records: talks, total, current: pageNum, size: pageSize },
+        '获取说说列表成功',
+      ),
+    )
+  } catch (error) {
+    console.error('获取说说列表失败:', error)
+    res.status(500).json(createErrorResponse('获取说说列表失败', 500))
+  }
+})
+
+app.get('/api/talks/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params
+    const talk = await Talk.findById(id)
+    if (!talk) return res.status(404).json(createErrorResponse('说说未找到', 404))
+    res.json(createResponse(talk, '获取说说成功'))
+  } catch (error) {
+    res.status(500).json(createErrorResponse('获取说说失败', 500))
+  }
+})
+
+app.post('/api/talks', async (req: Request, res: Response) => {
+  try {
+    const talkData = req.body
+    const talk = new Talk(talkData)
+    const saved = await talk.save()
+    res.status(201).json(createResponse(saved, '说说创建成功', 201))
+  } catch (error) {
+    res.status(500).json(createErrorResponse('创建说说失败', 500))
+  }
+})
+
+app.put('/api/talks/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params
+    const updateData = { ...req.body, updateDate: new Date() }
+    const talk = await Talk.findByIdAndUpdate(id, updateData, { new: true, runValidators: true })
+    if (!talk) return res.status(404).json(createErrorResponse('说说未找到', 404))
+    res.json(createResponse(talk, '说说更新成功'))
+  } catch (error) {
+    res.status(500).json(createErrorResponse('更新说说失败', 500))
+  }
+})
+
+app.delete('/api/talks/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params
+    const talk = await Talk.findByIdAndDelete(id)
+    if (!talk) return res.status(404).json(createErrorResponse('说说未找到', 404))
+    res.json(createResponse(null, '说说删除成功'))
+  } catch (error) {
+    res.status(500).json(createErrorResponse('删除说说失败', 500))
+  }
+})
+
+// ==================== 回复路由 ====================
+app.get('/api/replies', async (req: Request, res: Response) => {
+  try {
+    const { talkId, current = 1, size = 20 } = req.query
+    const query: any = { status: 'approved' }
+    if (talkId) query.talkId = talkId
+    const pageNum = Number(current)
+    const pageSize = Number(size)
+    const skip = (pageNum - 1) * pageSize
+    const replies = await Reply.find(query)
+      .skip(skip)
+      .limit(pageSize)
+      .sort({ publishDate: -1 })
+      .exec()
+    const total = await Reply.countDocuments(query)
+    res.json(
+      createResponse(
+        { records: replies, total, current: pageNum, size: pageSize },
+        '获取回复列表成功',
+      ),
+    )
+  } catch (error) {
+    console.error('获取回复列表失败:', error)
+    res.status(500).json(createErrorResponse('获取回复列表失败', 500))
+  }
+})
+
+app.post('/api/replies', async (req: Request, res: Response) => {
+  try {
+    const replyData = req.body
+    const reply = new Reply(replyData)
+    const saved = await reply.save()
+    res.status(201).json(createResponse(saved, '回复创建成功', 201))
+  } catch (error) {
+    res.status(500).json(createErrorResponse('创建回复失败', 500))
+  }
+})
+
+app.delete('/api/replies/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params
+    const reply = await Reply.findByIdAndDelete(id)
+    if (!reply) return res.status(404).json(createErrorResponse('回复未找到', 404))
+    res.json(createResponse(null, '回复删除成功'))
+  } catch (error) {
+    res.status(500).json(createErrorResponse('删除回复失败', 500))
+  }
+})
+
+// ==================== 照片分类路由 ====================
+app.get('/api/photo-categories', async (req: Request, res: Response) => {
+  try {
+    const categories = await PhotoCategory.find({ isVisible: true }).sort({ sortOrder: 1 }).exec()
+    res.json(createResponse(categories, '获取照片分类列表成功'))
+  } catch (error) {
+    console.error('获取照片分类列表失败:', error)
+    res.status(500).json(createErrorResponse('获取照片分类列表失败', 500))
+  }
+})
+
+app.get('/api/photo-categories/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params
+    const category = await PhotoCategory.findOne({ id })
+    if (!category) return res.status(404).json(createErrorResponse('照片分类未找到', 404))
+    res.json(createResponse(category, '获取照片分类成功'))
+  } catch (error) {
+    res.status(500).json(createErrorResponse('获取照片分类失败', 500))
+  }
+})
+
+// ==================== 照片路由 ====================
+app.get('/api/photos', async (req: Request, res: Response) => {
+  try {
+    const { categoryId, current = 1, size = 20 } = req.query
+    const query: any = { isVisible: true }
+    if (categoryId) query.categoryId = categoryId
+    const pageNum = Number(current)
+    const pageSize = Number(size)
+    const skip = (pageNum - 1) * pageSize
+    const photos = await Photo.find(query)
+      .skip(skip)
+      .limit(pageSize)
+      .sort({ sortOrder: 1, uploadDate: -1 })
+      .exec()
+    const total = await Photo.countDocuments(query)
+    res.json(
+      createResponse(
+        { records: photos, total, current: pageNum, size: pageSize },
+        '获取照片列表成功',
+      ),
+    )
+  } catch (error) {
+    console.error('获取照片列表失败:', error)
+    res.status(500).json(createErrorResponse('获取照片列表失败', 500))
+  }
+})
+
+app.get('/api/photos/:id', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params
+    const photo = await Photo.findById(id)
+    if (!photo) return res.status(404).json(createErrorResponse('照片未找到', 404))
+    res.json(createResponse(photo, '获取照片成功'))
+  } catch (error) {
+    res.status(500).json(createErrorResponse('获取照片失败', 500))
+  }
+})
 
 // 全局错误处理
 app.use((err: Error, _req: Request, res: Response, _next: any) => {
