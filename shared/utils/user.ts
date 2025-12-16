@@ -3,13 +3,26 @@
  */
 
 /**
- * 获取默认头像
+ * 获取默认头像（用户名前两个字母头像）
  */
 export function getDefaultAvatar(username: string): string {
-  const name = username || 'User'
-  const colors = ['409eff', '67c23a', 'e6a23c', 'f56c6c', '909399']
-  const color = colors[name.length % colors.length]
-  return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=${color}&color=fff&size=200`
+  const name = String(username || 'User')
+  const initials = name.slice(0, 2).toUpperCase()
+  const colors = ['#409eff', '#67c23a', '#e6a23c', '#f56c6c', '#909399']
+  const bg = colors[name.length % colors.length]
+  const svg = `<?xml version="1.0" encoding="UTF-8"?>
+  <svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">
+    <defs>
+      <style type="text/css">
+        @font-face { font-family: system-ui; }
+      </style>
+    </defs>
+    <rect width="200" height="200" fill="${bg}" rx="24" ry="24" />
+    <text x="50%" y="50%" dy="8" text-anchor="middle" dominant-baseline="middle"
+      font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, 'Noto Sans', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif"
+      font-size="88" font-weight="700" fill="#ffffff">${initials}</text>
+  </svg>`
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`
 }
 
 /**

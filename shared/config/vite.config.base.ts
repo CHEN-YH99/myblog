@@ -1,6 +1,9 @@
+// @ts-nocheck
 /// <reference types="node" />
 // @ts-ignore
-import { defineConfig, loadEnv, type UserConfig } from 'vite'
+import type { UserConfig } from 'vite'
+// @ts-ignore
+import { defineConfig, loadEnv } from 'vite'
 // @ts-ignore
 import vue from '@vitejs/plugin-vue'
 // @ts-ignore
@@ -27,7 +30,7 @@ export function createViteConfig(options: {
   }
 } = {}) {
   const {
-    root = process.cwd(),
+    root = (process as any).cwd(),
     isAdmin = false,
     additionalAlias = {},
     additionalPlugins = [],
@@ -139,6 +142,7 @@ export function createViteConfig(options: {
 /**
  * 解析路径工具函数
  */
-export function resolvePath(relativePath: string, basePath: string = process.cwd()): string {
+export function resolvePath(relativePath: string, basePath: string = (process as any).cwd()): string {
   return resolve(basePath, relativePath)
 }
+

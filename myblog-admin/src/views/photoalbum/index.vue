@@ -64,13 +64,13 @@
           </template>
         </ElTableColumn>
         <ElTableColumn prop="coverImage" label="相册分类封面" min-width="150">
-           <template #default="{ row }">
-             <div v-if="row.coverImage" class="cover-image">
-               <img :src="row.coverImage" :alt="row.name" class="cover-thumb" />
-             </div>
-             <span v-else class="no-cover">暂无封面</span>
-           </template>
-         </ElTableColumn>
+          <template #default="{ row }">
+            <div v-if="row.coverImage" class="cover-image">
+              <img :src="row.coverImage" :alt="row.name" class="cover-thumb" />
+            </div>
+            <span v-else class="no-cover">暂无封面</span>
+          </template>
+        </ElTableColumn>
         <ElTableColumn prop="description" label="描述" min-width="200" show-overflow-tooltip />
         <ElTableColumn prop="photoCount" label="图片数量" width="100" align="center">
           <template #default="{ row }">

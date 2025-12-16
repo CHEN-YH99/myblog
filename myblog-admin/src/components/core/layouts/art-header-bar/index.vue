@@ -113,15 +113,19 @@
             popper-style="border: 1px solid var(--art-border-dashed-color); border-radius: calc(var(--custom-radius) / 2 + 4px); padding: 5px 16px; 5px 16px;"
           >
             <template #reference>
-              <img class="cover" :src="userAvatar" alt="avatar" />
+              <div class="cover initial-avatar" :style="{ background: avatarBg, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 600, fontSize: '14px' }">
+                {{ initials }}
+              </div>
             </template>
             <template #default>
               <div class="user-menu-box">
                 <div class="user-head">
-                  <img class="cover" :src="userAvatar" style="float: left" />
+                  <div class="cover initial-avatar" :style="{ background: avatarBg, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 600, fontSize: '16px' }">
+                    {{ initials }}
+                  </div>
                   <div class="user-wrap">
-                    <span class="name">{{ userInfo.userName }}</span>
-                    <span class="email">{{ userInfo.email }}</span>
+                    <span class="name">{{ displayName }}</span>
+                    <span class="email">{{ displayEmail }}</span>
                   </div>
                 </div>
                 <ul class="user-menu">
@@ -162,7 +166,7 @@
   import { storeToRefs } from 'pinia'
   import { useI18n } from 'vue-i18n'
   import { useRouter } from 'vue-router'
-  import { ElMessageBox } from 'element-plus'
+  import { ElMessageBox, ElImage } from 'element-plus'
   import { useFullscreen, useWindowSize } from '@vueuse/core'
   import { LanguageEnum, MenuTypeEnum } from '@/enums/appEnum'
   import { useSettingStore } from '@/store/modules/setting'
@@ -175,6 +179,7 @@
   import { themeAnimation } from '@/utils/theme/animation'
   import { useCommon } from '@/composables/useCommon'
   import { useHeaderBar } from '@/composables/useHeaderBar'
+  import { getDefaultAvatar } from '@shared/utils/user'
 
   defineOptions({ name: 'ArtHeaderBar' })
 
@@ -207,24 +212,26 @@
   const { language, getUserInfo: userInfo } = storeToRefs(userStore)
   const { menuList } = storeToRefs(menuStore)
 
-  // 生成默认头像（用户名首字母头像）
-  const getDefaultAvatar = (username: string) => {
-    const name = username || 'User'
-    const colors = ['409eff', '67c23a', 'e6a23c', 'f56c6c', '909399']
-    const color = colors[name.length % colors.length]
-    return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=${color}&color=fff&size=200`
-  }
-
-  // 用户头像（优先使用用户上传，其次回退到首字母头像）
-  const userAvatar = computed(() => {
-    const name = userInfo.value?.userName || 'User'
-    const avatar = (userInfo.value as any)?.avatar
-    return avatar && typeof avatar === 'string' && avatar.length > 0
-      ? avatar
-      : getDefaultAvatar(name)
+  // 兼容字段：显示名与邮箱
+  const displayEmail = computed(() => (userInfo.value as any)?.email || (userInfo.value as any)?.userEmail || '')
+  const displayName = computed(() => {
+    const ui = userInfo.value as any
+    const u1 = ui?.userName || ui?.username
+    if (u1 && String(u1).trim()) return String(u1).trim()
+    const email = displayEmail.value
+    if (email && email.includes('@')) return email.split('@')[0]
+    return 'User'
   })
 
+  // 顶部栏头像：统一显示“用户名首两字母/字符”的头像（不使用上传头像）
+  const userAvatar = computed(() => getDefaultAvatar(displayName.value))
+
   const userMenuPopover = ref()
+
+  // 头像首字与背景色
+  const COLORS = ['#409eff', '#67c23a', '#e6a23c', '#f56c6c', '#909399']
+  const initials = computed(() => String(displayName.value).slice(0, 2).toUpperCase())
+  const avatarBg = computed(() => COLORS[String(displayName.value).length % COLORS.length])
 
   // 菜单类型判断
   const isLeftMenu = computed(() => menuType.value === MenuTypeEnum.LEFT)
