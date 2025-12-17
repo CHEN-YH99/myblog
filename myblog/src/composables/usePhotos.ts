@@ -29,19 +29,31 @@ export const usePhotos = () => {
     error.value = null
 
     try {
+      // 重置分页到第1页，确保新查询从第一页开始
+      pagination.current = 1
+      
       const response = await getPhotos({
         current: pagination.current,
         size: pagination.size,
         ...params,
       })
 
-      photos.value = response.photos
-      pagination.total = response.total
-      pagination.current = response.currentPage
-      pagination.size = response.pageSize
+      // 兼容后端响应格式：records/current/size 或 photos/currentPage/pageSize
+      const photoList = (response as any).records || (response as any).photos || []
+      const currentPage = (response as any).current || (response as any).currentPage || 1
+      const pageSize = (response as any).size || (response as any).pageSize || 20
+
+      photos.value = photoList
+      pagination.total = response.total || 0
+      pagination.current = currentPage
+      pagination.size = pageSize
+
+      console.log(`获取照片列表成功: ${photoList.length} 张, 总数: ${pagination.total}`)
     } catch (err: unknown) {
       error.value = err instanceof Error ? err.message : '获取照片列表失败'
       console.error('获取照片列表失败:', err)
+      // 错误时清空照片列表
+      photos.value = []
     } finally {
       loading.value = false
     }

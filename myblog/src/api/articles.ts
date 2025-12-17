@@ -2,7 +2,13 @@ import api from '@/utils/http'
 
 // 缓存配置
 const CACHE_DURATION = 5 * 60 * 1000 // 5分钟
+const MAX_CACHE_SIZE = 100 // 最大缓存条目数
+const CLEANUP_INTERVAL = 2 * 60 * 1000 // 清理间隔 2分钟
+
 const cache = new Map<string, { data: Record<string, unknown>; timestamp: number }>()
+
+// 缓存清理定时器ID
+let cleanupTimerId: ReturnType<typeof setInterval> | null = null
 
 // 缓存工具函数
 function getCacheKey(url: string, params?: Record<string, unknown>): string {
@@ -19,8 +25,71 @@ function getFromCache<T>(key: string): T | null {
 }
 
 function setCache(key: string, data: Record<string, unknown>): void {
+  // 检查缓存大小，如果超过限制则清理最旧的条目
+  if (cache.size >= MAX_CACHE_SIZE) {
+    // 找到最旧的条目并删除
+    let oldestKey: string | null = null
+    let oldestTime = Date.now()
+    
+    for (const [k, v] of cache.entries()) {
+      if (v.timestamp < oldestTime) {
+        oldestTime = v.timestamp
+        oldestKey = k
+      }
+    }
+    
+    if (oldestKey) {
+      cache.delete(oldestKey)
+    }
+  }
+  
   cache.set(key, { data, timestamp: Date.now() })
 }
+
+// 启动缓存清理定时器
+function startCacheCleanup(): void {
+  if (cleanupTimerId !== null) {
+    return // 已经启动，避免重复
+  }
+  
+  cleanupTimerId = setInterval(() => {
+    const now = Date.now()
+    let cleanedCount = 0
+    
+    for (const [key, value] of cache.entries()) {
+      if (now - value.timestamp > CACHE_DURATION) {
+        cache.delete(key)
+        cleanedCount++
+      }
+    }
+    
+    // 如果缓存仍然超过限制，继续清理最旧的条目
+    if (cache.size > MAX_CACHE_SIZE) {
+      const entriesToRemove = cache.size - MAX_CACHE_SIZE
+      const entries = Array.from(cache.entries()).sort((a, b) => a[1].timestamp - b[1].timestamp)
+      
+      for (let i = 0; i < entriesToRemove && i < entries.length; i++) {
+        cache.delete(entries[i][0])
+      }
+    }
+  }, CLEANUP_INTERVAL)
+}
+
+// 停止缓存清理定时器
+function stopCacheCleanup(): void {
+  if (cleanupTimerId !== null) {
+    clearInterval(cleanupTimerId)
+    cleanupTimerId = null
+  }
+}
+
+// 清除所有缓存
+function clearAllCache(): void {
+  cache.clear()
+}
+
+// 初始化时启动清理定时器
+startCacheCleanup()
 
 // 重试配置
 const MAX_RETRIES = 3
@@ -570,12 +639,11 @@ export function getAllArticlesWithSignal(signal?: AbortSignal, params?: Api.Arti
     })
 }
 
-// 清理过期缓存
-setInterval(() => {
-  const now = Date.now()
-  for (const [key, value] of cache.entries()) {
-    if (now - value.timestamp > CACHE_DURATION) {
-      cache.delete(key)
-    }
-  }
-}, CACHE_DURATION)
+/**
+ * 清理缓存和定时器（应在应用卸载时调用）
+ * 用于防止内存泄漏
+ */
+export function cleanupCache(): void {
+  stopCacheCleanup()
+  clearAllCache()
+}
