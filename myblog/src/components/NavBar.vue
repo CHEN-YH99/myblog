@@ -73,10 +73,10 @@
         </el-menu-item>
 
         <!-- 用户登录状态显示 -->
-        <div v-if="userStore.isLoggedIn" class="navbar__user" @click="handleUserMenuToggle">
+        <div v-if="Boolean(userStore.token)" class="navbar__user" @click="handleUserMenuToggle">
           <el-avatar :src="displayAvatar" :size="32" class="user-avatar" />
           <span class="user-name">{{
-            userStore.userInfo?.nickname || userStore.userInfo?.username
+            displayName
           }}</span>
 
           <!-- 用户下拉菜单 -->
@@ -200,12 +200,10 @@
         </el-menu-item>
 
         <!-- 移动端用户登录状态显示 -->
-        <div v-if="userStore.isLoggedIn" class="mobile-user-section">
+        <div v-if="Boolean(userStore.token)" class="mobile-user-section">
           <div class="mobile-user-info">
             <el-avatar :src="displayAvatar" :size="40" />
-            <span class="mobile-user-name">{{
-              userStore.userInfo?.nickname || userStore.userInfo?.username
-            }}</span>
+            <span class="mobile-user-name">{{ displayName }}</span>
           </div>
           <el-menu-item index="m-user-center" @click="handleMobileNavigation('/user/center')">
             <el-icon><UserFilled /></el-icon>
@@ -274,6 +272,12 @@ const displayAvatar = computed(() => {
   if (user && user.avatar) return user.avatar
   const name = user?.nickname || user?.username || (user?.id ? String(user.id) : 'User')
   return getDefaultAvatar(name)
+})
+
+// 统一的展示昵称：优先昵称，其次用户名；未加载完成前返回空字符串以避免闪烁
+const displayName = computed(() => {
+  const u = userStore.userInfo
+  return (u?.nickname || u?.username || '')
 })
 
 // 使用 ref 来控制活动菜单项，避免跳闪
@@ -355,6 +359,21 @@ watch(
   { immediate: true },
 )
 
+// 修复：登录成功后立即刷新用户信息，触发用户名/头像的动态渲染
+// 注意：仅监听 token，避免 isLoggedIn 依赖 userInfo 导致的“永远不会变真”的死锁
+watch(
+  () => userStore.token,
+  async (t) => {
+    if (t) {
+      try {
+        await userStore.fetchUserInfo()
+      } catch (err) {
+        // 忽略异常，防止影响导航条渲染
+      }
+    }
+  },
+)
+
 // 处理移动端导航
 const handleMobileNavigation = (path) => {
   drawer.value = false
@@ -416,7 +435,7 @@ onMounted(() => {
   // 添加点击外部关闭菜单的监听器
   document.addEventListener('click', handleClickOutside)
   // 刷新用户信息，确保头像与后台同步（登录状态下）
-  if (userStore.isLoggedIn) {
+  if (userStore.token) {
     userStore.fetchUserInfo().catch(() => {})
   }
 })

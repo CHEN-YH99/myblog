@@ -392,15 +392,9 @@ const heroProgress = ref(0)
 const heroStyle = computed(() => {
   const p = Math.min(Math.max(heroProgress.value, 0), 1)
   const translateY = p * window.innerHeight * 0.5
-  const scale = 1 - p * 0.2
-  const blur = p * 20
-  const brightness = Math.max(0.4, 1 - p * 0.6)
-  const opacity = Math.max(0, 1 - p * 1.2)
   return {
-    transform: `translate3d(0, ${translateY}px, 0) scale(${scale.toFixed(3)})`,
-    filter: `blur(${blur.toFixed(2)}px) brightness(${brightness.toFixed(2)})`,
-    opacity: opacity.toFixed(3),
-    willChange: 'transform, filter, opacity',
+    transform: `translate3d(0, ${translateY}px, 0)`,
+    willChange: 'transform',
   }
 })
 let heroRaf = 0
@@ -733,9 +727,21 @@ onActivated(() => {
   parallaxReady.value = false
   updateHeaderHeight()
   bindHeroScroll()
-  syncHeroProgressSoon()
-  requestAnimationFrame(() => {
-    parallaxReady.value = true
+
+  // 延迟执行，确保在浏览器滚动恢复之后重置位置
+  nextTick(() => {
+    try {
+      // 强制滚动到顶部
+      window.scrollTo({ top: 0, behavior: 'auto' })
+      // 立即更新一次视差进度，以反映滚动到顶部后的状态
+      updateHeroProgress()
+    } catch (e) {
+      console.error('Failed to reset scroll on activation:', e)
+    }
+
+    requestAnimationFrame(() => {
+      parallaxReady.value = true
+    })
   })
 })
 

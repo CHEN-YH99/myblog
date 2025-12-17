@@ -41,7 +41,7 @@
       <el-dialog
         v-model="avatarDialogVisible"
         title="更换头像"
-        width="500px"
+        width="500px" 
         :before-close="() => { avatarDialogVisible = false; currentAvatarUser = null }"
       >
         <div class="avatar-dialog-content">

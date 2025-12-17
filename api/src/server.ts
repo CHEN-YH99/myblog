@@ -501,20 +501,27 @@ function normalizeIP(ip: string): string {
   return ip
 }
 
+// 从请求中解析用于去重的用户标识（登录用户用用户名，未登录用IP）
+function resolveUserIdentifier(req: Request): string {
+  const rawIP = req.ip || (req.connection as any)?.remoteAddress || 'unknown'
+  const clientIP = normalizeIP(rawIP)
+  const authorization = req.get('Authorization') || ''
+  let userIdentifier = clientIP
+  if (authorization && authorization.startsWith('mock-jwt-token-')) {
+    const tokenParts = authorization.split('-')
+    if (tokenParts.length >= 5) {
+      const username = decodeURIComponent(tokenParts.slice(3, -1).join('-'))
+      userIdentifier = `user_${username}`
+    }
+  }
+  return userIdentifier
+}
+
+// 文章点赞
 app.post('/api/articles/:id/like', async (req: Request, res: Response) => {
   try {
     const { id } = req.params
-    const rawIP = req.ip || (req.connection as any)?.remoteAddress || 'unknown'
-    const clientIP = normalizeIP(rawIP)
-    const authorization = req.get('Authorization') || ''
-    let userIdentifier = clientIP
-    if (authorization && authorization.startsWith('mock-jwt-token-')) {
-      const tokenParts = authorization.split('-')
-      if (tokenParts.length >= 5) {
-        const username = decodeURIComponent(tokenParts[3])
-        userIdentifier = `user_${username}`
-      }
-    }
+    const userIdentifier = resolveUserIdentifier(req)
     const existingLike = await Like.findOne({ targetId: id, targetType: 'article', ip: userIdentifier })
     if (existingLike) return res.status(400).json(createErrorResponse('您已经点过赞', 400))
     await Like.create({ targetId: id, targetType: 'article', ip: userIdentifier, userAgent: req.headers['user-agent'] || '' })
@@ -529,20 +536,11 @@ app.post('/api/articles/:id/like', async (req: Request, res: Response) => {
   }
 })
 
+// 文章取消点赞
 app.post('/api/articles/:id/unlike', async (req: Request, res: Response) => {
   try {
     const { id } = req.params
-    const rawIP = req.ip || (req.connection as any)?.remoteAddress || 'unknown'
-    const clientIP = normalizeIP(rawIP)
-    const authorization = req.get('Authorization') || ''
-    let userIdentifier = clientIP
-    if (authorization && authorization.startsWith('mock-jwt-token-')) {
-      const tokenParts = authorization.split('-')
-      if (tokenParts.length >= 5) {
-        const username = decodeURIComponent(tokenParts[3])
-        userIdentifier = `user_${username}`
-      }
-    }
+    const userIdentifier = resolveUserIdentifier(req)
     const likeRecord = await Like.findOne({ targetId: id, targetType: 'article', ip: userIdentifier })
     if (!likeRecord) return res.status(400).json(createErrorResponse('您还没有点赞', 400))
     await Like.deleteOne({ _id: likeRecord._id })
@@ -553,6 +551,82 @@ app.post('/api/articles/:id/unlike', async (req: Request, res: Response) => {
       await article.save()
     }
     res.json(createResponse({ likes: article.likes }, '取消点赞成功'))
+  } catch (error) {
+    res.status(500).json(createErrorResponse('取消点赞失败', 500))
+  }
+})
+
+// 说说点赞（前台使用 POST/DELETE /api/talks/:id/like）
+app.post('/api/talks/:id/like', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params
+    const userIdentifier = resolveUserIdentifier(req)
+    const existing = await Like.findOne({ targetId: id, targetType: 'talk', ip: userIdentifier })
+    if (existing) return res.status(400).json(createErrorResponse('您已经点过赞', 400))
+    await Like.create({ targetId: id, targetType: 'talk', ip: userIdentifier, userAgent: req.headers['user-agent'] || '' })
+    const talk = await Talk.findByIdAndUpdate(id, { $inc: { likes: 1 } }, { new: true })
+    if (!talk) {
+      await Like.deleteOne({ targetId: id, targetType: 'talk', ip: userIdentifier })
+      return res.status(404).json(createErrorResponse('说说未找到', 404))
+    }
+    res.json(createResponse({ likes: talk.likes }, '点赞成功'))
+  } catch (error) {
+    res.status(500).json(createErrorResponse('点赞失败', 500))
+  }
+})
+
+app.delete('/api/talks/:id/like', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params
+    const userIdentifier = resolveUserIdentifier(req)
+    const likeRecord = await Like.findOne({ targetId: id, targetType: 'talk', ip: userIdentifier })
+    if (!likeRecord) return res.status(400).json(createErrorResponse('您还没有点赞', 400))
+    await Like.deleteOne({ _id: likeRecord._id })
+    const talk = await Talk.findByIdAndUpdate(id, { $inc: { likes: -1 } }, { new: true })
+    if (!talk) return res.status(404).json(createErrorResponse('说说未找到', 404))
+    if (talk.likes < 0) {
+      talk.likes = 0
+      await talk.save()
+    }
+    res.json(createResponse({ likes: talk.likes }, '取消点赞成功'))
+  } catch (error) {
+    res.status(500).json(createErrorResponse('取消点赞失败', 500))
+  }
+})
+
+// 回复点赞（前台使用 POST/DELETE /api/replies/:id/like）
+app.post('/api/replies/:id/like', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params
+    const userIdentifier = resolveUserIdentifier(req)
+    const existing = await Like.findOne({ targetId: id, targetType: 'reply', ip: userIdentifier })
+    if (existing) return res.status(400).json(createErrorResponse('您已经点过赞', 400))
+    await Like.create({ targetId: id, targetType: 'reply', ip: userIdentifier, userAgent: req.headers['user-agent'] || '' })
+    const reply = await Reply.findByIdAndUpdate(id, { $inc: { likes: 1 } }, { new: true })
+    if (!reply) {
+      await Like.deleteOne({ targetId: id, targetType: 'reply', ip: userIdentifier })
+      return res.status(404).json(createErrorResponse('回复未找到', 404))
+    }
+    res.json(createResponse({ likes: reply.likes }, '点赞成功'))
+  } catch (error) {
+    res.status(500).json(createErrorResponse('点赞失败', 500))
+  }
+})
+
+app.delete('/api/replies/:id/like', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params
+    const userIdentifier = resolveUserIdentifier(req)
+    const likeRecord = await Like.findOne({ targetId: id, targetType: 'reply', ip: userIdentifier })
+    if (!likeRecord) return res.status(400).json(createErrorResponse('您还没有点赞', 400))
+    await Like.deleteOne({ _id: likeRecord._id })
+    const reply = await Reply.findByIdAndUpdate(id, { $inc: { likes: -1 } }, { new: true })
+    if (!reply) return res.status(404).json(createErrorResponse('回复未找到', 404))
+    if (reply.likes < 0) {
+      reply.likes = 0
+      await reply.save()
+    }
+    res.json(createResponse({ likes: reply.likes }, '取消点赞成功'))
   } catch (error) {
     res.status(500).json(createErrorResponse('取消点赞失败', 500))
   }
@@ -1061,6 +1135,74 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('登录失败:', error)
     res.status(500).json(createErrorResponse('登录失败', 500))
+  }
+})
+
+// 注册：创建新用户（默认角色 READER/VIEWER；若不存在则自动创建 READER）
+app.post('/api/auth/register', async (req: Request, res: Response) => {
+  try {
+    const { username, email, password, confirmPassword } = (req.body || {}) as {
+      username?: string
+      email?: string
+      password?: string
+      confirmPassword?: string
+    }
+
+    if (!username || !password) return res.status(400).json(createErrorResponse('用户名和密码不能为空', 400))
+    if (password.length < 6) return res.status(400).json(createErrorResponse('密码长度不能少于6位', 400))
+    if (confirmPassword !== undefined && password !== confirmPassword) {
+      return res.status(400).json(createErrorResponse('两次输入的密码不一致', 400))
+    }
+
+    // 用户名唯一
+    const exists = await User.findOne({ username })
+    if (exists) return res.status(400).json(createErrorResponse('用户名已存在', 400))
+
+    // 准备角色：优先 READER -> VIEWER；若都不存在则创建一个 READER
+    let roleDoc = await Role.findOne({ roleCode: 'READER' })
+    if (!roleDoc) roleDoc = await Role.findOne({ roleCode: 'VIEWER' })
+    if (!roleDoc) {
+      const lastRole = await Role.findOne().sort({ roleId: -1 }).lean()
+      const nextRoleId = (lastRole?.roleId ?? 100) + 1
+      roleDoc = await Role.create({
+        roleId: nextRoleId,
+        roleName: '读者',
+        roleCode: 'READER',
+        enabled: true,
+        permissions: deriveDefaultPermissions('READER')
+      })
+    }
+
+    // 生成自增 userId
+    const lastUser = await User.findOne().sort({ userId: -1 }).lean()
+    const nextUserId = (lastUser?.userId ?? 1000) + 1
+
+    // 哈希密码
+    const hashed = await bcrypt.hash(password, 10)
+
+    const user = await User.create({
+      userId: nextUserId,
+      username,
+      nickname: username,
+      password: hashed,
+      avatar: '',
+      email: email || '',
+      phone: '',
+      roleId: roleDoc.roleId,
+      roleName: roleDoc.roleName,
+      enabled: true,
+      registerSource: 'frontend',
+      createTime: new Date(),
+      updateTime: new Date(),
+    })
+
+    const safe = user.toObject()
+    delete (safe as any).password
+
+    res.json(createResponse({ id: safe.userId, username: safe.username }, '注册成功'))
+  } catch (error) {
+    console.error('注册失败:', error)
+    res.status(500).json(createErrorResponse('注册失败', 500))
   }
 })
 

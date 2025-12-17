@@ -100,8 +100,8 @@ export function getTalkReplies(
   },
 ) {
   return api.get({
-    url: `/api/talks/${id}/replies`,
-    params,
+    url: `/api/replies`,
+    params: { talkId: id, ...(params || {}) },
     showErrorMessage: true,
   })
 }
@@ -123,9 +123,10 @@ export function addTalkReply(
     replyTo?: string
   },
 ) {
+  // 服务器期望在 body 中携带 talkId
   return api.post({
-    url: `/api/talks/${id}/replies`,
-    data,
+    url: `/api/replies`,
+    data: { ...data, talkId: id },
     showErrorMessage: true,
   })
 }
