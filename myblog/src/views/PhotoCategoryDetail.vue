@@ -234,7 +234,7 @@ const fetchCategoryAndPhotos = async (id: string) => {
   try {
     // 先清空旧的照片数据，避免显示前一个分类的照片
     photos.value = []
-    console.log(`[PhotoCategoryDetail] 开始加载分类: ${id}`)
+
     
     // 先尝试从列表中匹配（兼容 id 和 _id）
     currentCategory.value =
@@ -245,23 +245,23 @@ const fetchCategoryAndPhotos = async (id: string) => {
     const detail = await getPhotoCategoryDetail(id)
     if (detail) {
       currentCategory.value = detail as Api.PhotoCategory.PhotoCategoryItem
-      console.log(`[PhotoCategoryDetail] 获取分类详情成功:`, currentCategory.value)
+
     }
 
     // 分类被禁用时不再加载照片并清空列表（兼容 status/inactive 与 isVisible=false）
     const c: any = currentCategory.value
     if (c && (c.status === 'inactive' || c.isVisible === false)) {
-      console.log(`[PhotoCategoryDetail] 分类已禁用，不加载照片`)
+
       photos.value = []
       return
     }
 
     // 计算用于查询照片列表的分类ID（优先 id，其余 _id）
     const fetchCategoryId = currentCategory.value?.id || currentCategory.value?._id || id
-    console.log(`[PhotoCategoryDetail] 使用分类ID查询照片: ${fetchCategoryId}`)
+
     await initPhotos({ categoryId: fetchCategoryId, isVisible: true })
 
-    console.log(`[PhotoCategoryDetail] 第一次查询获得 ${photos.value.length} 张照片`)
+    // console.log(`[PhotoCategoryDetail] 第一次查询获得 ${photos.value.length} 张照片`)
 
     // 如果按 id 查询没有数据，回退用 _id 再查一次（兼容历史数据存储 categoryId 为 _id 的情况）
     if (
@@ -277,7 +277,7 @@ const fetchCategoryAndPhotos = async (id: string) => {
       console.log(`[PhotoCategoryDetail] 第二次查询获得 ${photos.value.length} 张照片`)
     }
   } catch (e) {
-    console.warn('[PhotoCategoryDetail] 刷新分类与照片数据失败: ', e)
+
     // 出错时也清空照片列表
     photos.value = []
   } finally {

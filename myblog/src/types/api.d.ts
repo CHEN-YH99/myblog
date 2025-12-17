@@ -232,7 +232,7 @@ declare namespace Api {
     interface CategoryItem {
       _id?: string
       id?: string
-      name: string
+      name?: string
       slug: string
       description?: string
       color?: string
@@ -283,19 +283,36 @@ declare namespace Api {
 
   /** 图片分类相关类型 */
   namespace PhotoCategory {
-    /** 图片分类项 */
+    /** 图片分类项（与后端对齐，兼容多种字段） */
     interface PhotoCategoryItem {
-      _id: string
-      id: string
+      /** 主键（Mongo默认） */
+      _id?: string
+      /** 业务ID（可与 _id 相同） */
+      id?: string
+      /** 分类名称（始终有值，title 的兜底） */
       name: string
-      title: string
-      description: string
-      coverImage: string
-      photoCount: number
-      sortOrder: number
-      isVisible: boolean
-      createdAt: string
-      updatedAt: string
+      /** 展示标题（可与 name 同步） */
+      title?: string
+      /** 封面图 */
+      coverImage?: string
+      /** 描述 */
+      description?: string
+      /** 颜色（可选） */
+      color?: string
+      /** 排序（前端统一字段） */
+      sort?: number
+      /** 排序（后端可能用 sortOrder） */
+      sortOrder?: number
+      /** 状态：active 启用 | inactive 禁用（前端统一使用） */
+      status?: 'active' | 'inactive'
+      /** 是否可见（历史字段，等价于 status） */
+      isVisible?: boolean
+      /** 照片数量 */
+      photoCount?: number
+      /** 创建时间 */
+      createdAt?: string | Date
+      /** 更新时间 */
+      updatedAt?: string | Date
     }
 
     /** 图片分类列表 */
@@ -307,18 +324,22 @@ declare namespace Api {
       keyword?: string
       /** 是否可见 */
       isVisible?: boolean
+      /** 状态（与管理端保持一致） */
+      status?: 'active' | 'inactive'
     }
 
-    /** 图片分类列表响应 */
-    interface ListResponse {
-      categories: PhotoCategoryItem[]
-      total: number
-      currentPage: number
-      pageSize: number
-    }
+    /** 图片分类列表响应（兼容数组或带分页对象） */
+    type ListResponse =
+      | {
+          categories: PhotoCategoryItem[]
+          total: number
+          currentPage: number
+          pageSize: number
+        }
+      | PhotoCategoryItem[]
 
     /** 图片分类详情响应 */
-    interface DetailResponse extends PhotoCategoryItem {}
+    type DetailResponse = PhotoCategoryItem
   }
 
   /** 图片相关类型 */
@@ -363,7 +384,7 @@ declare namespace Api {
     }
 
     /** 图片详情响应 */
-    interface DetailResponse extends PhotoItem {}
+    type DetailResponse = PhotoItem
   }
 
   /** 用户相关类型 */

@@ -48,7 +48,7 @@ export const usePhotos = () => {
       pagination.current = currentPage
       pagination.size = pageSize
 
-      console.log(`获取照片列表成功: ${photoList.length} 张, 总数: ${pagination.total}`)
+
     } catch (err: unknown) {
       error.value = err instanceof Error ? err.message : '获取照片列表失败'
       console.error('获取照片列表失败:', err)
