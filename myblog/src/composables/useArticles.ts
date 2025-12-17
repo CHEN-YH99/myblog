@@ -59,7 +59,7 @@ export function useArticles(options: UseArticlesOptions = {}) {
       } catch (error) {
         if (import.meta.env?.DEV) console.warn('保存分页状态失败:', error)
       }
-    }, 300)
+    }, 100)
 
     return { getSavedPagination, savePagination }
   }

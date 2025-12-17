@@ -5,26 +5,44 @@ const CACHE_DURATION = 5 * 60 * 1000 // 5分钟
 const MAX_CACHE_SIZE = 100 // 最大缓存条目数
 const CLEANUP_INTERVAL = 2 * 60 * 1000 // 清理间隔 2分钟
 
-const cache = new Map<string, { data: Record<string, unknown>; timestamp: number }>()
+const cache = new Map<string, { data: any; timestamp: number; ttl?: number }>()
 
 // 缓存清理定时器ID
 let cleanupTimerId: ReturnType<typeof setInterval> | null = null
 
 // 缓存工具函数
-function getCacheKey(url: string, params?: Record<string, unknown>): string {
-  return `${url}${params ? JSON.stringify(params) : ''}`
+function stableStringify(value: any): string {
+  if (value === null || value === undefined) return String(value)
+  if (typeof value !== 'object') return JSON.stringify(value)
+  if (value instanceof Date) return `"${value.toISOString()}"`
+  if (Array.isArray(value)) return `[${value.map((v) => stableStringify(v)).join(',')}]`
+  const keys = Object.keys(value)
+    .filter((k) => value[k] !== undefined)
+    .sort()
+  const entries = keys.map((k) => `"${k}":${stableStringify(value[k])}`)
+  return `{${entries.join(',')}}`
 }
 
-function getFromCache<T>(key: string): T | null {
+function getCacheKey(url: string, params?: Record<string, unknown>): string {
+  // 递归稳定序列化参数，忽略 undefined，排序 key，确保相同语义不同顺序的参数命中同一缓存
+  if (!params || Object.keys(params).every((k) => (params as any)[k] === undefined)) return url
+  return `${url}?${stableStringify(params)}`
+}
+
+function getFromCache<T>(key: string, ttl?: number): T | null {
   const cached = cache.get(key)
-  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+  if (!cached) return null
+  
+  const cacheTTL = ttl ?? cached.ttl ?? CACHE_DURATION
+  if (Date.now() - cached.timestamp < cacheTTL) {
     return cached.data as T
   }
+  
   cache.delete(key)
   return null
 }
 
-function setCache(key: string, data: Record<string, unknown>): void {
+function setCache(key: string, data: any, ttl?: number): void {
   // 检查缓存大小，如果超过限制则清理最旧的条目
   if (cache.size >= MAX_CACHE_SIZE) {
     // 找到最旧的条目并删除
@@ -43,7 +61,7 @@ function setCache(key: string, data: Record<string, unknown>): void {
     }
   }
   
-  cache.set(key, { data, timestamp: Date.now() })
+  cache.set(key, { data, timestamp: Date.now(), ttl })
 }
 
 // 启动缓存清理定时器
@@ -56,8 +74,10 @@ function startCacheCleanup(): void {
     const now = Date.now()
     let cleanedCount = 0
     
+    // 根据每个缓存项的 TTL 清理过期项
     for (const [key, value] of cache.entries()) {
-      if (now - value.timestamp > CACHE_DURATION) {
+      const ttl = value.ttl ?? CACHE_DURATION
+      if (now - value.timestamp > ttl) {
         cache.delete(key)
         cleanedCount++
       }
@@ -430,15 +450,14 @@ export function getRelatedArticles(articleId: string, limit: number = 5) {
  */
 export function getCategories(params?: Api.Article.CategorySearchParams) {
   const cacheKey = getCacheKey('/api/categories', params as unknown as Record<string, unknown>)
-
-  // 当请求显式要求仅获取启用分类时，为保证与后台管理状态同步，跳过缓存
-  if (params?.status === 'active') {
-    // 不走缓存
-  } else {
-    const cached = getFromCache<Api.Article.CategoryItem[]>(cacheKey)
-    if (cached) {
-      return Promise.resolve(cached)
-    }
+  
+  // 当请求显式要求仅获取启用分类时，为保证与后台管理状态同步，使用较短的缓存时间
+  const shouldSkipCache = params?.status === 'active'
+  const cacheTTL = shouldSkipCache ? 30 * 1000 : CACHE_DURATION // 启用分类用30秒缓存，其他用默认5分钟
+  
+  const cached = getFromCache<Api.Article.CategoryItem[]>(cacheKey, cacheTTL)
+  if (cached) {
+    return Promise.resolve(cached)
   }
 
   return api
@@ -466,7 +485,7 @@ export function getCategories(params?: Api.Article.CategorySearchParams) {
       // 如果入参要求仅返回启用分类，则在前端再做一次兜底过滤
       const finalList = params?.status === 'active' ? mapped.filter((c) => c.status === 'active') : mapped
 
-      setCache(cacheKey, finalList as unknown as Record<string, unknown>)
+      setCache(cacheKey, finalList as unknown as Record<string, unknown>, cacheTTL)
       return finalList
     })
     .catch(() => []) // 降级处理
