@@ -1,29 +1,27 @@
 <template>
-  <div class="login-container">
-    <!-- 背景装饰 -->
-    <div class="bg-decoration">
-      <div class="bg-circle bg-circle-1"></div>
-      <div class="bg-circle bg-circle-2"></div>
-      <div class="bg-circle bg-circle-3"></div>
-    </div>
+  <div
+    class="login-container"
+    :style="{ backgroundImage: `url(${loginBg})` }"
+  >
+
 
     <!-- 主要内容区域 -->
     <div class="login-content">
       <!-- 左侧信息区域 -->
       <div class="info-section">
         <div class="brand-info">
-          <h1 class="brand-title">欢迎来到我的博客</h1>
-          <p class="brand-subtitle">分享技术，记录生活，探索未知</p>
+          <h1 ref="brandTitleRef" class="brand-title">欢迎来到我的博客</h1>
+          <p ref="subtitleRef" class="brand-subtitle">分享技术，记录生活，探索未知</p>
           <div class="feature-list">
-            <div class="feature-item">
+            <div class="feature-item" :ref="el => { if (el) featureItemsRef[0] = el as HTMLElement }">
               <el-icon><Document /></el-icon>
               <span>精彩文章分享</span>
             </div>
-            <div class="feature-item">
+            <div class="feature-item" :ref="el => { if (el) featureItemsRef[1] = el as HTMLElement }">
               <el-icon><Picture /></el-icon>
               <span>美好时光记录</span>
             </div>
-            <div class="feature-item">
+            <div class="feature-item" :ref="el => { if (el) featureItemsRef[2] = el as HTMLElement }">
               <el-icon><ChatDotRound /></el-icon>
               <span>互动交流平台</span>
             </div>
@@ -92,12 +90,12 @@
               </div>
             </el-form-item>
 
-            <el-form-item>
-              <div class="form-options">
+            <el-form-item class="form-options">
+              <div class="form-options__content">
                 <el-checkbox v-model="loginForm.rememberMe">
                   七天免登录
                 </el-checkbox>
-                <el-link type="primary" @click="showForgotPassword">
+                <el-link class="forgot-link" type="primary" @click="showForgotPassword">
                   忘记密码？
                 </el-link>
               </div>
@@ -254,7 +252,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, nextTick } from 'vue'
+import { ref, reactive, onMounted, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   ElMessage,
@@ -274,6 +272,7 @@ import { loginApi, registerApi } from '@/api/auth'
 import { useUserStore } from '@/stores/user'
 import { useArticlesStore } from '@/stores/articles'
 import { useTalksStore } from '@/stores/talks'
+import loginBg from '@/assets/images/loginleft.webp'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -285,6 +284,9 @@ const isLogin = ref(true)
 const loginFormRef = ref<FormInstance>()
 const registerFormRef = ref<FormInstance>()
 const forgotFormRef = ref<FormInstance>()
+const brandTitleRef = ref<HTMLElement | null>(null)
+const subtitleRef = ref<HTMLElement | null>(null)
+const featureItemsRef = ref<HTMLElement[]>([])
 
 // 验证码相关
 const captchaCanvas = ref<HTMLCanvasElement>()
@@ -299,12 +301,30 @@ const forgotLoading = ref(false)
 const forgotPasswordVisible = ref(false)
 
 // 登录表单
+const savedRememberMe = localStorage.getItem('rememberMe') === 'true'
 const loginForm = reactive({
   username: '',
   password: '',
   captcha: '',
-  rememberMe: false,
+  rememberMe: savedRememberMe,
 })
+
+// 持久化“七天免登录”勾选状态
+watch(
+  () => loginForm.rememberMe,
+  (val) => {
+    localStorage.setItem('rememberMe', String(val))
+  },
+  { immediate: false }
+)
+
+// 监听勾选状态变化，持久化到 localStorage
+watch(
+  () => loginForm.rememberMe,
+  (val) => {
+    localStorage.setItem('rememberMe', String(!!val))
+  }
+)
 
 // 注册表单
 const registerForm = reactive({
@@ -485,7 +505,8 @@ const toggleMode = () => {
       username: '',
       password: '',
       captcha: '',
-      rememberMe: false,
+      // 保留/恢复上次选择的七天免登录偏好
+      rememberMe: localStorage.getItem('rememberMe') === 'true',
     })
   } else {
     Object.assign(registerForm, {
@@ -666,11 +687,61 @@ const showPrivacy = () => {
   })
 }
 
+// 检查是否需要自动登录（七天免登录功能）
+const checkAutoLogin = async () => {
+  const rememberMe = localStorage.getItem('rememberMe') === 'true'
+  const token = localStorage.getItem('token')
+  const userInfo = localStorage.getItem('userInfo')
+  
+  // 如果勾选了七天免登录且有有效的token和用户信息，自动登录
+  if (rememberMe && token && userInfo) {
+    try {
+      // 检查token是否过期
+      if (userStore.checkTokenExpire()) {
+        // 恢复用户状态
+        userStore.setToken(token)
+        userStore.setUserInfo(JSON.parse(userInfo))
+        
+        // 初始化用户相关数据
+        const articlesStore = useArticlesStore()
+        const talksStore = useTalksStore()
+        
+        // 并行初始化点赞状态
+        await Promise.all([
+          articlesStore.initializeLikeStatus(),
+          talksStore.initializeLikeStatus(),
+        ])
+        
+        ElMessage.success('自动登录成功')
+        router.push('/')
+      }
+    } catch (error) {
+      console.error('自动登录失败:', error)
+      // 自动登录失败，清除相关数据
+      localStorage.removeItem('token')
+      localStorage.removeItem('userInfo')
+      localStorage.removeItem('tokenExpire')
+    }
+  }
+}
+
 // 组件挂载后初始化验证码
 onMounted(() => {
   nextTick(() => {
-    drawCaptcha()
-  })
+    // 检查自动登录
+    checkAutoLogin()
+    
+    drawCaptcha();
+
+    const titleEl = brandTitleRef.value;
+    if (titleEl) {
+      // The typing animation lasts 1.5s. After it finishes, trigger the scan.
+      setTimeout(() => {
+        titleEl.classList.add('typing-done');
+        titleEl.classList.add('scan-active');
+      }, 1500); // Wait for the typing animation to complete
+    }
+  });
 })
 </script>
 
@@ -678,59 +749,13 @@ onMounted(() => {
 .login-container {
   min-height: 100vh;
   position: relative;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  
+  background-size: cover;
+  background-position: center;
   overflow: hidden;
 }
 
-.bg-decoration {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
 
-  .bg-circle {
-    position: absolute;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.1);
-    animation: float 6s ease-in-out infinite;
-
-    &.bg-circle-1 {
-      width: 200px;
-      height: 200px;
-      top: 10%;
-      left: 10%;
-      animation-delay: 0s;
-    }
-
-    &.bg-circle-2 {
-      width: 150px;
-      height: 150px;
-      top: 60%;
-      right: 15%;
-      animation-delay: 2s;
-    }
-
-    &.bg-circle-3 {
-      width: 100px;
-      height: 100px;
-      bottom: 20%;
-      left: 20%;
-      animation-delay: 4s;
-    }
-  }
-}
-
-@keyframes float {
-  0%,
-  100% {
-    transform: translateY(0px) rotate(0deg);
-  }
-  50% {
-    transform: translateY(-20px) rotate(180deg);
-  }
-}
 
 .login-content {
   display: flex;
@@ -745,26 +770,63 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   padding: 2rem;
-  color: white;
+  color: #000;
+  transition: transform 0.3s ease;
+  position: relative;
+  z-index: 1;
 
   .brand-info {
     max-width: 500px;
+    min-height: 250px; /* Prevent layout shift during animations */
 
     .brand-title {
       font-size: 3rem;
       font-weight: 700;
       margin-bottom: 1rem;
-      background: linear-gradient(45deg, #fff, #e0e7ff);
+      background: linear-gradient(45deg, black, #87CEEB);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
+
+      position: relative;
+      width: max-content; /* Fit content for animation */
+      overflow: hidden; /* Hide untyped text and scan effect */
+      white-space: nowrap; /* Keep text on one line */
+      border-right: 3px solid var(--el-text-color-primary); /* The cursor */
+
+      /* Typing animation */
+      animation: typing 1.5s steps(8, end) forwards;
+
+      /* After typing, start blinking cursor */
+      &.typing-done {
+        animation: blink 0.75s step-end infinite;
+      }
+
+      /* Scan effect */
+      &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        width: 50px;
+        height: 100%;
+        background: linear-gradient(to right, transparent 0%, rgba(255, 255, 255, 0.5) 50%, transparent 100%);
+        left: -50px; /* Start off-screen */
+        transform: skewX(-25deg); /* Add a skew effect */
+        pointer-events: none; /* do not block clicks */
+      }
+
+      /* Trigger scan effect when scan-active class is present */
+      &.scan-active::before {
+        animation: scan-effect 1.5s ease-in-out 1 forwards;
+      }
     }
 
     .brand-subtitle {
       font-size: 1.2rem;
       margin-bottom: 2rem;
-      opacity: 0.9;
       line-height: 1.6;
+      font-weight: bold;
+      font-style: italic;
     }
 
     .feature-list {
@@ -773,6 +835,8 @@ onMounted(() => {
         align-items: center;
         margin-bottom: 1rem;
         font-size: 1.1rem;
+        font-weight: bold;
+        font-style: italic;
 
         .el-icon {
           margin-right: 0.8rem;
@@ -790,6 +854,8 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   padding: 2rem;
+  position: relative;
+  z-index: 5; /* ensure above any left-side visuals */
 }
 
 .form-container {
@@ -801,6 +867,9 @@ onMounted(() => {
   padding: 2.5rem;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
+  position: relative;
+  z-index: 1000;
+  pointer-events: auto;
 }
 
 .form-header {
@@ -810,12 +879,12 @@ onMounted(() => {
   .form-title {
     font-size: 1.8rem;
     font-weight: 600;
-    color: #1f2937;
+    color: #000;
     margin-bottom: 0.5rem;
   }
 
   .form-subtitle {
-    color: #6b7280;
+    color: #000;
     font-size: 0.9rem;
   }
 }
@@ -826,6 +895,7 @@ onMounted(() => {
   }
 
   :deep(.el-input__wrapper) {
+    background-color: #fff !important; /* 固定背景色为白色 */
     border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
     border: 1px solid #e5e7eb;
@@ -873,6 +943,18 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   width: 100%;
+
+  :deep(.el-checkbox__inner) {
+    background-color: #fff;
+    border-color: #dcdfe6;
+  }
+
+  /* 修复被覆盖的选中样式 */
+  :deep(.el-checkbox__input.is-checked .el-checkbox__inner),
+  :deep(.el-checkbox__input.is-indeterminate .el-checkbox__inner) {
+    background-color: var(--el-color-primary);
+    border-color: var(--el-color-primary);
+  }
 
   .el-checkbox {
     :deep(.el-checkbox__label) {
@@ -925,6 +1007,12 @@ onMounted(() => {
 }
 
 // 响应式设计
+@media (min-width: 1025px) {
+  .info-section {
+    transform: translateY(-50px);
+  }
+}
+
 @media (max-width: 1024px) {
   .login-content {
     flex-direction: column;
@@ -991,6 +1079,28 @@ onMounted(() => {
 
   .el-dialog__footer {
     padding: 1rem 1.5rem 1.5rem;
+  }
+}
+
+@keyframes blink {
+  from, to { border-color: transparent; }
+  50% { border-color: var(--el-text-color-primary); }
+}
+
+@keyframes typing {
+  from { max-width: 0; }
+  to { max-width: 100%; }
+}
+
+@keyframes scan-effect {
+  0% {
+    left: -50px; /* Start off-screen to the left */
+  }
+  50% {
+    left: calc(100% + 50px); /* Move to the far right */
+  }
+  100% {
+    left: -50px; /* Return to the starting position */
   }
 }
 </style>

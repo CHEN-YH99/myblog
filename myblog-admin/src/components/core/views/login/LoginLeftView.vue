@@ -1,13 +1,12 @@
 <!-- 登录、注册、忘记密码左侧背景 -->
 <template>
-  <div class="login-left-view">
+  <div class="login-left-view" :style="{ backgroundImage: `url(${loginImage})` }">
+    <!-- 蒙版 -->
+    <div class="overlay"></div>
+
     <div class="logo">
       <ArtLogo class="icon" size="46" />
       <h1 class="title">{{ AppConfig.systemInfo.name }}</h1>
-    </div>
-
-    <div class="left-img">
-      <ThemeSvg :src="loginIcon" size="100%" />
     </div>
 
     <div class="text-wrap">
@@ -72,7 +71,7 @@
 
 <script setup lang="ts">
   import AppConfig from '@/config'
-  import loginIcon from '@imgs/svg/login_icon.svg'
+  import loginImage from '@/assets/img/login/loginleft.webp'
   import { themeAnimation } from '@/utils/theme/animation'
 
   // 定义 props
@@ -89,11 +88,6 @@
   $primary-base: var(--el-color-primary);
   $main-bg: var(--art-main-bg-color);
 
-  // 混合颜色函数
-  $bg-mix-light-9: color-mix(in srgb, $primary-light-9 100%, $main-bg);
-  $bg-mix-light-8: color-mix(in srgb, $primary-light-8 80%, $main-bg);
-  $bg-mix-light-7: color-mix(in srgb, $primary-light-7 80%, $main-bg);
-
   .login-left-view {
     position: relative;
     box-sizing: border-box;
@@ -101,11 +95,25 @@
     height: 100%;
     padding: 15px;
     overflow: hidden;
-    background-color: $bg-mix-light-9;
+    background-size: cover;
+    background-position: center;
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      background-color: rgba(255, 255, 255, 0.15);
+      z-index: 1;
+      transition: background-color 0.3s;
+    }
+
+    .logo,
+    .text-wrap,
+    .geometric-decorations {
+      position: relative;
+      z-index: 2;
+    }
 
     .logo {
-      position: relative;
-      z-index: 100;
       display: flex;
       align-items: center;
 
@@ -113,22 +121,15 @@
         margin-left: 10px;
         font-size: 20px;
         font-weight: 400;
-        color: var(--art-text-gray-900) !important;
+        color: var(--art-text-color-primary) !important;
       }
-    }
-
-    .left-img {
-      position: absolute;
-      inset: 0 0 10.5%;
-      z-index: 10;
-      width: 40%;
-      margin: auto;
-      animation: slideInLeft 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
     }
 
     .text-wrap {
       position: absolute;
       bottom: 80px;
+      left: 0;
+      right: 0;
       width: 100%;
       text-align: center;
       animation: slideInLeft 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
@@ -136,13 +137,13 @@
       h1 {
         font-size: 24px;
         font-weight: 400;
-        color: var(--art-gray-900) !important;
+        color: var(--art-text-color-primary) !important;
       }
 
       p {
         margin-top: 10px;
         font-size: 14px;
-        color: var(--art-text-gray-600) !important;
+        color: var(--art-text-color-regular) !important;
       }
     }
 
@@ -319,7 +320,7 @@
         left: 25%;
         width: 42px;
         height: 42px;
-        border: 2px solid $primary-light-8;
+        border: 2px solid hsla(from $primary-base h s l / 0.4);
         border-radius: 50%;
       }
 
@@ -328,7 +329,7 @@
         left: 16%;
         width: 60px;
         height: 60px;
-        background-color: $bg-mix-light-8;
+        background-color: hsla(from $primary-base h s l / 0.1);
 
         &.animate-fade-in-left {
           animation-name: fadeInLeftRotated;
@@ -340,7 +341,7 @@
         left: 30%;
         width: 18px;
         height: 18px;
-        background-color: $primary-light-8;
+        background-color: hsla(from $primary-base h s l / 0.4);
         border-radius: 50%;
       }
 
@@ -352,7 +353,7 @@
         width: 50px;
         height: 50px;
         cursor: pointer;
-        background: $bg-mix-light-7;
+        background: hsla(from $primary-base h s l / 0.2);
         border-radius: 50%;
         transition: all 0.3s;
 
@@ -384,7 +385,7 @@
         bottom: 10%;
         width: 50px;
         height: 50px;
-        background-color: $primary-light-8;
+        background-color: hsla(from $primary-base h s l / 0.1);
 
         &.animate-fade-in-right {
           animation-name: fadeInRightRotated;
@@ -397,7 +398,7 @@
         right: -120px;
         width: 360px;
         height: 360px;
-        background-color: $bg-mix-light-8;
+        background-color: hsla(from $primary-base h s l / 0.08);
         border-radius: 50%;
       }
 
@@ -405,7 +406,7 @@
       .dot {
         width: 14px;
         height: 14px;
-        background-color: $primary-light-7;
+        background-color: hsla(from $primary-base h s l / 0.3);
         border-radius: 50%;
 
         &.dot-top-left {
@@ -421,7 +422,7 @@
         &.dot-center-right {
           top: 46%;
           right: 22%;
-          background-color: $primary-light-8;
+          background-color: hsla(from $primary-base h s l / 0.2);
         }
       }
 
@@ -446,7 +447,7 @@
             z-index: 2;
             width: 50px;
             height: 50px;
-            background-color: rgb(from $primary-base r g b / 30%);
+            background-color: hsla(from $primary-base h s l / 0.3);
           }
 
           &.square-pink {
@@ -455,7 +456,7 @@
             z-index: 1;
             width: 70px;
             height: 70px;
-            background-color: rgb(from $primary-base r g b / 15%);
+            background-color: hsla(from $primary-base h s l / 0.15);
           }
 
           &.square-purple {
@@ -464,7 +465,7 @@
             z-index: 3;
             width: 32px;
             height: 32px;
-            background-color: rgb(from $primary-base r g b / 45%);
+            background-color: hsla(from $primary-base h s l / 0.45);
           }
         }
 
@@ -476,7 +477,7 @@
           width: 80px;
           height: 1px;
           content: '';
-          background: linear-gradient(90deg, var(--el-color-primary-light-6), transparent);
+          background: linear-gradient(90deg, hsla(from $primary-base h s l / 0.5), transparent);
           opacity: 0;
           transform: rotate(50deg);
           animation: lineGrow 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
@@ -517,16 +518,48 @@
 
   // 暗色主题
   .dark .login-left-view {
-    background-color: color-mix(in srgb, $primary-light-9 60%, #070707);
+    .overlay {
+      background-color: rgba(0, 0, 0, 0.45);
+    }
 
-    @media only screen and (max-width: $device-ipad-pro) {
-      background: transparent;
+    .logo .title,
+    .text-wrap h1 {
+      color: #fff !important;
+    }
+
+    .text-wrap p {
+      color: rgba(255, 255, 255, 0.85) !important;
     }
 
     .geometric-decorations {
+      // 几何图形在暗色模式下的颜色调整
+      .circle-outline {
+        border-color: rgba(255, 255, 255, 0.5);
+      }
+      .square-rotated,
+      .bg-bubble {
+        background-color: rgba(255, 255, 255, 0.1);
+      }
+      .circle-small,
+      .dot {
+        background-color: rgba(255, 255, 255, 0.4);
+      }
+      .square-bottom-right {
+        background-color: rgba(255, 255, 255, 0.15);
+      }
+      .squares-group .square {
+        box-shadow: none;
+        &.square-blue { background-color: rgba(255, 255, 255, 0.2); }
+        &.square-pink { background-color: rgba(255, 255, 255, 0.1); }
+        &.square-purple { background-color: rgba(255, 255, 255, 0.25); }
+      }
+      .squares-group::after {
+        background: linear-gradient(90deg, rgba(255, 255, 255, 0.4), transparent);
+      }
+
       // 月亮效果
       .circle-top-right {
-        background-color: $bg-mix-light-8;
+        background-color: rgba(255, 255, 255, 0.1);
         box-shadow: 0 0 25px #333 inset;
         transition: all 0.3s ease-in-out 0.1s;
         rotate: -48deg;
@@ -538,7 +571,7 @@
           width: 50px;
           height: 50px;
           content: '';
-          background-color: $bg-mix-light-9;
+          background-color: $main-bg;
           border-radius: 50%;
           transition: all 0.3s ease-in-out;
         }
@@ -556,51 +589,10 @@
           }
         }
       }
-
-      .bg-bubble {
-        background-color: $bg-mix-light-9;
-      }
-
-      // 其他元素颜色调整
-      .square-rotated {
-        background-color: $bg-mix-light-9;
-      }
-
-      .circle-small,
-      .dot {
-        background-color: $primary-light-8;
-      }
-
-      .square-bottom-right {
-        background-color: $primary-light-9;
-      }
-
-      .dot.dot-top-right {
-        background-color: $primary-light-8;
-      }
     }
 
-    // 方块组暗色调整
-    .squares-group {
-      .square {
-        box-shadow: none;
-
-        &.square-blue {
-          background-color: rgb(from $primary-base r g b / 18%);
-        }
-
-        &.square-pink {
-          background-color: rgb(from $primary-base r g b / 10%);
-        }
-
-        &.square-purple {
-          background-color: rgb(from $primary-base r g b / 20%);
-        }
-      }
-
-      &::after {
-        background: linear-gradient(90deg, $primary-light-8, transparent);
-      }
+    @media only screen and (max-width: $device-ipad-pro) {
+      background: transparent;
     }
   }
 </style>
