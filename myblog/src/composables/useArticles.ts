@@ -4,7 +4,7 @@ import { useArticlesStore } from '@/stores/articles'
 import { useUserStore } from '@/stores/user'
 import { ElMessage } from 'element-plus'
 import { nanoid } from 'nanoid'
-import { debounce } from '@/utils/performance'
+import { debounce } from '@/utils/debounce'
 import { mapPathToMenu } from '@/utils/routerMap'
 
 // 类型定义

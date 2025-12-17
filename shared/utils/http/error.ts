@@ -1,14 +1,38 @@
 import { AxiosError } from 'axios'
 import { ApiStatus } from './status'
 
-// 错误响应接口
+/**
+ * ============================================================
+ * HTTP 错误处理模块 - 共享实现
+ * ============================================================
+ *
+ * 此模块提供统一的 HTTP 错误处理能力，包括：
+ * - HttpError 自定义错误类
+ * - 错误消息映射和国际化支持
+ * - 错误处理和显示函数
+ * - 类型定义和工具函数
+ *
+ * 使用方式：
+ * 1. 前台 (myblog): 直接重新导出此模块
+ * 2. 管理端 (myblog-admin): 重新导出 + 包装函数以集成 ElMessage
+ */
+
+// ============================================================
+// 类型定义
+// ============================================================
+
+/**
+ * API 错误响应接口
+ */
 export interface ErrorResponse {
   code: number
   msg: string
   data?: unknown
 }
 
-// 错误日志数据接口
+/**
+ * 错误日志数据接口
+ */
 export interface ErrorLogData {
   code: number
   message: string
@@ -19,10 +43,31 @@ export interface ErrorLogData {
   stack?: string
 }
 
-// 消息提示函数类型
+/**
+ * 消息提示函数类型
+ */
 export type MessageFunction = (message: string) => void
 
-// 自定义 HttpError 类
+// ============================================================
+// 自定义错误类
+// ============================================================
+
+/**
+ * HTTP 错误类
+ *
+ * 用于统一表示 HTTP 请求过程中的各类错误，包括：
+ * - 网络错误
+ * - HTTP 状态码错误
+ * - 业务逻辑错误
+ *
+ * @example
+ * ```ts
+ * throw new HttpError('请求失败', 500, {
+ *   url: '/api/users',
+ *   method: 'GET'
+ * })
+ * ```
+ */
 export class HttpError extends Error {
   public readonly code: number
   public readonly data?: unknown
@@ -48,6 +93,9 @@ export class HttpError extends Error {
     this.method = options?.method
   }
 
+  /**
+   * 转换为日志数据
+   */
   public toLogData(): ErrorLogData {
     return {
       code: this.code,
@@ -61,11 +109,18 @@ export class HttpError extends Error {
   }
 }
 
+// ============================================================
+// 错误消息映射
+// ============================================================
+
 /**
  * 获取错误消息
- * @param status 错误状态码
- * @param useI18n 是否使用国际化
- * @param t 国际化函数
+ *
+ * 根据 HTTP 状态码返回对应的错误消息，支持国际化。
+ *
+ * @param status - HTTP 状态码
+ * @param useI18n - 是否使用国际化
+ * @param t - 国际化函数
  * @returns 错误消息
  */
 const getErrorMessage = (
@@ -104,12 +159,29 @@ const getErrorMessage = (
   return defaultErrorMap[status] || '请求失败'
 }
 
+// ============================================================
+// 错误处理函数
+// ============================================================
+
 /**
- * 处理错误
- * @param error 错误对象
- * @param useI18n 是否使用国际化
- * @param t 国际化函数
- * @returns 错误对象
+ * 处理 Axios 错误
+ *
+ * 将 Axios 错误转换为 HttpError，支持国际化。
+ * 此函数总是抛出错误，不会返回。
+ *
+ * @param error - Axios 错误对象
+ * @param useI18n - 是否使用国际化
+ * @param t - 国际化函数
+ * @throws HttpError 总是抛出 HttpError
+ *
+ * @example
+ * ```ts
+ * try {
+ *   await api.get('/users')
+ * } catch (error) {
+ *   handleError(error as AxiosError, true, $t)
+ * }
+ * ```
  */
 export function handleError(
   error: AxiosError<ErrorResponse>,
@@ -151,11 +223,27 @@ export function handleError(
   })
 }
 
+// ============================================================
+// 消息显示函数
+// ============================================================
+
 /**
  * 显示错误消息
- * @param error 错误对象
- * @param showMessage 是否显示错误消息
- * @param messageFunction 消息提示函数
+ *
+ * 根据配置显示错误消息，支持自定义消息函数或使用 console.error。
+ *
+ * @param error - HttpError 对象
+ * @param showMessage - 是否显示错误消息（默认 true）
+ * @param messageFunction - 自定义消息显示函数
+ *
+ * @example
+ * ```ts
+ * // 使用 console.error
+ * showError(error, true)
+ *
+ * // 使用自定义函数（如 ElMessage）
+ * showError(error, true, (msg) => ElMessage.error(msg))
+ * ```
  */
 export function showError(
   error: HttpError,
@@ -174,16 +262,28 @@ export function showError(
       }
     }
   }
-  
+
   // 记录错误日志
   console.error('[HTTP Error Details]', error.toLogData())
 }
 
 /**
  * 显示成功消息
- * @param message 成功消息
- * @param showMessage 是否显示消息
- * @param messageFunction 消息提示函数
+ *
+ * 根据配置显示成功消息，支持自定义消息函数或使用 console.log。
+ *
+ * @param message - 成功消息
+ * @param showMessage - 是否显示消息（默认 true）
+ * @param messageFunction - 自定义消息显示函数
+ *
+ * @example
+ * ```ts
+ * // 使用 console.log
+ * showSuccess('操作成功', true)
+ *
+ * // 使用自定义函数（如 ElMessage）
+ * showSuccess('操作成功', true, (msg) => ElMessage.success(msg))
+ * ```
  */
 export function showSuccess(
   message: string,
@@ -203,10 +303,22 @@ export function showSuccess(
   }
 }
 
+// ============================================================
+// 工具函数
+// ============================================================
+
 /**
  * 判断是否为 HttpError 类型
- * @param error 错误对象
+ *
+ * @param error - 错误对象
  * @returns 是否为 HttpError 类型
+ *
+ * @example
+ * ```ts
+ * if (isHttpError(error)) {
+ *   console.log(error.code)
+ * }
+ * ```
  */
 export const isHttpError = (error: unknown): error is HttpError => {
   return error instanceof HttpError

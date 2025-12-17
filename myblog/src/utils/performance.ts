@@ -2,44 +2,8 @@
  * 性能优化相关工具函数
  */
 
-// 防抖函数
-export function debounce<T extends (...args: any[]) => any>(
-  func: T,
-  wait: number,
-  immediate = false,
-): (...args: Parameters<T>) => void {
-  let timeout: NodeJS.Timeout | null = null
-
-  return function executedFunction(...args: Parameters<T>) {
-    const later = () => {
-      timeout = null
-      if (!immediate) func(...args)
-    }
-
-    const callNow = immediate && !timeout
-
-    if (timeout) clearTimeout(timeout)
-    timeout = setTimeout(later, wait)
-
-    if (callNow) func(...args)
-  }
-}
-
-// 节流函数
-export function throttle<T extends (...args: any[]) => any>(
-  func: T,
-  limit: number,
-): (...args: Parameters<T>) => void {
-  let inThrottle: boolean
-
-  return function executedFunction(this: any, ...args: Parameters<T>) {
-    if (!inThrottle) {
-      func.apply(this, args)
-      inThrottle = true
-      setTimeout(() => (inThrottle = false), limit)
-    }
-  }
-}
+// 统一导出：防抖/节流从单一来源 utils/debounce 提供，避免重复实现与行为不一致
+export { debounce, throttle } from './debounce'
 
 // 图片懒加载
 export function lazyLoadImage(img: HTMLImageElement, src: string): Promise<void> {
@@ -84,30 +48,30 @@ export class TimerManager {
     const timer = setTimeout(() => {
       callback()
       this.timers.delete(timer)
-    }, delay)
+    }, delay) as unknown as NodeJS.Timeout
     this.timers.add(timer)
     return timer
   }
 
   setInterval(callback: () => void, delay: number): NodeJS.Timeout {
-    const interval = setInterval(callback, delay)
+    const interval = setInterval(callback, delay) as unknown as NodeJS.Timeout
     this.intervals.add(interval)
     return interval
   }
 
   clearTimeout(timer: NodeJS.Timeout): void {
-    clearTimeout(timer)
+    clearTimeout(timer as unknown as number)
     this.timers.delete(timer)
   }
 
   clearInterval(interval: NodeJS.Timeout): void {
-    clearInterval(interval)
+    clearInterval(interval as unknown as number)
     this.intervals.delete(interval)
   }
 
   clearAll(): void {
-    this.timers.forEach((timer) => clearTimeout(timer))
-    this.intervals.forEach((interval) => clearInterval(interval))
+    this.timers.forEach((timer) => clearTimeout(timer as unknown as number))
+    this.intervals.forEach((interval) => clearInterval(interval as unknown as number))
     this.timers.clear()
     this.intervals.clear()
   }
