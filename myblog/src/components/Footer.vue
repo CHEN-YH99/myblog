@@ -48,8 +48,8 @@ const footlist = reactive([
   },
   {
     id: 4,
-    img: 'https://img.shields.io/badge/华为云-Escalation-yellow',
-    imgurl: 'https://www.huaweicloud.com/',
+    img: 'https://img.shields.io/badge/Vue3-Frontend-yellow',
+    imgurl: 'https://cn.vuejs.org/',
   },
 ])
 </script>

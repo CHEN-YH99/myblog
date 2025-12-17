@@ -96,7 +96,7 @@ const routes: RouteRecordRaw[] = [
 ]
 
 const router = createRouter({
-  history: createWebHashHistory(),
+  history: createWebHashHistory('/'),
   routes,
   // 添加滚动行为优化
   scrollBehavior(to, _from, savedPosition) {

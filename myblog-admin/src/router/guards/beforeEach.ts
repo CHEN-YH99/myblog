@@ -40,7 +40,12 @@ export function setupBeforeEachGuard(router: Router): void {
         await handleRouteGuard(to, from, next, router)
       } catch (error) {
         console.error('路由守卫处理失败:', error)
-        next('/exception/500')
+        // 防止无限循环：如果已经在异常页面，则直接通过
+        if (to.path !== '/exception/500') {
+          next('/exception/500')
+        } else {
+          next()
+        }
       }
     }
   )
@@ -119,7 +124,12 @@ async function handleRouteGuard(
     // 检查权限：超级管理员或只读用户或拥有所需角色
     const hasPermission = isSuperAdmin || userStore.isReadOnly || requiredRoles.some((role: string) => userRolesSet.has(role))
     if (!hasPermission) {
-      next('/exception/403')
+      // 防止无限循环：如果已经在异常页面，则直接通过
+      if (to.path !== '/exception/403') {
+        next('/exception/403')
+      } else {
+        next()
+      }
       return
     }
   }
@@ -143,8 +153,13 @@ async function handleRouteGuard(
     return
   }
 
-  // 未匹配到路由，跳转到 404
-  next('/exception/404')
+  // 未匹配到路由，跳转到 404（防止无限循环）
+  if (to.path !== '/exception/404') {
+    next('/exception/404')
+  } else {
+    // 如果已经在 404 页面，则直接通过
+    next()
+  }
 }
 
 /**
@@ -204,7 +219,12 @@ async function handleDynamicRoutes(
     })
   } catch (error) {
     console.error('动态路由注册失败:', error)
-    next('/exception/500')
+    // 防止无限循环：如果已经在异常页面，则直接通过
+    if (to.path !== '/exception/500') {
+      next('/exception/500')
+    } else {
+      next()
+    }
   }
 }
 

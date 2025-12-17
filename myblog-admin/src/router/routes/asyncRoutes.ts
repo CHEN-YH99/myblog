@@ -118,6 +118,36 @@ export const asyncRoutes: AppRouteRecord[] = [
     ]
   },
   {
+    path: '/talk',
+    name: 'Talk',
+    component: RoutesAlias.Layout,
+    meta: {
+      title: 'menus.talk.title',
+      icon: '&#xe7e0;',
+      roles: ['R_SUPER', 'R_ADMIN']
+    },
+    children: [
+      {
+        path: 'talklist',
+        name: 'TalkList',
+        component: RoutesAlias.TalkList,
+        meta: {
+          title: 'menus.talk.list',
+          keepAlive: true
+        }
+      },
+      {
+        path: 'publishtalk',
+        name: 'PublishTalk',
+        component: RoutesAlias.PublishTalk,
+        meta: {
+          title: 'menus.talk.publish',
+          keepAlive: false
+        }
+      }
+    ]
+  },
+  {
     path: '/exception',
     name: 'Exception',
     component: RoutesAlias.Layout,

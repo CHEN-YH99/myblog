@@ -7,7 +7,7 @@ import { setupAfterEachGuard } from '@/router/guards/afterEach'
 
 // 创建路由实例
 export const router = createRouter({
-  history: createWebHashHistory(),
+  history: createWebHashHistory('/'),
   routes: staticRoutes // 静态路由
 })
 

@@ -85,7 +85,8 @@ export function createViteConfig(options: {
     }
 
     const config: UserConfig = {
-      base: env.VITE_BASE_URL || '/',
+      // 管理端强制使用根路径，避免出现 /art-design-pro 之类的前缀
+      base: isAdmin ? '/' : (env.VITE_BASE_URL || '/'),
       plugins: basePlugins,
       resolve: {
         alias: {
