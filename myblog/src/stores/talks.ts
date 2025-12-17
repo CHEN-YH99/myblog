@@ -8,6 +8,7 @@ import {
   removeLikedTalk,
   clearUserLikeData,
 } from '@/utils/storage'
+import { createLikeToolkit } from '@/stores/likeBase'
 
 export const useTalksStore = defineStore('talks', {
   state: () => ({
@@ -38,60 +39,35 @@ export const useTalksStore = defineStore('talks', {
   },
 
   actions: {
+    // 初始化点赞工具（内部使用）
+    _initLikeToolkit() {
+      if ((this as any)._likeToolkit) return (this as any)._likeToolkit
+
+      const toolkit = createLikeToolkit({
+        likedSet: this.likedTalks,
+        likingSet: this.likingTalks,
+        api: {
+          like: likeTalk,
+          unlike: unlikeTalk,
+          getStatus: getTalkLikeStatus,
+        },
+        storage: {
+          getLiked: getLikedTalks,
+          addLiked: addLikedTalk,
+          removeLiked: removeLikedTalk,
+          saveLiked: saveLikedTalks,
+        },
+      })
+
+      ;(this as any)._likeToolkit = toolkit
+      return toolkit
+    },
+
     // 初始化点赞状态
     async initializeLikeStatus(talkIds: string[] = []) {
-      const userStore = useUserStore()
-      if (!userStore.isLoggedIn) {
-        this.likedTalks.clear()
-        this.likeStatusInitialized = true
-        return
-      }
-
-      try {
-        // 等待用户信息完全加载
-        let userInfo = userStore.userInfo
-        if (!userInfo && userStore.token) {
-          // 如果有token但没有用户信息，尝试获取用户信息
-          try {
-            userInfo = await userStore.fetchUserInfo()
-          } catch (error) {
-            console.warn('获取用户信息失败，使用空状态初始化点赞状态')
-            this.likedTalks.clear()
-            this.likeStatusInitialized = true
-            return
-          }
-        }
-
-        // 从本地存储获取已点赞的说说ID（用户键：优先使用id，兜底使用username）
-        const userKey = userInfo?.id || userInfo?.username
-        if (!userKey) {
-          console.warn('无法获取用户标识，使用空状态初始化点赞状态')
-          this.likedTalks.clear()
-          this.likeStatusInitialized = true
-          return
-        }
-
-        const localLikedTalks = getLikedTalks(userKey)
-
-        // 清空当前状态
-        this.likedTalks.clear()
-
-        // 如果有本地存储的点赞数据，先恢复本地状态
-        if (localLikedTalks.length > 0) {
-          localLikedTalks.forEach((id) => this.likedTalks.add(id))
-        }
-
-        // 对于新用户或没有本地存储数据的用户，确保不会错误地标记任何说说为已点赞
-        // 只有在本地存储中明确记录的说说才会被标记为已点赞
-
-        this.likeStatusInitialized = true
-        /* talk like status initialized (debug log removed) */
-      } catch (error) {
-        console.error('初始化说说点赞状态失败:', error)
-        // 即使出错，也要确保新用户从干净的状态开始
-        this.likedTalks.clear()
-        this.likeStatusInitialized = true
-      }
+      const toolkit = this._initLikeToolkit()
+      await toolkit.initializeLikeStatus()
+      this.likeStatusInitialized = true
     },
 
     // 重置点赞状态（用户登出时调用）
@@ -111,67 +87,20 @@ export const useTalksStore = defineStore('talks', {
 
     // 点赞说说
     async likeTalk(talkId: string) {
-      const userStore = useUserStore()
-      if (!userStore.isLoggedIn) {
-        throw new Error('请先登录')
-      }
-
-      if (this.likingTalks.has(talkId)) return // 防止重复点击
-
-      this.likingTalks.add(talkId)
-
-      try {
-        const result = await likeTalk(talkId)
-
-        // 更新本地状态
-        this.likedTalks.add(talkId)
-
-        // 保存到localStorage（按用户键隔离）
-        const userKey = userStore.userInfo?.id || userStore.userInfo?.username
-        addLikedTalk(talkId, userKey)
-
-        return result
-      } catch (error) {
-        console.error('点赞失败:', error)
-        throw error
-      } finally {
-        this.likingTalks.delete(talkId)
-      }
+      const toolkit = this._initLikeToolkit()
+      return await toolkit.like(talkId)
     },
 
     // 取消点赞
     async unlikeTalk(talkId: string) {
-      const userStore = useUserStore()
-      if (!userStore.isLoggedIn) {
-        throw new Error('请先登录')
-      }
-
-      if (this.likingTalks.has(talkId)) return
-
-      this.likingTalks.add(talkId)
-
-      try {
-        const result = await unlikeTalk(talkId)
-
-        this.likedTalks.delete(talkId)
-
-        // 从localStorage移除（按用户键隔离）
-        const userKey = userStore.userInfo?.id || userStore.userInfo?.username
-        removeLikedTalk(talkId, userKey)
-
-        return result
-      } catch (error) {
-        console.error('取消点赞失败:', error)
-        throw error
-      } finally {
-        this.likingTalks.delete(talkId)
-      }
+      const toolkit = this._initLikeToolkit()
+      return await toolkit.unlike(talkId)
     },
 
     // 切换点赞状态
     async toggleLike(talkId: string) {
-      const isLiked = this.likedTalks.has(talkId)
-      return isLiked ? this.unlikeTalk(talkId) : this.likeTalk(talkId)
+      const toolkit = this._initLikeToolkit()
+      return await toolkit.toggle(talkId)
     },
   },
 })

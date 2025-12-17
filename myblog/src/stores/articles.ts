@@ -15,6 +15,7 @@ import {
   removeLikedArticle,
   clearUserLikeData,
 } from '@/utils/storage'
+import { createLikeToolkit } from '@/stores/likeBase'
 // Api 类型是全局声明的，不需要导入
 
 // 扩展文章类型
@@ -79,92 +80,52 @@ export const useArticlesStore = defineStore('articles', {
   },
 
   actions: {
+    // 初始化点赞工具（内部使用）
+    _initLikeToolkit() {
+      if ((this as any)._likeToolkit) return (this as any)._likeToolkit
+
+      const toolkit = createLikeToolkit({
+        likedSet: this.likedArticles,
+        likingSet: this.likingArticles,
+        lastActionAt: this.lastActionAt,
+        getCooldownMs: () => this.likeCooldownMs,
+        api: {
+          like: likeArticle,
+          unlike: unlikeArticle,
+          getStatus: getLikeStatus,
+          getBatchStatus: getBatchLikeStatus,
+        },
+        storage: {
+          getLiked: getLikedArticles,
+          addLiked: addLikedArticle,
+          removeLiked: removeLikedArticle,
+          saveLiked: saveLikedArticles,
+        },
+        getAllKnownIds: () => this.articles.map((a) => a._id),
+        onOptimisticDelta: (id: string, delta: 1 | -1) => {
+          const article = this.articles.find((a) => a._id === id)
+          if (article) {
+            const prev = Number((article as any)?.likes) || 0
+            article.likes = Math.max(0, prev + delta)
+          }
+        },
+        onServerSync: (id: string, result: any) => {
+          const article = this.articles.find((a) => a._id === id)
+          if (article && typeof result?.likes === 'number') {
+            article.likes = result.likes
+          }
+        },
+      })
+
+      ;(this as any)._likeToolkit = toolkit
+      return toolkit
+    },
+
     // 初始化用户点赞状态
     async initializeLikeStatus() {
-      const userStore = useUserStore()
-
-      // 如果用户未登录，清空状态并返回
-      if (!userStore.isLoggedIn) {
-        this.likedArticles.clear()
-        this.likeStatusInitialized = true
-        return
-      }
-
-      try {
-        // 等待用户信息完全加载
-        let userInfo = userStore.userInfo
-        if (!userInfo && userStore.token) {
-          // 如果有token但没有用户信息，尝试获取用户信息
-          try {
-            userInfo = await userStore.fetchUserInfo()
-          } catch (error) {
-            console.warn('获取用户信息失败，使用空状态初始化点赞状态')
-            this.likedArticles.clear()
-            this.likeStatusInitialized = true
-            return
-          }
-        }
-
-        // 从localStorage恢复点赞状态（支持按 id 与 username 双键合并）
-        const idKey = userInfo?.id
-        const nameKey = userInfo?.username
-        if (!idKey && !nameKey) {
-          console.warn('无法获取用户标识，使用空状态初始化点赞状态')
-          this.likedArticles.clear()
-          this.likeStatusInitialized = true
-          return
-        }
-
-        const savedById = idKey ? getLikedArticles(idKey) : []
-        const savedByName = nameKey ? getLikedArticles(nameKey) : []
-        const mergedSaved = Array.from(new Set([...(savedById || []), ...(savedByName || [])]))
-
-        // 清空当前状态
-        this.likedArticles.clear()
-
-        // 如果有文章数据，同步服务器状态（与本地状态取并集，避免误清本地）
-        if (this.articles.length > 0) {
-          const articleIds = this.articles.map((article) => article._id)
-          const response = await getBatchLikeStatus(articleIds)
-
-          // 基于本地合并集开始
-          const mergedSet = new Set<string>(mergedSaved)
-
-          // 合并服务端为 true 的状态
-          Object.entries(response).forEach(([articleId, isLiked]) => {
-            if (isLiked) mergedSet.add(articleId)
-          })
-
-          // 应用合并结果到内存 Set
-          this.likedArticles.clear()
-          mergedSet.forEach((id) => this.likedArticles.add(id))
-
-          // 保存合并后的状态到localStorage（双键写入，避免后续切换标识）
-          const finalLikedArticles = Array.from(this.likedArticles)
-          if (idKey) saveLikedArticles(finalLikedArticles, idKey)
-          if (nameKey) saveLikedArticles(finalLikedArticles, nameKey)
-        } else {
-          // 如果没有文章数据，使用本地保存的状态（合并 id/username 两处数据）
-          mergedSaved.forEach((articleId) => {
-            this.likedArticles.add(articleId)
-          })
-        }
-
-        this.likeStatusInitialized = true
-        /* init like status synced (debug log removed) */
-      } catch (error) {
-        console.error('初始化点赞状态失败:', error)
-        // 如果服务器请求失败，使用本地状态（合并 id 与 username）
-        const idKey = userStore.userInfo?.id
-        const nameKey = userStore.userInfo?.username
-        const savedById = idKey ? getLikedArticles(idKey) : []
-        const savedByName = nameKey ? getLikedArticles(nameKey) : []
-        const merged = Array.from(new Set([...(savedById || []), ...(savedByName || [])]))
-        merged.forEach((articleId) => {
-          this.likedArticles.add(articleId)
-        })
-        this.likeStatusInitialized = true
-      }
+      const toolkit = this._initLikeToolkit()
+      await toolkit.initializeLikeStatus()
+      this.likeStatusInitialized = true
     },
 
     // 重置点赞状态（用户登出时调用）
@@ -184,131 +145,20 @@ export const useArticlesStore = defineStore('articles', {
 
     // 点赞文章（乐观更新 + 冷却 + 并发保护）
     async likeArticle(articleId: string, options?: { force?: boolean }) {
-      const userStore = useUserStore()
-      if (!userStore.isLoggedIn) {
-        throw new Error('请先登录')
-      }
-
-      const now = Date.now()
-      const last = this.lastActionAt.get(articleId) || 0
-      if (!options?.force && now - last < this.likeCooldownMs) return
-      if (!options?.force && this.likingArticles.has(articleId)) return // 防止并发
-
-      this.lastActionAt.set(articleId, now)
-      this.likingArticles.add(articleId)
-
-      // 已点赞则直接返回，避免重复请求（force 时忽略）
-      if (!options?.force && this.likedArticles.has(articleId)) {
-        this.likingArticles.delete(articleId)
-        return
-      }
-
-      const article = this.articles.find((a) => a._id === articleId)
-      const prevLikes = Number((article as any)?.likes) || 0
-
-      // 乐观更新本地状态 + 立即写入本地存储（按账号隔离）
-      this.likedArticles.add(articleId)
-      if (article) article.likes = prevLikes + 1
-      const idKey = userStore.userInfo?.id
-      const nameKey = userStore.userInfo?.username
-      if (idKey) addLikedArticle(articleId, idKey)
-      if (nameKey) addLikedArticle(articleId, nameKey)
-
-      try {
-        const result = await likeArticle(articleId)
-
-        // 以服务端结果为准
-        if (article && typeof result?.likes === 'number') {
-          article.likes = result.likes
-        }
-
-        return result
-      } catch (error) {
-        // 回滚乐观更新 + 回滚本地存储
-        this.likedArticles.delete(articleId)
-        if (article) article.likes = prevLikes
-        if (idKey) removeLikedArticle(articleId, idKey)
-        if (nameKey) removeLikedArticle(articleId, nameKey)
-        console.error('点赞失败:', error)
-        throw error
-      } finally {
-        this.likingArticles.delete(articleId)
-      }
+      const toolkit = this._initLikeToolkit()
+      return await toolkit.like(articleId, options)
     },
 
     // 取消点赞（乐观更新 + 冷却 + 并发保护）
     async unlikeArticle(articleId: string, options?: { force?: boolean }) {
-      const userStore = useUserStore()
-      if (!userStore.isLoggedIn) {
-        throw new Error('请先登录')
-      }
-
-      const now = Date.now()
-      const last = this.lastActionAt.get(articleId) || 0
-      if (now - last < this.likeCooldownMs) return
-      if (this.likingArticles.has(articleId)) return // 防止并发
-
-      // 若当前未点赞，则无需请求
-      if (!this.likedArticles.has(articleId)) return
-
-      this.lastActionAt.set(articleId, now)
-      this.likingArticles.add(articleId)
-
-      const article = this.articles.find((a) => a._id === articleId)
-      const prevLikes = Number((article as any)?.likes) || 0
-
-      // 乐观更新
-      this.likedArticles.delete(articleId)
-      if (article && prevLikes > 0) article.likes = prevLikes - 1
-
-      try {
-        const result = await unlikeArticle(articleId)
-
-        // 从localStorage移除（按用户键隔离）
-        const idKey = userStore.userInfo?.id
-        const nameKey = userStore.userInfo?.username
-        if (idKey) removeLikedArticle(articleId, idKey)
-        if (nameKey) removeLikedArticle(articleId, nameKey)
-
-        // 以服务端结果为准
-        if (article && typeof result?.likes === 'number') {
-          article.likes = result.likes
-        }
-
-        return result
-      } catch (error) {
-        // 回滚乐观更新
-        this.likedArticles.add(articleId)
-        if (article) article.likes = prevLikes
-        console.error('取消点赞失败:', error)
-        throw error
-      } finally {
-        this.likingArticles.delete(articleId)
-      }
+      const toolkit = this._initLikeToolkit()
+      return await toolkit.unlike(articleId, options)
     },
 
     // 与服务端对齐某篇文章的点赞状态，并同步到本地存储
     async reconcileLikeStatus(articleId: string): Promise<boolean> {
-      try {
-        const status = await getLikeStatus(articleId)
-        const isLiked = !!(status as any)?.isLiked
-        const userStore = useUserStore()
-        const idKey = userStore.userInfo?.id
-        const nameKey = userStore.userInfo?.username
-        if (isLiked) {
-          this.likedArticles.add(articleId)
-          if (idKey) addLikedArticle(articleId, idKey)
-          if (nameKey) addLikedArticle(articleId, nameKey)
-        } else {
-          this.likedArticles.delete(articleId)
-          if (idKey) removeLikedArticle(articleId, idKey)
-          if (nameKey) removeLikedArticle(articleId, nameKey)
-        }
-        return isLiked
-      } catch (e) {
-        // 如果校验失败，不改变现有状态
-        return this.likedArticles.has(articleId)
-      }
+      const toolkit = this._initLikeToolkit()
+      return await toolkit.reconcileLikeStatus(articleId)
     },
 
     // 切换点赞状态（带冲突自愈：当本地与服务端不一致导致400时自动对齐后再执行期望操作）
@@ -318,41 +168,8 @@ export const useArticlesStore = defineStore('articles', {
         await this.initializeLikeStatus()
       }
 
-      const localLiked = this.likedArticles.has(articleId)
-      if (localLiked) {
-        try {
-          return await this.unlikeArticle(articleId)
-        } catch (e: any) {
-          // 400 等错误时尝试自愈
-          const code = e?.code || e?.response?.status
-          if (code === 400) {
-            const serverLiked = await this.reconcileLikeStatus(articleId)
-            if (serverLiked) {
-              // 服务端仍显示已点赞，用户意图是取消 -> 强制再次执行取消，忽略冷却/并发保护
-              return await this.unlikeArticle(articleId, { force: true })
-            }
-          }
-          throw e
-        }
-      } else {
-        try {
-          return await this.likeArticle(articleId)
-        } catch (e: any) {
-          const code = e?.code || e?.response?.status
-          if (code === 400) {
-            // 很可能是服务端判定已点赞，本地状态不同步
-            const serverLiked = await this.reconcileLikeStatus(articleId)
-            if (serverLiked) {
-              // 用户意图是切换（取消），强制执行取消
-              return await this.unlikeArticle(articleId, { force: true })
-            } else {
-              // 服务端认为未点赞，则强制重试点赞
-              return await this.likeArticle(articleId, { force: true })
-            }
-          }
-          throw e
-        }
-      }
+      const toolkit = this._initLikeToolkit()
+      return await toolkit.toggle(articleId)
     },
 
     // 组件订阅管理
