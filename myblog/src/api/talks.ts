@@ -7,11 +7,17 @@ import api from '@/utils/http'
  */
 export function getTalkList(params?: Api.Talk.SearchParams) {
   return api
-    .get({ url: '/api/talks', params })
+    .get({ url: '/api/talks', params, showErrorMessage: false })
     .then((response) => {
       return response as Api.Talk.TalkList
     })
-    .catch((error) => {
+    .catch((error: any) => {
+      const msg = String(error?.message || '')
+      if ((error as any)?.isCanceled || /已取消|canceled/i.test(msg)) {
+        console.debug('[API] 获取说说列表请求已取消')
+        // 返回空分页，避免弹窗与异常
+        return { records: [], total: 0, current: params?.current || 1, size: params?.size || 10 } as Api.Talk.TalkList
+      }
       console.error('前台获取说说列表失败:', error)
       throw error
     })

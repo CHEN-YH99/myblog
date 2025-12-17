@@ -449,8 +449,10 @@ export const useArticlesStore = defineStore('articles', {
 
         return this.articles
       } catch (error: any) {
-        if (error.name === 'AbortError') {
-          // console.log('请求被取消')
+        // 检查是否是取消的请求
+        if (error?.name === 'AbortError' || String(error?.message || '').toLowerCase().includes('canceled')) {
+          console.debug('[Store] 文章数据请求已取消')
+          // 取消的请求不算失败，直接返回已有数据
           return this.articles
         }
 

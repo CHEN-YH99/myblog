@@ -57,7 +57,7 @@ export function getAllArticles(params?: Api.Article.SearchParams) {
 
   return withRetry(() =>
     api
-      .get({ url: '/api/articles', params })
+      .get({ url: '/api/articles', params, showErrorMessage: false })
       .then((response) => {
         const data = response
 
@@ -73,6 +73,11 @@ export function getAllArticles(params?: Api.Article.SearchParams) {
         return articles
       })
       .catch((error) => {
+        const msg = String(error?.message || '')
+        if (error?.isCanceled || error?.code === 'ERR_CANCELED' || error?.name === 'AbortError' || msg.toLowerCase().includes('canceled') || msg.includes('已取消')) {
+          console.debug('[API] 获取文章列表请求已取消')
+          return []
+        }
         console.error('前台获取文章失败:', error)
         // 返回空数组而不是抛出错误，提供降级体验
         return []
@@ -538,6 +543,7 @@ export function getAllArticlesWithSignal(signal?: AbortSignal, params?: Api.Arti
       url: '/api/articles',
       params,
       signal, // 支持取消请求
+      showErrorMessage: false, // 取消或失败不弹窗，由调用方决定
     })
     .then((response) => {
       const data = response
@@ -552,8 +558,11 @@ export function getAllArticlesWithSignal(signal?: AbortSignal, params?: Api.Arti
       }
     })
     .catch((error) => {
-      if (error.name === 'AbortError') {
-        console.log('请求已取消')
+      // 检查是否是取消的请求
+      const msg = String(error?.message || '')
+      if (error?.isCanceled || error?.name === 'AbortError' || error?.code === 'ERR_CANCELED' || msg.toLowerCase().includes('canceled') || msg.includes('已取消')) {
+        console.debug('[API] 文章数据请求已取消')
+        // 返回空数组而不是抛出错误，避免错误传播
         return []
       }
       console.error('前台获取文章失败:', error)

@@ -272,7 +272,8 @@ export function createHttpClient(options: CreateHttpClientOptions = {}): HttpCli
       })
     } catch (error: any) {
       if (error instanceof HttpError && error.code !== ApiStatus.unauthorized) {
-        const showMsg = config.showErrorMessage !== false
+        const isCanceled = (error as any)?.isCanceled === true || String(error?.message || '').includes('已取消')
+        const showMsg = config.showErrorMessage !== false && !isCanceled
         if (showMsg) {
           messages?.showError ? messages.showError(error, true) : sharedShowError(error, true)
         }

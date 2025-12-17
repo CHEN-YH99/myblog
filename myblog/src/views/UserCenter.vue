@@ -659,16 +659,28 @@ watch(
 
 // 获取用户已点赞的文章列表（严格以前端点赞状态为准，和 Home.vue 一致）
 const loadLikedArticles = async () => {
-  if (!userStore.isLoggedIn) return
+  if (!userStore.isLoggedIn || !isComponentMounted) return
 
   loadingLikedArticles.value = true
   try {
     // 确保文章数据与点赞状态已就绪
     if (articlesStore.articles.length === 0) {
-      await articlesStore.fetchArticles()
+      try {
+        await articlesStore.fetchArticles()
+      } catch (error: any) {
+        // 忽略请求被取消的错误
+        if (error?.isCanceled || error?.name === 'AbortError' || error?.message?.includes('canceled') || error?.message?.includes('已取消')) {
+          console.debug('文章数据加载被取消')
+          return
+        }
+        throw error
+      }
     } else if (!articlesStore.likeStatusInitialized) {
       await articlesStore.initializeLikeStatus()
     }
+
+    // 检查组件是否仍然挂载
+    if (!isComponentMounted) return
 
     // 以 store 的点赞状态为唯一来源，避免与服务端状态不一致
     const likedArticleIds = articlesStore.likedArticleIds
@@ -683,20 +695,29 @@ const loadLikedArticles = async () => {
     likedArticlesList.value = allArticles.filter((a) =>
       likedArticleIds.includes(a._id),
     )
-  } catch (error) {
-    ElMessage.error('获取已点赞文章失败')
+  } catch (error: any) {
+    // 忽略请求被取消的错误
+    if (error?.name === 'AbortError' || error?.message?.includes('canceled')) {
+      console.log('加载已点赞文章被取消')
+      return
+    }
+    if (isComponentMounted) {
+      ElMessage.error('获取已点赞文章失败')
+    }
   } finally {
-    loadingLikedArticles.value = false
-    // 重新设置懒加载（仅在文章Tab下）
-    if (activeTab.value === 'articles') {
-      await resetLazy()
+    if (isComponentMounted) {
+      loadingLikedArticles.value = false
+      // 重新设置懒加载（仅在文章Tab下）
+      if (activeTab.value === 'articles') {
+        await resetLazy()
+      }
     }
   }
 }
 
 // 获取用户已点赞的说说列表
 const loadLikedTalks = async () => {
-  if (!userStore.isLoggedIn) return
+  if (!userStore.isLoggedIn || !isComponentMounted) return
 
   loadingLikedTalks.value = true
   try {
@@ -704,6 +725,9 @@ const loadLikedTalks = async () => {
     if (!talksStore.likeStatusInitialized) {
       await talksStore.initializeLikeStatus()
     }
+
+    // 检查组件是否仍然挂载
+    if (!isComponentMounted) return
 
     // 从store中获取已点赞的说说ID
     const likedTalkIds = Array.from(talksStore.likedTalks)
@@ -722,6 +746,9 @@ const loadLikedTalks = async () => {
         status: 'public',
       })
 
+      // 再次检查组件是否仍然挂载
+      if (!isComponentMounted) return
+
       if (response && response.records) {
         // 筛选出已点赞的说说
         const likedTalks = response.records.filter((talk) =>
@@ -731,16 +758,32 @@ const loadLikedTalks = async () => {
       } else {
         likedTalksList.value = []
       }
-    } catch (error) {
+    } catch (error: any) {
+      // 忽略请求被取消的错误
+      if (error?.name === 'AbortError' || error?.message?.includes('canceled')) {
+        console.log('加载已点赞说说被取消')
+        return
+      }
       console.warn('无法获取说说列表，使用空列表:', error)
-      likedTalksList.value = []
+      if (isComponentMounted) {
+        likedTalksList.value = []
+      }
     }
-  } catch (error) {
+  } catch (error: any) {
+    // 忽略请求被取消的错误
+    if (error?.name === 'AbortError' || error?.message?.includes('canceled')) {
+      console.log('初始化说说点赞状态被取消')
+      return
+    }
     console.error('获取已点赞说说失败:', error)
     // 不显示错误消息，因为这不是关键功能
-    likedTalksList.value = []
+    if (isComponentMounted) {
+      likedTalksList.value = []
+    }
   } finally {
-    loadingLikedTalks.value = false
+    if (isComponentMounted) {
+      loadingLikedTalks.value = false
+    }
   }
 }
 
@@ -757,7 +800,16 @@ const initData = async () => {
     // 确保文章数据已加载
     if (articlesStore.articles.length === 0) {
       // console.log('文章数据为空，开始加载文章数据...')
-      await articlesStore.fetchArticles()
+      try {
+        await articlesStore.fetchArticles()
+      } catch (error: any) {
+        // 忽略请求被取消的错误
+        if (error?.name === 'AbortError' || error?.message?.includes('canceled')) {
+          console.log('文章数据加载被取消')
+          return
+        }
+        throw error
+      }
     }
 
     // 加载已点赞的说说列表（内部会处理点赞状态初始化）
@@ -765,16 +817,34 @@ const initData = async () => {
 
     // 加载已点赞的文章列表
     await loadLikedArticles()
-  } catch (error) {
+  } catch (error: any) {
+    // 忽略请求被取消的错误
+    if (error?.name === 'AbortError' || error?.message?.includes('canceled')) {
+      console.log('用户数据初始化被取消')
+      return
+    }
     console.error('初始化用户数据失败:', error)
   }
 }
 
+// 组件是否已卸载的标记
+let isComponentMounted = true
+
 onMounted(async () => {
-  await initData()
-  await nextTick()
-  if (activeTab.value === 'articles') {
-    await resetLazy()
+  isComponentMounted = true
+  try {
+    await initData()
+    if (isComponentMounted) {
+      await nextTick()
+      if (activeTab.value === 'articles') {
+        await resetLazy()
+      }
+    }
+  } catch (error: any) {
+    // 忽略组件卸载后的错误
+    if (isComponentMounted) {
+      console.error('挂载时初始化数据失败:', error)
+    }
   }
 })
 
@@ -829,6 +899,13 @@ watch(activeTab, (newTab) => {
 })
 
 onBeforeUnmount(() => {
+  // 标记组件已卸载，停止处理异步操作的结果
+  isComponentMounted = false
+  
+  // 取消正在进行的文章数据加载请求
+  articlesStore.cancelRequest()
+  
+  // 清理 IntersectionObserver
   if (io) {
     io.disconnect()
     io = null

@@ -68,7 +68,12 @@ const api = createHttpClient({
   // 前台容忍非标准响应（默认解析器已支持）
   onUnauthorized,
   messages: {
-    showError: (error) => ElMessage.error(error.message),
+    showError: (error) => {
+      const msg = String(error?.message || '')
+      const isCanceled = (error as any)?.isCanceled === true || /已取消|canceled/i.test(msg)
+      if (isCanceled) return
+      ElMessage.error(msg)
+    },
     showSuccess: (message) => ElMessage.success(message),
   },
   retry: {

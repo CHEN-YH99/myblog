@@ -117,10 +117,14 @@ export function handleError(
   t?: (key: string) => string
 ): never {
   // 处理取消的请求
-  if (error.code === 'ERR_CANCELED') {
-    console.warn('Request cancelled:', error.message)
+  if (error.code === 'ERR_CANCELED' || String(error.message).toLowerCase().includes('canceled')) {
+    // 取消的请求不应作为警告或错误噪音；静默处理（保留可调试日志）
     const cancelMessage = useI18n && t ? t('httpMsg.requestCancelled') : '请求已取消'
-    throw new HttpError(cancelMessage, ApiStatus.error)
+    // 使用 debug 级别，避免在控制台产生警告
+    console.debug('[HTTP] Request cancelled:', error.message)
+    const err = new HttpError(cancelMessage, ApiStatus.error)
+    ;(err as any).isCanceled = true
+    throw err
   }
 
   const statusCode = error.response?.status
