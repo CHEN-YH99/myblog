@@ -96,7 +96,7 @@ p {
   position: absolute;
   bottom: 100px;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translate(-50%, 0);
   cursor: pointer;
   z-index: 10;
   animation: change-down 1.5s ease-in-out infinite alternate;
@@ -104,10 +104,11 @@ p {
 
 @keyframes change-down {
   from {
-    transform: translateY(0);
+    /* 保持水平居中（translateX(-50%)），仅做垂直位移动画 */
+    transform: translate(-50%, 0);
   }
   to {
-    transform: translateY(50px);
+    transform: translate(-50%, 50px);
     opacity: 0.5;
   }
 }
@@ -122,8 +123,9 @@ p {
 
 .inner-header h1 {
   // color: white;
-  font-family: 'Lato', sans-serif;
-  font-weight: bolder;
+  /* 标题字体：汉仪文博古隶W 优先 */
+  font-family: 'HanYiWenBoGuLiW', '汉仪文博古隶W', 'HYWenBoGuLiW', 'HanYi WenBo GuLi W', 'STKaiti', 'KaiTi', 'Songti SC', 'Noto Serif SC', serif;
+  font-weight: 600;
   font-size: 3rem;
   letter-spacing: 10px;
   margin: 0;

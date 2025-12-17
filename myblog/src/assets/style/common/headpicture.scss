@@ -20,8 +20,9 @@
       object-position: center; /* 图片居中显示 */
     }
     h1 {
-      font-family: 'Lato', sans-serif;
-      font-weight: bolder;
+      /* 标题字体：汉仪文博古隶W 优先 */
+      font-family: 'HanYiWenBoGuLiW', '汉仪文博古隶W', 'HYWenBoGuLiW', 'HanYi WenBo GuLi W', 'STKaiti', 'KaiTi', 'Songti SC', 'Noto Serif SC', serif;
+      font-weight: 600;
     }
     .inner-header {
       position: absolute;
