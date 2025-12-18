@@ -111,21 +111,22 @@
                 <div v-if="likedTalksList.length === 0" class="empty-state">
                   <el-empty description="暂无点赞的说说" :image-size="100" />
                 </div>
-                <div v-else class="talks-list">
+                <div v-else class="talks-grid">
                   <div
                     v-for="talk in likedTalksList"
                     :key="talk._id"
-                    class="talk-item"
+                    class="talk-card"
                   >
                     <div
-                      class="talk-content"
+                      class="talk-card-content"
                       v-html="formatContent(talk.content)"
                     ></div>
-                    <div class="talk-meta">
-                      <span class="talk-date">
-                        {{ formatDate(talk.publishDate) }}
+                    <div class="talk-card-footer">
+                      <span class="talk-date">{{ formatDate(talk.publishDate) }}</span>
+                      <span class="talk-likes">
+                        <el-icon><Star /></el-icon>
+                        {{ talk.likes }}
                       </span>
-                      <span class="talk-likes">{{ talk.likes }} 点赞</span>
                     </div>
                   </div>
                 </div>
@@ -1076,30 +1077,98 @@ onBeforeUnmount(() => {
   color: var(--text-color-secondary);
 }
 
-/* 说说列表 */
-.talks-list {
+/* 说说卡片网格 */
+.talks-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.talk-card {
+  position: relative;
+  border-radius: 12px;
+  background: var(--bg-color-secondary);
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+  min-height: 180px;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-}
-
-.talk-item {
-  padding: 1rem;
+  justify-content: space-between;
+  padding: 1.5rem;
   border: 1px solid var(--border-color);
-  border-radius: 8px;
-  background: var(--bg-color-secondary);
 }
 
-.talk-content {
-  margin-bottom: 0.5rem;
-  line-height: 1.6;
+/* 默认/浅色主题下的悬停效果 */
+.talk-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--primary-color);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
 }
 
-.talk-meta {
+/* 深色主题下的专属悬停效果 */
+@media (prefers-color-scheme: dark) {
+  .talk-card:hover {
+    border-color: var(--primary-color-light);
+    /* 核心：多层 box-shadow 模拟霓虹灯辉光 */
+    animation: neon-glow 1.5s ease-in-out infinite alternate;
+  }
+}
+
+/* 荧光呼吸动画 */
+@keyframes neon-glow {
+  from {
+    box-shadow: 0 0 5px #fff,
+                0 0 10px var(--primary-color-light),
+                0 0 15px var(--primary-color);
+  }
+  to {
+    box-shadow: 0 0 10px #fff,
+                0 0 20px var(--primary-color-light),
+                0 0 30px var(--primary-color);
+  }
+}
+
+.talk-card-content {
+  line-height: 1.7;
+  color: var(--text-color);
+  margin-bottom: 1rem;
+  /* 限制内容高度，超出显示滚动条 */
+  max-height: 150px;
+  overflow-y: auto;
+  /* 美化滚动条 */
+  scrollbar-width: thin;
+  scrollbar-color: var(--primary-color) var(--bg-color);
+}
+
+.talk-card-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.talk-card-content::-webkit-scrollbar-track {
+  background: var(--bg-color);
+}
+
+.talk-card-content::-webkit-scrollbar-thumb {
+  background-color: var(--primary-color-light);
+  border-radius: 6px;
+  border: 2px solid var(--bg-color);
+}
+
+.talk-card-footer {
   display: flex;
   justify-content: space-between;
-  font-size: 0.8rem;
+  align-items: center;
+  font-size: 0.85rem;
   color: var(--text-color-secondary);
+  border-top: 1px solid var(--border-color);
+  padding-top: 1rem;
+  margin-top: auto; /* 让页脚始终在卡片底部 */
+}
+
+.talk-likes {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-weight: 500;
 }
 
 /* 设置项 */
