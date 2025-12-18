@@ -334,4 +334,3 @@ function defaultParseResponse(response: AxiosResponse<any>): ParseResult {
   return { ok: true, data }
 }
 
-export type { CreateHttpClientOptions }

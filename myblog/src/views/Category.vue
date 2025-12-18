@@ -59,8 +59,8 @@
               class="tag"
               :to="`/category/${encodeURIComponent(category.slug)}`"
               :style="{
-                color: category.color || colorFor(category.name),
-                borderColor: category.color || colorFor(category.name),
+                color: category.color || colorFor(category.name || ''),
+                borderColor: category.color || colorFor(category.name || ''),
               }"
             >
               <span class="tag-name">{{ category.name }}</span>

@@ -177,7 +177,7 @@
           <RelatedArticles 
             v-if="article"
             :current-article-id="article._id"
-            :category="article.category"
+            :category="article.category || ''"
             :limit="2"
           />
         </div>

@@ -1620,7 +1620,7 @@ app.patch('/api/photo-categories/status', async (req: Request, res: Response) =>
     if (objectIds.length) filter.$or.push({ _id: { $in: objectIds } })
 
     const result = await PhotoCategory.updateMany(filter, { $set: { isVisible: status === 'active', updatedAt: new Date() } })
-    res.json(createResponse({ matched: result.matchedCount ?? result.n, modified: result.modifiedCount ?? result.nModified }, '批量更新状态成功'))
+    res.json(createResponse({ matched: result.matchedCount ?? 0, modified: result.modifiedCount ?? 0 }, '批量更新状态成功'))
   } catch (error) {
     console.error('批量更新照片分类状态失败:', error)
     res.status(500).json(createErrorResponse('批量更新照片分类状态失败', 500))
