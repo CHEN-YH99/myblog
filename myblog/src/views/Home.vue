@@ -5,6 +5,7 @@
       <!-- LCP/首图：使用 <img>，便于浏览器尽早发现与调度，并设置 fetchpriority -->
       <img
         ref="headerBgRef"
+        :key="heroKey"
         class="header-bg"
         :src="url"
         alt="首页头图"
@@ -388,8 +389,17 @@ const url = ref(bgImage)
 const fit = ref('cover')
 const innerHeaderRef = ref<HTMLElement | null>(null)
 const headerBgRef = ref<HTMLElement | null>(null)
+const heroKey = ref(0)
 const heroProgress = ref(0)
+const heroEnabled = ref(false)
 const heroStyle = computed(() => {
+  // 未就绪或未开启前强制不偏移，避免返回瞬间因旧的 heroProgress 造成首图下移
+  if (!parallaxReady.value || !heroEnabled.value) {
+    return {
+      transform: 'translate3d(0, 0, 0)',
+      willChange: 'transform',
+    }
+  }
   const p = Math.min(Math.max(heroProgress.value, 0), 1)
   const translateY = p * window.innerHeight * 0.5
   return {
@@ -398,6 +408,8 @@ const heroStyle = computed(() => {
   }
 })
 let heroRaf = 0
+// 在返回首页后的短时间内忽略浏览器可能触发的滚动恢复事件，避免首图位置被错误计算
+let ignoreScrollUntil = 0
 const safeScrollTop = () => {
   try {
     return (
@@ -416,6 +428,8 @@ const updateHeroProgress = () => {
   heroProgress.value = Math.min(top / viewportHeight, 1)
 }
 const onHeroScroll = () => {
+  // 在短时间内忽略浏览器的自动滚动恢复，防止进度被错误设置
+  if (Date.now() < ignoreScrollUntil) return
   cancelAnimationFrame(heroRaf)
   heroRaf = requestAnimationFrame(updateHeroProgress)
 }
@@ -468,8 +482,13 @@ const syncHeroProgressSoon = () => {
 }
 
 // 页面显示事件处理
-const onPageShow = () => {
+const onPageShow = (ev?: any) => {
   try {
+    // 防止浏览器从 bfcache 恢复滚动位置，强制回到顶部
+    parallaxReady.value = false
+    heroProgress.value = 0
+    ignoreScrollUntil = Date.now() + 800
+    try { window.scrollTo({ top: 0, behavior: 'auto' }) } catch {}
     updateHeroProgress()
     setBackTopVisibility()
   } catch (error) {
@@ -679,6 +698,8 @@ let stopWatchingPagination: (() => void) | null = null
 onMounted(async () => {
   try {
     // 返回或首次进入首页时，强制回到顶部，避免首图因浏览器滚动恢复而出现偏移
+    ignoreScrollUntil = Date.now() + 800
+    heroProgress.value = 0
     try { window.scrollTo({ top: 0, behavior: 'auto' }) } catch {}
     await initArticles()
 
@@ -724,25 +745,38 @@ watch(
 )
 
 onActivated(() => {
-  parallaxReady.value = false
-  updateHeaderHeight()
-  bindHeroScroll()
+  // 在首页禁用浏览器的滚动恢复
+  try { if ('scrollRestoration' in history) (history as any).scrollRestoration = 'manual' } catch {}
 
-  // 延迟执行，确保在浏览器滚动恢复之后重置位置
-  nextTick(() => {
+  // 先解绑，避免在重置滚动的过程中触发 onHeroScroll 把进度又改错
+  unbindHeroScroll()
+  parallaxReady.value = false
+  heroEnabled.value = false
+  heroProgress.value = 0
+  ignoreScrollUntil = Date.now() + 1200
+
+  updateHeaderHeight()
+
+  // 使用 setTimeout 确保在浏览器完成历史滚动恢复后再重置
+  setTimeout(() => {
     try {
       // 强制滚动到顶部
       window.scrollTo({ top: 0, behavior: 'auto' })
       // 立即更新一次视差进度，以反映滚动到顶部后的状态
       updateHeroProgress()
+      // 轻触发首图重新渲染，彻底清掉旧 transform
+      heroKey.value++
     } catch (e) {
       console.error('Failed to reset scroll on activation:', e)
     }
 
     requestAnimationFrame(() => {
+      // 重绑滚动监听
+      bindHeroScroll()
       parallaxReady.value = true
+      heroEnabled.value = true
     })
-  })
+  }, 0)
 })
 
 onDeactivated(() => {

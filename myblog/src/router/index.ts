@@ -100,6 +100,11 @@ const router = createRouter({
   routes,
   // 添加滚动行为优化
   scrollBehavior(to, _from, savedPosition) {
+    // 0) 回到首页一律置顶，避免首屏大图被滚动恢复影响
+    if (to.name === 'Home') {
+      return { left: 0, top: 0 }
+    }
+
     // 1) 浏览器前进/后退：直接返回保存位置，不延迟，避免覆盖用户主动滚动
     if (savedPosition) {
       return savedPosition
