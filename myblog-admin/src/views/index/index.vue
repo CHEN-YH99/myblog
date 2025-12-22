@@ -11,6 +11,11 @@
       <div class="app-content">
         <ArtPageContent />
       </div>
+
+      <div class="app-footer">
+        <span class="icp-badge">ICP备</span>
+        <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">粤ICP备2025506377号-2</a>
+      </div>
     </main>
 
     <div class="app-global">

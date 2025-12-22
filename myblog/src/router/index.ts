@@ -1,4 +1,4 @@
-import { createRouter, createWebHashHistory } from 'vue-router'
+import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
 import { setupRouterGuards } from './guards'
 
@@ -96,7 +96,7 @@ const routes: RouteRecordRaw[] = [
 ]
 
 const router = createRouter({
-  history: createWebHashHistory('/'),
+  history: createWebHistory(import.meta.env.BASE_URL),
   routes,
   // 添加滚动行为优化
   scrollBehavior(to, _from, savedPosition) {

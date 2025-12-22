@@ -537,7 +537,7 @@
 
         // 确保返回完整的URL
         if (!imageUrl.startsWith('http')) {
-          imageUrl = `http://localhost:3001${imageUrl}`
+          imageUrl = `${import.meta.env.VITE_API_URL || ''}${imageUrl}`
         }
 
         return imageUrl
@@ -1040,14 +1040,14 @@
       // 如果是相对路径，转换为完整URL
       const imageUrl = response.data.url.startsWith('http')
         ? response.data.url
-        : `http://localhost:3001${response.data.url}`
+        : `${import.meta.env.VITE_API_URL || ''}${response.data.url}`
       cover.value = imageUrl
       ElMessage.success(`图片上传成功 ${EmojiText[200]}`)
     } else if (response && response.url) {
       // 如果是相对路径，转换为完整URL
       const imageUrl = response.url.startsWith('http')
         ? response.url
-        : `http://localhost:3001${response.url}`
+        : `${import.meta.env.VITE_API_URL || ''}${response.url}`
       cover.value = imageUrl
       ElMessage.success(`图片上传成功 ${EmojiText[200]}`)
     } else {

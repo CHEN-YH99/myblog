@@ -1,5 +1,5 @@
 import type { App } from 'vue'
-import { createRouter, createWebHashHistory } from 'vue-router'
+import { createRouter, createWebHistory } from 'vue-router'
 import { staticRoutes } from '@/router/routes/staticRoutes'
 import { configureNProgress } from '@/router/utils/utils'
 import { setupBeforeEachGuard } from '@/router/guards/beforeEach'
@@ -7,7 +7,7 @@ import { setupAfterEachGuard } from '@/router/guards/afterEach'
 
 // 创建路由实例
 export const router = createRouter({
-  history: createWebHashHistory('/'),
+  history: createWebHistory(import.meta.env.BASE_URL),
   routes: staticRoutes // 静态路由
 })
 

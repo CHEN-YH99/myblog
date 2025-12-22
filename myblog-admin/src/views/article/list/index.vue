@@ -564,14 +564,23 @@
 
     let finalUrl = imageUrl
 
-    // 如果是本地上传的图片，修正端口号
+    // 如果是本地上传的图片且是开发口本地完整URL，转换为基于环境变量的相对路径
     if (imageUrl.includes('localhost:3006')) {
-      finalUrl = imageUrl.replace('localhost:3006', 'localhost:3001')
+      try {
+        const u = new URL(imageUrl)
+        // 仅对 uploads 路径做转换，其他保持原样
+        if (u.pathname.startsWith('/uploads/')) {
+          finalUrl = `${import.meta.env.VITE_API_URL || ''}${u.pathname}${u.search || ''}${u.hash || ''}`
+        }
+      } catch (e) {
+        // 回退：去掉域名部分再拼接
+        finalUrl = `${import.meta.env.VITE_API_URL || ''}${imageUrl.replace(/^https?:\/\/[^/]+/, '')}`
+      }
     }
 
     // 如果是相对路径，添加正确的基础URL
     if (imageUrl.startsWith('/uploads/')) {
-      finalUrl = `http://localhost:3001${imageUrl}`
+      finalUrl = `${import.meta.env.VITE_API_URL || ''}${imageUrl}`
     }
 
     // 移除时间戳参数，避免图片加载错误

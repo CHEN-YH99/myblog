@@ -14,10 +14,8 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/my-blo
 const DEFAULT_ORIGINS = [
   'http://localhost:5173',
   'http://localhost:5174',
-  'http://localhost:5175',
-  'http://localhost:5176',
   'https://www.xiaohui88.site',
-  'https://www.xhui886.online',
+  'https://xhui886.online',
 ]
 const CORS_ORIGINS = (process.env.CORS_ORIGINS || '')
   .split(',')
