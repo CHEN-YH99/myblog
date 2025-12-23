@@ -1379,6 +1379,41 @@ onBeforeUnmount(() => {
 }
 
 /* 响应式设计 */
+@media (max-width: 576px) {
+  .user-info-card {
+    flex-direction: row; /* 恢复为水平布局 */
+    gap: 1rem;
+    padding: 1.5rem;
+    text-align: left; /* 恢复文本对齐 */
+  }
+
+  .user-avatar :deep(.el-avatar) {
+    width: 80px !important;
+    height: 80px !important;
+  }
+
+  .display-name {
+    font-size: 1.5rem;
+  }
+
+  .name-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .user-stats {
+    gap: 0.5rem;
+  }
+
+  .stat-item {
+    min-width: auto;
+    padding: 6px 8px;
+  }
+
+  .stat-number {
+    font-size: 1.2rem;
+  }
+}
+
 @media (max-width: 768px) {
   .user-center-container {
     padding: 1rem;

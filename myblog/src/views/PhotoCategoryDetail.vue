@@ -369,8 +369,18 @@ onUnmounted(() => {
 
     .photos-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      // 固定三列布局，每列占据相等的空间
+      grid-template-columns: repeat(3, 1fr);
       gap: 20px;
+
+      // 在小屏幕设备上调整间距，保持三列布局
+      @media (max-width: 768px) {
+        gap: 10px;
+      }
+
+      @media (max-width: 480px) {
+        gap: 8px;
+      }
 
       .photo-item {
         cursor: pointer;
@@ -422,17 +432,44 @@ onUnmounted(() => {
             align-items: flex-end;
             padding: 20px;
 
+            // 在小屏幕上调整内边距
+            @media (max-width: 768px) {
+              padding: 10px;
+            }
+
+            @media (max-width: 480px) {
+              padding: 8px;
+            }
+
             .photo-info {
               color: white;
 
               h3 {
                 font-size: 16px;
                 margin-bottom: 5px;
+
+                // 在小屏幕上调整字体大小
+                @media (max-width: 768px) {
+                  font-size: 14px;
+                }
+
+                @media (max-width: 480px) {
+                  font-size: 12px;
+                }
               }
 
               p {
                 font-size: 14px;
                 opacity: 0.8;
+
+                // 在小屏幕上调整字体大小
+                @media (max-width: 768px) {
+                  font-size: 12px;
+                }
+
+                @media (max-width: 480px) {
+                  font-size: 10px;
+                }
               }
             }
           }

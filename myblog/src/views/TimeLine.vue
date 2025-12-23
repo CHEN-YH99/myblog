@@ -477,6 +477,9 @@ onBeforeUnmount(() => {
     transition: transform 260ms ease, box-shadow 260ms ease, background 260ms ease, border-color 260ms ease;
     overflow: hidden;
     cursor: pointer;
+    display: flex; // 确保卡片是flex容器
+    flex-direction: column; // 垂直排列
+    height: 100%; // 占满网格单元高度
   }
   .tl-card:hover {
     transform: translateY(-6px);
@@ -488,6 +491,10 @@ onBeforeUnmount(() => {
 
   :deep(.el-card__body) {
     padding: 16px 18px;
+    height: 100%; // 占满卡片高度
+    display: flex; // 内部也是flex
+    flex-direction: column; // 垂直排列
+    box-sizing: border-box; // 边框盒模型
   }
 
   .timeline-card {
@@ -546,49 +553,127 @@ onBeforeUnmount(() => {
 
   @media (max-width: 768px) {
     .timeline-list {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
       max-width: 100%;
+      justify-content: center; // 内容居中
+      margin: 0 auto; // 容器居中
     }
+
+    // Hide all timeline-specific elements on mobile
+    :deep(.el-timeline-item__tail),
+    :deep(.el-timeline-item__node),
     :deep(.el-timeline-item__timestamp) {
-      font-size: 1.25rem;
+      display: none;
     }
-    :deep(.el-timeline-item__tail) {
-      left: 12px;
+
+    :deep(.el-timeline-item) {
+      padding: 0 !important;
     }
-    :deep(.el-timeline-item__wrapper) {
-      margin-left: 28px;
-      margin-right: 0;
-      width: auto;
-      text-align: left;
-    }
+
+    :deep(.el-timeline-item__wrapper),
     :deep(.reverse .el-timeline-item__wrapper) {
-      margin-left: 28px;
-      margin-right: 0;
-      width: auto;
+      margin: 0;
+      width: 100%;
       text-align: left;
+      padding: 0;
     }
+
+    // Card content stacks vertically and fills height
     .timeline-card {
-      align-items: flex-start;
-      flex-direction: row;
+      flex-direction: column;
+      align-items: stretch;
       gap: 12px;
+      height: 100%; // Fill the height of el-card__body
+      display: flex; // Ensure it's a flex container
     }
+
+    /* 统一卡片高度，避免同一行出现高度不一致 */
+    .tl-card {
+      min-height: 230px; /* 根据图片120 + 间距12 + 标题(2 行) + 底部发布时间大约 230px */
+    }
+
+    .timeline-card-content {
+      flex-grow: 1; // Grow to fill available space
+      justify-content: flex-start; // Align content to the top
+    }
+
+    // Image takes full width of card
     .timeline-card .timeline-card-image {
-      width: 88px;
-      height: 88px;
+      width: 100%;
+      height: 120px;
       border-radius: 10px;
+    }
+
+    // Reset reverse direction for cards
+    :deep(.reverse .el-card__body .timeline-card) {
+      flex-direction: column;
     }
   }
 
   @media (max-width: 480px) {
-    :deep(.el-timeline-item__wrapper) {
-      margin-left: 20px;
+    /* 保持两列布局，卡片和图片等比例缩放 */
+    .timeline_content {
+      padding: 1rem 0.5rem 2rem; // 减少左右内边距
     }
-    .timeline-card {
+
+    .timeline-list {
+      grid-template-columns: repeat(2, 1fr);
+      grid-auto-rows: 1fr; // 关键：确保每行的所有卡片高度一致
+      gap: 0.5rem; // 缩小间距
+      max-width: 100%;
+      justify-content: center;
+      margin: 0 auto;
+      padding: 0 0.5rem; // 添加左右内边距保持居中
+    }
+
+    /* 确保 timeline-item 占满网格单元 */
+    :deep(.el-timeline-item) {
+      display: flex;
       flex-direction: column;
-      align-items: stretch;
+      height: 100%;
     }
+
+    :deep(.el-timeline-item__wrapper) {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* 卡片占满可用空间 */
+    .tl-card {
+      height: 100%; // 占满网格单元高度
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* 图片等比例缩放 */
     .timeline-card .timeline-card-image {
       width: 100%;
-      height: 180px;
+      height: auto; // 自动高度保持比例
+      aspect-ratio: 16 / 9; // 设置宽高比
+      min-height: 80px; // 最小高度避免过小
+      max-height: 100px; // 最大高度避免过大
+      object-fit: cover;
+      flex-shrink: 0; // 防止图片被压缩
+    }
+
+    /* 文字内容也相应缩小 */
+    .timeline-card-content h4 {
+      font-size: 0.9rem; // 缩小标题字体
+      line-height: 1.3;
+      -webkit-line-clamp: 2; // 限制2行
+    }
+
+    .timeline-card-content .publish-time {
+      font-size: 0.75rem; // 缩小发布时间字体
+      margin-top: 6px;
+    }
+
+    :deep(.el-card__body) {
+      padding: 12px; // 缩小内边距
+      flex: 1; // 占满卡片剩余空间
     }
   }
 }

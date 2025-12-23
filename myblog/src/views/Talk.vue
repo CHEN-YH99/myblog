@@ -825,7 +825,6 @@ const changePage = (page: number) => {
   // 滚动到顶部
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
-
 /**
  * 获取分页页码数组
  */
@@ -1675,3 +1674,4 @@ onUnmounted(() => {
   .submit-btn, .cancel-btn { width: 100%; }
 }
 </style>
+
