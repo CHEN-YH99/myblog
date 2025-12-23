@@ -150,7 +150,7 @@
           <div class="action-buttons">
             <el-button 
               @click="likeArticle" 
-              :disabled="!article?._id || isLiking(article._id)"
+              :disabled="!article?._id || isLiking(article?._id || '')"
               :class="{ 'liked': isLiked(article?._id || '') }"
             >
               <el-icon v-if="!isLiking(article?._id || '')">
@@ -170,8 +170,8 @@
         </div> <!-- 关闭 article-content-wrapper -->
       </div> <!-- 关闭 article-main -->
       
-      <!-- 右侧推荐和目录区域 -->
-      <aside class="sidebar">
+      <!-- 桌面端右侧推荐和目录区域 -->
+      <aside class="sidebar desktop-sidebar">
         <!-- 推荐文章区域 -->
         <div class="recommendations-section">
           <RelatedArticles 
@@ -193,6 +193,57 @@
         </div>
       </aside>
     </div> <!-- 关闭 content-wrapper -->
+
+    <!-- 移动端推荐文章浮动按钮 -->
+    <teleport to="body">
+    <div
+      ref="triggerRef"
+      class="mobile-recommend-trigger"
+      :style="triggerStyle"
+      @click="handleTriggerClick"
+      @pointerdown.prevent="onPointerDown"
+    >
+      <el-badge :value="2" :max="9" class="recommend-badge">
+        <el-icon :size="24">
+          <Reading />
+        </el-icon>
+      </el-badge>
+      <span class="trigger-text">推荐</span>
+    </div>
+    </teleport>
+    <!-- 移动端推荐文章抽屉 -->
+    <teleport to="body">
+    <transition name="drawer-fade">
+      <div v-if="mobileDrawerVisible" class="mobile-drawer-overlay" @click="handleOverlayClick">
+        <transition name="drawer-slide">
+          <div v-if="mobileDrawerVisible" class="mobile-drawer" :style="drawerStyle" @click.stop>
+            <div class="drawer-header">
+              <h3 class="drawer-title">
+                <el-icon class="title-icon"><Reading /></el-icon>
+                推荐文章
+              </h3>
+              <el-button 
+                circle 
+                size="small" 
+                @click="closeMobileDrawer"
+                class="close-btn"
+              >
+                <el-icon><Close /></el-icon>
+              </el-button>
+            </div>
+            <div class="drawer-content">
+              <RelatedArticles 
+                v-if="article"
+                :current-article-id="article._id"
+                :category="article.category || ''"
+                :limit="5"
+              />
+            </div>
+          </div>
+        </transition>
+      </div>
+    </transition>
+    </teleport>
   </div> <!-- 关闭 article-container -->
 
   <!-- 空状态 -->
@@ -227,6 +278,8 @@ import {
   ArrowLeft,
   Loading,
   Picture,
+  Reading,
+  Close,
 } from '@element-plus/icons-vue'
 import ReadingProgress from '@/components/ReadingProgress.vue'
 import WaveContainer from '@/components/WaveContainer.vue'
@@ -254,6 +307,26 @@ const loading = ref(true)
 const error = ref<string>('')
 const tocRef = ref<InstanceType<typeof TableOfContents> | null>(null)
 const contentRef = ref<HTMLElement | null>(null)
+const mobileDrawerVisible = ref(false)
+const drawerStyle = ref({})
+
+// 推荐按钮拖动相关
+const triggerRef = ref<HTMLElement | null>(null)
+const triggerPos = reactive({
+  x: 0,
+  y: 0,
+})
+const isDragging = ref(false)
+const dragMoved = ref(false)
+
+// 按钮样式（动态定位）
+const triggerStyle = computed(() => ({
+  position: 'fixed' as const,
+  left: `${triggerPos.x}px`,
+  top: `${triggerPos.y}px`,
+  right: 'auto',
+  bottom: 'auto',
+}))
 
 const imageViewer = reactive({
   visible: false,
@@ -309,6 +382,8 @@ const unbindImagePreview = () => {
 
 onBeforeUnmount(() => {
   unbindImagePreview()
+  // 恢复 body 滚动
+  document.body.style.overflow = ''
 })
 
 // 使用全局点赞状态管理
@@ -593,6 +668,78 @@ const shareArticle = async () => {
   }
 }
 
+// 移动端抽屉控制
+const handleTriggerClick = (e: MouseEvent) => {
+  if (dragMoved.value) {
+    // 如果是拖动行为，不触发展开
+    dragMoved.value = false
+    return
+  }
+  toggleMobileDrawer()
+}
+
+const handleOverlayClick = () => {
+  closeMobileDrawer()
+}
+
+const updateDrawerPosition = () => {
+  if (!triggerRef.value) return
+
+  const triggerRect = triggerRef.value.getBoundingClientRect()
+  const drawerWidth = 300 // 假设抽屉宽度
+  const drawerHeight = 400 // 假设抽屉高度
+  const gap = 10 // 按钮和抽屉之间的间隙
+
+  const margin = 10 // 弹窗与屏幕边缘的最小间距
+  let left;
+
+  // 检查按钮左侧是否有足够空间
+  const hasSpaceOnLeft = triggerRect.left > drawerWidth + gap + margin;
+  // 检查按钮右侧是否有足够空间
+  const hasSpaceOnRight = window.innerWidth - triggerRect.right > drawerWidth + gap + margin;
+
+  if (hasSpaceOnLeft) {
+    // 优先放在左边
+    left = triggerRect.left - drawerWidth - gap;
+  } else if (hasSpaceOnRight) {
+    // 其次放在右边
+    left = triggerRect.right + gap;
+  } else {
+    // 如果两边都不够，则在屏幕中居中显示
+    left = (window.innerWidth - drawerWidth) / 2;
+  }
+
+  let top = triggerRect.top + triggerRect.height / 2 - drawerHeight / 2
+  // 确保不超出视口顶部和底部
+  top = Math.max(10, Math.min(top, window.innerHeight - drawerHeight - 10))
+
+  drawerStyle.value = {
+    position: 'fixed',
+    left: `${left}px`,
+    top: `${top}px`,
+  }
+}
+
+const toggleMobileDrawer = () => {
+  mobileDrawerVisible.value = !mobileDrawerVisible.value
+  if (mobileDrawerVisible.value) {
+    nextTick(() => {
+      updateDrawerPosition()
+    })
+  }
+  // 防止背景滚动
+  if (mobileDrawerVisible.value) {
+    document.body.style.overflow = 'hidden'
+  } else {
+    document.body.style.overflow = ''
+  }
+}
+
+const closeMobileDrawer = () => {
+  mobileDrawerVisible.value = false
+  document.body.style.overflow = ''
+}
+
 // 不再拦截离开详情页的导航，避免覆盖用户从导航栏主动跳转的意图
 onBeforeRouteLeave((_to, _from, next) => {
   next()
@@ -637,8 +784,60 @@ watch(
   },
 )
 
+// ------------------ 推荐按钮拖动逻辑 ------------------
+const initTriggerPos = () => {
+  try {
+    const size = 56 // 按钮大小
+    triggerPos.x = window.innerWidth - size - 20
+    triggerPos.y = window.innerHeight - size - 80
+  } catch {}
+}
+
+let startX = 0
+let startY = 0
+let offsetX = 0
+let offsetY = 0
+
+const onPointerMove = (e: PointerEvent) => {
+  if (!isDragging.value) return
+  e.preventDefault()
+  dragMoved.value = true
+  const size = 56
+  const minX = 0
+  const maxX = window.innerWidth - size
+  const minY = 0
+  const maxY = window.innerHeight - size
+  triggerPos.x = Math.min(maxX, Math.max(minX, e.clientX - offsetX))
+  triggerPos.y = Math.min(maxY, Math.max(minY, e.clientY - offsetY))
+}
+
+const onPointerUp = () => {
+  if (!isDragging.value) return
+  isDragging.value = false
+  document.removeEventListener('pointermove', onPointerMove)
+  document.removeEventListener('pointerup', onPointerUp)
+}
+
+const onPointerDown = (e: PointerEvent) => {
+  if (mobileDrawerVisible.value) return // 抽屉展开时禁止拖动
+  isDragging.value = true
+  startX = e.clientX
+  startY = e.clientY
+  offsetX = e.clientX - triggerPos.x
+  offsetY = e.clientY - triggerPos.y
+  document.addEventListener('pointermove', onPointerMove, {
+    passive: false,
+  })
+  document.addEventListener('pointerup', onPointerUp)
+}
+
+// ------------------ 生命周期钩子 ------------------
 // 生命周期钩子 - 初始化加载
 onMounted(async () => {
+  // 初始化推荐按钮位置
+  initTriggerPos()
+  triggerRef.value?.addEventListener('pointerdown', onPointerDown)
+  window.addEventListener('resize', initTriggerPos)
 
   // 初始化时加载文章
   if (!article.value) {
@@ -660,7 +859,7 @@ onMounted(async () => {
 }
 
 .article-container {
-  padding: 20px 0;
+  padding: 20px;
 }
 
 .content-wrapper {
@@ -681,13 +880,19 @@ onMounted(async () => {
   padding: 30px;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  /* 让容器在移动端不超出屏幕 */
+  width: 100%;
+  box-sizing: border-box;
+  overflow-wrap: break-word; /* 防止超长单词导致溢出 */
 }
 
-.sidebar {
+/* 桌面端侧边栏 - 默认显示 */
+.sidebar.desktop-sidebar {
   width: 300px;
   flex-shrink: 0;
   position: sticky;
   top: 20px;
+  display: block;
 }
 
 .recommendations-section,
@@ -900,14 +1105,175 @@ onMounted(async () => {
   }
 }
 
+/* 移动端推荐文章浮动按钮 */
+.mobile-recommend-trigger {
+  display: none;
+  position: fixed;
+  right: 20px;
+  bottom: 80px;
+  width: 56px;
+  height: 56px;
+  background: linear-gradient(135deg, var(--el-color-primary), var(--el-color-primary-light-3));
+  border-radius: 50%;
+  box-shadow: 0 4px 16px rgba(64, 158, 255, 0.4);
+  cursor: pointer;
+  z-index: 999;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  color: #fff;
+}
+
+.mobile-recommend-trigger:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 20px rgba(64, 158, 255, 0.5);
+}
+
+.mobile-recommend-trigger:active {
+  transform: translateY(-2px);
+}
+
+.mobile-recommend-trigger .trigger-text {
+  font-size: 11px;
+  margin-top: 2px;
+  font-weight: 500;
+}
+
+.mobile-recommend-trigger .recommend-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 移动端抽屉遮罩层 */
+.mobile-drawer-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 2000;
+  backdrop-filter: blur(4px);
+}
+
+/* 移动端抽屉 */
+.mobile-drawer {
+  /* position, top, left are now dynamically set by drawerStyle */
+  width: 300px;
+  height: 400px;
+  background-color: var(--el-bg-color);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  z-index: 2001;
+  overflow: hidden; /* Ensure content respects border-radius */
+}
+
+.drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px;
+  border-bottom: 1px solid var(--el-border-color-light);
+  background: linear-gradient(135deg, var(--el-color-primary-light-9), var(--el-bg-color));
+}
+
+.drawer-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--el-text-color-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.drawer-title .title-icon {
+  color: var(--el-color-primary);
+  font-size: 20px;
+}
+
+.drawer-header .close-btn {
+  background-color: var(--el-fill-color-light);
+  border: none;
+  transition: all 0.3s;
+}
+
+.drawer-header .close-btn:hover {
+  background-color: var(--el-color-danger-light-9);
+  color: var(--el-color-danger);
+  transform: rotate(90deg);
+}
+
+.drawer-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.drawer-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.drawer-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.drawer-content::-webkit-scrollbar-thumb {
+  background: var(--el-border-color);
+  border-radius: 3px;
+}
+
+.drawer-content::-webkit-scrollbar-thumb:hover {
+  background: var(--el-border-color-dark);
+}
+
+/* 抽屉动画 */
+.drawer-fade-enter-active,
+.drawer-fade-leave-active {
+  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.drawer-fade-enter-from,
+.drawer-fade-leave-to {
+  opacity: 0;
+}
+
+.drawer-slide-enter-active,
+.drawer-slide-leave-active {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.drawer-slide-enter-from,
+.drawer-slide-leave-to {
+  transform: scale(0.95);
+  opacity: 0;
+}
+.drawer-slide-enter-active,
+.drawer-slide-leave-active {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 /* 响应式设计 */
 @media (max-width: 992px) {
   .content-wrapper {
     flex-direction: column;
   }
-  .sidebar {
-    width: 100%;
-    order: -1; /* 在移动端将侧边栏移到顶部 */
+  
+  /* 在移动端隐藏桌面侧边栏 */
+  .sidebar.desktop-sidebar {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+  
+  /* 显示移动端浮动按钮 */
+  .mobile-recommend-trigger {
+    display: flex !important;
   }
 }
 
@@ -921,6 +1287,37 @@ onMounted(async () => {
   .article-meta {
     flex-direction: column;
     gap: 15px;
+  }
+  
+  .mobile-drawer {
+    width: 90%;
+  }
+  
+  .mobile-recommend-trigger {
+    right: 16px;
+    bottom: 70px;
+    width: 52px;
+    height: 52px;
+  }
+}
+
+@media (max-width: 615px) {
+  .article-container {
+    padding: 10px;
+  }
+  
+  .article-main {
+    width: 100%;
+    max-width: 100%;
+    margin: 0 auto;
+  }
+  
+  .article-content-wrapper {
+    padding: 13px;
+  }
+  
+  .article-title {
+    font-size: 1.8rem;
   }
 }
 
