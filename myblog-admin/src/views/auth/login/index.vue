@@ -160,7 +160,8 @@
     SUPER_ADMIN: { label: t('login.roles.super'), userName: '', password: '' },
     ADMIN: { label: t('login.roles.admin'), userName: '', password: '' },
     EDITOR: { label: t('login.roles.editor'), userName: '', password: '' },
-    USER: { label: t('login.roles.user'), userName: 'user1', password: 'a123456' }
+    USER: { label: t('login.roles.user'), userName: 'user', password: 'a123456' },
+    READER: { label: t('login.roles.reader') || '读者', userName: 'read', password: 'a123456' }
   }))
 
   // 可选：支持通过环境变量提供演示密码映射，如 {"ADMIN":"adminPass","SUPER_ADMIN":"superPass"}
@@ -290,23 +291,28 @@
   // 设置账号：根据所选角色填充匹配该角色的账号，并尽量从环境变量读取演示密码
   const setupAccount = async (key: AccountKey) => {
     const selectedAccount = accounts.value.find((account: Account) => String(account.key).toUpperCase() === String(key).toUpperCase())
-    formData.account = selectedAccount?.key || ''
-    formData.roleCode = selectedAccount?.roleCode || ''
+    if (!selectedAccount) return
+    
+    formData.account = selectedAccount.key
+    formData.roleCode = selectedAccount.roleCode
 
-    // 先用后端数据找一个该角色的有效用户名
-    const usernameFromServer = await getFirstUserByRole(formData.roleCode)
-    const fallbackUser = selectedAccount?.userName || ''
-    formData.username = usernameFromServer || fallbackUser
+    // 使用预置的用户名和密码
+    formData.username = selectedAccount.userName || ''
+    formData.password = selectedAccount.password || ''
 
-    // 密码优先取环境变量 DEMO_PASSWORDS 映射，其次预置（仅 USER 提供），否则留空让用户自己输入
+    // 如果预置的用户名为空，尝试从后端获取
+    if (!formData.username) {
+      const usernameFromServer = await getFirstUserByRole(formData.roleCode)
+      if (usernameFromServer) {
+        formData.username = usernameFromServer
+      }
+    }
+
+    // 密码优先取环境变量 DEMO_PASSWORDS 映射
     const roleKey = String(formData.roleCode || '').toUpperCase()
     const pwdFromEnv = DEMO_PASSWORDS?.[roleKey]
-    formData.password = pwdFromEnv || selectedAccount?.password || ''
-
-    if (!formData.password) {
-      // 不自动填错密码，提示用户手动输入
-      // 这里不使用弹窗打扰，仅在控制台提示；若需要也可改为 ElMessage.info
-      console.info(`[Login] 角色 ${roleKey} 未配置演示密码，请手动输入密码`)
+    if (pwdFromEnv) {
+      formData.password = pwdFromEnv
     }
   }
 

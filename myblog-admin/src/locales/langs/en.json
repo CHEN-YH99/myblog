@@ -199,7 +199,8 @@
       "super": "Super Admin",
       "admin": "Admin",
       "editor": "Editor",
-      "user": "User"
+      "user": "User",
+      "reader": "Reader"
     },
     "placeholder": [
       "Please enter your account",
