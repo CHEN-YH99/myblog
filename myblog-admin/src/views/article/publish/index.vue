@@ -9,10 +9,16 @@
               v-model.trim="articleName"
               placeholder="请输入文章标题（最多100个字符）"
               maxlength="100"
+              :disabled="userStore.isReadOnly"
             />
           </ElCol>
           <ElCol :span="6">
-            <ElSelect v-model="articleType" placeholder="请选择文章类型" filterable>
+            <ElSelect 
+              v-model="articleType" 
+              placeholder="请选择文章类型" 
+              filterable
+              :disabled="userStore.isReadOnly"
+            >
               <ElOption
                 v-for="item in articleTypes"
                 :key="item.id"
@@ -26,12 +32,18 @@
         <!-- 视图模式切换 -->
         <div class="mode-switch el-top">
           <div class="mode-controls">
-            <ElRadioGroup v-model="viewMode" size="small">
+            <ElRadioGroup v-model="viewMode" size="small" :disabled="userStore.isReadOnly">
               <ElRadioButton value="edit">编辑模式</ElRadioButton>
               <ElRadioButton value="preview">预览模式</ElRadioButton>
               <ElRadioButton value="split">分屏模式</ElRadioButton>
             </ElRadioGroup>
-            <ElButton size="small" type="warning" plain @click="clearLocalDraft">
+            <ElButton 
+              size="small" 
+              type="warning" 
+              plain 
+              @click="clearLocalDraft"
+              :disabled="userStore.isReadOnly"
+            >
               清除草稿
             </ElButton>
           </div>
@@ -46,6 +58,7 @@
               :height="viewMode === 'split' ? 500 : 600"
               :preview="false"
               :toolbars="toolbars"
+              :disabled="userStore.isReadOnly"
               @onSave="handleSave"
               @onUploadImg="handleEditorImageUpload"
             />
@@ -75,10 +88,11 @@
                   <ElTag
                     v-for="tag in selectedTags"
                     :key="tag.name"
-                    closable
+                    :closable="!userStore.isReadOnly"
                     @close="removeTag(tag)"
                     type="primary"
                     class="selected-tag"
+                    :class="{ 'is-disabled': userStore.isReadOnly }"
                   >
                     {{ tag.name }}
                   </ElTag>
@@ -91,9 +105,9 @@
                     placeholder="搜索标签或输入新标签名称"
                     clearable
                     @input="onTagSearchInput"
-                    @focus="showTagOptions = true"
+                    @focus="showTagOptions = !userStore.isReadOnly"
                     class="tag-search-input"
-                    :disabled="selectedTags.length >= 4"
+                    :disabled="selectedTags.length >= 4 || userStore.isReadOnly"
                   >
                     <template #suffix>
                       <ElIcon><Search /></ElIcon>
@@ -113,8 +127,8 @@
                           v-for="tag in filteredTags.slice(0, 10)"
                           :key="tag.name"
                           class="tag-option"
-                          @click="selectTag(tag)"
-                          :class="{ disabled: isTagSelected(tag.name) }"
+                          @click="!userStore.isReadOnly && selectTag(tag)"
+                          :class="{ disabled: isTagSelected(tag.name) || userStore.isReadOnly }"
                         >
                           <span class="tag-name">{{ tag.name }}</span>
                           <span class="tag-count">({{ tag.count }})</span>
@@ -128,7 +142,7 @@
                       class="tag-section"
                     >
                       <div class="section-title">创建新标签</div>
-                      <div class="tag-option new-tag" @click="createNewTag(tagSearchInput.trim())">
+                      <div class="tag-option new-tag" @click="!userStore.isReadOnly && createNewTag(tagSearchInput.trim())">
                         <ElIcon><Plus /></ElIcon>
                         <span>创建 "{{ tagSearchInput.trim() }}"</span>
                       </div>
@@ -144,8 +158,8 @@
                       v-for="tag in popularTags.slice(0, 8)"
                       :key="tag.name"
                       class="popular-tag"
-                      :class="{ disabled: isTagSelected(tag.name) }"
-                      @click="selectTag(tag)"
+                      :class="{ disabled: isTagSelected(tag.name) || userStore.isReadOnly }"
+                      @click="!userStore.isReadOnly && selectTag(tag)"
                       :type="isTagSelected(tag.name) ? 'info' : undefined"
                     >
                       {{ tag.name }}
@@ -170,6 +184,7 @@
                   :on-error="onError"
                   :on-progress="onProgress"
                   :before-upload="beforeUpload"
+                  :disabled="userStore.isReadOnly"
                   accept="image/*"
                   name="file"
                 >
@@ -186,15 +201,20 @@
               </div>
             </ElFormItem>
             <ElFormItem label="可见">
-              <ElSwitch v-model="visible" />
+              <ElSwitch v-model="visible" :disabled="userStore.isReadOnly" />
             </ElFormItem>
             <ElFormItem label="置顶">
-              <ElSwitch v-model="isTop" @change="onTopChangeWrapper" />
+              <ElSwitch v-model="isTop" @change="onTopChangeWrapper" :disabled="userStore.isReadOnly" />
             </ElFormItem>
           </ElForm>
 
           <div style="display: flex; justify-content: flex-end">
-            <ElButton type="primary" @click="submit" style="width: 100px">
+            <ElButton 
+              type="primary" 
+              @click="submit" 
+              style="width: 100px"
+              :disabled="userStore.isReadOnly"
+            >
               {{ pageMode === PageModeEnum.Edit ? '保存' : '发布' }}
             </ElButton>
           </div>

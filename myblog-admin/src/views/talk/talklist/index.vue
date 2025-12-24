@@ -27,8 +27,8 @@
         </div>
       </ElCol>
       <ElCol :lg="8" :md="8" :sm="10" :xs="8" style="display: flex; justify-content: end; gap: 8px">
-        <ElButton @click="resetFilters" :disabled="isLoading">{{$t('talk.actions.reset')}}</ElButton>
-        <ElButton type="primary" @click="toPublishTalk">
+        <ElButton @click="resetFilters" :disabled="isLoading || userStore.isReadOnly">{{$t('talk.actions.reset')}}</ElButton>
+        <ElButton type="primary" @click="toPublishTalk" :disabled="userStore.isReadOnly">
           <ElIcon><Plus /></ElIcon>
           {{$t('talk.actions.publish')}}
         </ElButton>
@@ -103,7 +103,7 @@
                   :key="index"
                   :src="image"
                   :preview-src-list="row.images"
-                  :initial-index="index"
+                  :initial-index="Number(index)"
                   class="content-image"
                   fit="cover"
                 />
@@ -176,12 +176,12 @@
                 type="primary" 
                 size="small" 
                 @click="editTalk(row)"
-                :disabled="row.status === 'deleted'"
+                :disabled="row.status === 'deleted' || userStore.isReadOnly"
               >
                 {{$t('talk.actions.edit')}}
               </ElButton>
               
-              <ElDropdown @command="(command) => handleAction(command, row)">
+              <ElDropdown @command="(command) => handleAction(command, row)" :disabled="userStore.isReadOnly">
                 <ElButton size="small">
                   {{$t('talk.actions.more')}}<ElIcon class="el-icon--right"><ArrowDown /></ElIcon>
                 </ElButton>
@@ -246,6 +246,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useUserStore } from '@/store/modules/user'
 import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { 
@@ -261,6 +262,9 @@ import { formatDate } from '@shared/utils/user'
 
 // 路由
 const router = useRouter()
+
+// 用户信息
+const userStore = useUserStore()
 
 // 搜索和筛选
 const searchVal = ref('')
@@ -496,20 +500,22 @@ const resetFilters = () => {
 }
 
 // 分页处理
-const handleSizeChange = async (size: number) => {
+const handleSizeChange = async (size: number | string) => {
+  const newSize = Number(size)
   // console.log('🔄 分页大小变化:', size)
   // 更新搜索参数
   updateSearchParams()
   // 调用 useTable 提供的分页处理方法
-  await useTableHandleSizeChange(size)
+  await useTableHandleSizeChange(newSize)
 }
 
-const handleCurrentChange = async (page: number) => {
+const handleCurrentChange = async (page: number | string) => {
+  const newPage = Number(page)
   // console.log('🔄 当前页变化:', page)
   // 更新搜索参数
   updateSearchParams()
   // 调用 useTable 提供的分页处理方法
-  await useTableHandleCurrentChange(page)
+  await useTableHandleCurrentChange(newPage)
 }
 
 // 选择处理

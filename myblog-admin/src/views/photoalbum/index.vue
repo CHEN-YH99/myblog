@@ -7,7 +7,7 @@
         <p class="subtitle">管理相册图片的分类信息</p>
       </div>
       <div class="header-right">
-        <ElButton type="primary" @click="handleAdd">
+        <ElButton type="primary" @click="!userStore.isReadOnly && handleAdd()" :disabled="userStore.isReadOnly">
           <ElIcon><Plus /></ElIcon>
           新增分类
         </ElButton>
@@ -100,13 +100,13 @@
          </ElTableColumn>
         <ElTableColumn label="操作" width="200" fixed="right">
           <template #default="{ row }">
-            <ElButton size="small" @click.stop="handleEdit(row)">编辑</ElButton>
-            <ElButton size="small" type="info" @click.stop="handleView(row)">查看</ElButton>
+            <ElButton size="small" @click.stop="!userStore.isReadOnly && handleEdit(row)" :disabled="userStore.isReadOnly">编辑</ElButton>
+            <ElButton size="small" type="info" @click.stop="handleView(row)" :disabled="userStore.isReadOnly">查看</ElButton>
             <ElButton
               size="small"
               type="danger"
-              @click.stop="handleDelete(row)"
-              :disabled="row.photoCount > 0"
+              @click.stop="!userStore.isReadOnly && handleDelete(row)"
+              :disabled="row.photoCount > 0 || userStore.isReadOnly"
             >
               删除
             </ElButton>
@@ -224,6 +224,7 @@
   import { useRouter } from 'vue-router'
   import { ElMessage, ElMessageBox } from 'element-plus'
   import { Plus, Search } from '@element-plus/icons-vue'
+import { useUserStore } from '@/store/modules/user'
   import ImageUploader from '@/components/ImageUploader.vue'
   import {
     getPhotoCategories,
@@ -242,6 +243,7 @@
   defineOptions({ name: 'PhotoCategoryManagement' })
 
   const router = useRouter()
+const userStore = useUserStore()
 
   // 响应式数据
   const loading = ref(false)

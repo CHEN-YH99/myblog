@@ -6,9 +6,27 @@
         <h1 class="page-title">{{ isEdit ? '编辑说说' : '发表说说' }}</h1>
       </div>
       <div class="header-right">
-        <ElButton v-if="!isEdit" @click="loadDraft" :loading="draftLoading">加载草稿</ElButton>
-        <ElButton @click="saveDraft" :loading="draftLoading">保存草稿</ElButton>
-        <ElButton type="primary" @click="publishTalk" :loading="publishLoading">
+        <ElButton 
+          v-if="!isEdit" 
+          @click="loadDraft" 
+          :loading="draftLoading"
+          :disabled="userStore.isReadOnly"
+        >
+          加载草稿
+        </ElButton>
+        <ElButton 
+          @click="saveDraft" 
+          :loading="draftLoading"
+          :disabled="userStore.isReadOnly"
+        >
+          保存草稿
+        </ElButton>
+        <ElButton 
+          type="primary" 
+          @click="publishTalk" 
+          :loading="publishLoading"
+          :disabled="userStore.isReadOnly"
+        >
           {{ isEdit ? '更新说说' : '发表说说' }}
         </ElButton>
       </div>
@@ -35,26 +53,28 @@
                   show-word-limit
                   placeholder="分享你的想法..."
                   class="content-textarea"
+                  :disabled="userStore.isReadOnly"
                   @input="onContentChange"
                 />
                 <div class="editor-toolbar">
                    <div class="emoji-picker-container">
                      <ElButton 
                        size="small" 
-                       @click="() => insertEmoji()" 
+                       @click="!userStore.isReadOnly && insertEmoji()" 
                        :icon="Sunny"
                        text
+                       :disabled="userStore.isReadOnly"
                      >
                        表情
                      </ElButton>
                      <!-- 表情选择器面板 -->
-                     <div v-if="showEmojiPicker" class="emoji-picker">
+                     <div v-if="showEmojiPicker && !userStore.isReadOnly" class="emoji-picker">
                        <div class="emoji-grid">
                          <span
                            v-for="emoji in emojiList"
                            :key="emoji"
                            class="emoji-item"
-                           @click="insertEmoji(emoji)"
+                           @click="!userStore.isReadOnly && insertEmoji(emoji)"
                          >
                            {{ emoji }}
                          </span>
@@ -63,17 +83,19 @@
                    </div>
                    <ElButton 
                      size="small" 
-                     @click="insertMention" 
+                     @click="!userStore.isReadOnly && insertMention()" 
                      :icon="User"
                      text
+                     :disabled="userStore.isReadOnly"
                    >
                      @提及
                    </ElButton>
                    <ElButton 
                      size="small" 
-                     @click="insertTopic" 
+                     @click="!userStore.isReadOnly && insertTopic()" 
                      :icon="ChatDotRound"
                      text
+                     :disabled="userStore.isReadOnly"
                    >
                      #话题
                    </ElButton>
@@ -107,14 +129,15 @@
                         type="danger" 
                         :icon="Delete" 
                         circle
-                        @click="removeImage(index)"
+                        :disabled="userStore.isReadOnly"
+                        @click="!userStore.isReadOnly && removeImage(index)"
                       />
                     </div>
                   </div>
                   <div 
                     v-if="(talkForm.images || []).length < 9" 
                     class="upload-trigger"
-                    @click="triggerImageUpload"
+                    @click="!userStore.isReadOnly && triggerImageUpload()"
                   >
                     <ElIcon class="upload-icon"><Plus /></ElIcon>
                     <span>添加图片</span>
@@ -186,7 +209,7 @@
               
               <div class="setting-item">
                 <label class="setting-label">可见性</label>
-                <ElRadioGroup v-model="talkForm.status" class="status-radio">
+                <ElRadioGroup v-model="talkForm.status" class="status-radio" :disabled="userStore.isReadOnly">
                   <ElRadio value="public">
                     <ElIcon><View /></ElIcon>
                     公开
@@ -201,14 +224,14 @@
               <div class="setting-item">
                 <div class="setting-row">
                   <label class="setting-label">置顶</label>
-                  <ElSwitch v-model="talkForm.isTop" />
+                  <ElSwitch v-model="talkForm.isTop" :disabled="userStore.isReadOnly" />
                 </div>
               </div>
 
               <div class="setting-item" v-if="talkForm.status === 'public'">
                 <div class="setting-row">
                   <label class="setting-label">隐藏</label>
-                  <ElSwitch v-model="talkForm.isHidden" />
+                  <ElSwitch v-model="talkForm.isHidden" :disabled="userStore.isReadOnly" />
                 </div>
               </div>
 
@@ -368,8 +391,10 @@ import {
 } from '@element-plus/icons-vue'
 import { createTalk, updateTalk, getTalkById, uploadTalkImage } from '@/api/talks'
 import type { Talk } from '@/api/talks'
+import { useUserStore } from '@/store/modules/user'
 
 // 路由
+const userStore = useUserStore()
 const router = useRouter()
 const route = useRoute()
 

@@ -10,7 +10,7 @@
         </div>
       </div>
       <div class="header-right">
-        <ElButton type="primary" @click="showUploadDialog = true">
+        <ElButton type="primary" @click="!userStore.isReadOnly && (showUploadDialog = true)" :disabled="userStore.isReadOnly">
           <ElIcon><Upload /></ElIcon>
           上传图片
         </ElButton>
@@ -56,7 +56,7 @@
       <ElCheckbox :model-value="isAllSelected" @change="toggleSelectAll">
         {{ isAllSelected ? '取消全选' : '全选' }}
       </ElCheckbox>
-      <ElButton type="danger" :disabled="selectedIds.length === 0" @click="handleBatchDelete">
+      <ElButton type="danger" :disabled="selectedIds.length === 0 || userStore.isReadOnly" @click="!userStore.isReadOnly && handleBatchDelete">
         批量删除
       </ElButton>
       <span class="selected-count" v-if="selectedIds.length">已选 {{ selectedIds.length }} 张</span>
