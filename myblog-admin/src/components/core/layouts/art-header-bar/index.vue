@@ -113,16 +113,38 @@
             popper-style="border: 1px solid var(--art-border-dashed-color); border-radius: calc(var(--custom-radius) / 2 + 4px); padding: 5px 16px; 5px 16px;"
           >
             <template #reference>
-              <div class="cover initial-avatar" :style="{ background: avatarBg, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 600, fontSize: '14px' }">
-                {{ initials }}
-              </div>
+              <template v-if="avatarUrl">
+                <el-image
+                  :src="avatarUrl"
+                  class="avatar-img"
+                  fit="cover"
+                  preview-teleported
+                  :preview-src-list="[avatarUrl]"
+                />
+              </template>
+              <template v-else>
+                <div class="cover initial-avatar" :style="{ background: avatarBg, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 600, fontSize: '14px' }">
+                  {{ initials }}
+                </div>
+              </template>
             </template>
             <template #default>
               <div class="user-menu-box">
                 <div class="user-head">
+                  <template v-if="avatarUrl">
+                  <el-image
+                    :src="avatarUrl"
+                    class="avatar-img avatar-img--big"
+                    fit="cover"
+                    preview-teleported
+                    :preview-src-list="[avatarUrl]"
+                  />
+                </template>
+                <template v-else>
                   <div class="cover initial-avatar" :style="{ background: avatarBg, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 600, fontSize: '16px' }">
                     {{ initials }}
                   </div>
+                </template>
                   <div class="user-wrap">
                     <span class="name">{{ displayName }}</span>
                     <span class="email">{{ displayEmail }}</span>
@@ -223,7 +245,12 @@
     return 'User'
   })
 
-  // 顶部栏头像：统一显示“用户名首两字母/字符”的头像（不使用上传头像）
+  // 顶部栏头像：优先使用用户上传头像（avatar），否则使用默认字母头像
+  const avatarUrl = computed(() => {
+    const ui = userInfo.value as any
+    const a = ui?.avatar || ui?.avatarUrl
+    return a && String(a).trim() ? String(a) : ''
+  })
   const userAvatar = computed(() => getDefaultAvatar(displayName.value))
 
   const userMenuPopover = ref()
@@ -371,4 +398,25 @@
 <style lang="scss" scoped>
   @use './style';
   @use './mobile';
+.avatar-img {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    overflow: hidden;
+    display: block;
+  }
+  .avatar-img--big {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    overflow: hidden;
+    display: block;
+  }
+  :deep(.avatar-img .el-image__inner),
+  :deep(.avatar-img--big .el-image__inner) {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+  }
 </style>

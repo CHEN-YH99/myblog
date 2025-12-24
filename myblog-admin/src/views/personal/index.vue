@@ -314,6 +314,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, watch } from 'vue'
+import { RoutesAlias } from '@/router/routesAlias'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import {
@@ -464,10 +465,33 @@ const passwordRules: FormRules = {
 //   return new Date(dateString).toLocaleDateString('zh-CN')
 // }
 
-// 处理头像更换
-const handleAvatarChange = (newAvatarUrl: string) => {
-  userProfile.value.avatar = newAvatarUrl
-  ElMessage.success('头像更新成功')
+// 处理头像更换（上传成功后需要写回后端并刷新 store，否则页面刷新会丢失）
+const handleAvatarChange = async (newAvatarUrl: string) => {
+  try {
+    const id = userProfile.value.id ?? (getUserInfo.value as any)?.userId ?? (getUserInfo.value as any)?.id ?? (getUserInfo.value as any)?._id
+    if (!id) {
+      // 没有用户ID时只能更新本地显示
+      userProfile.value.avatar = newAvatarUrl
+      ElMessage.warning('头像已更新，但缺少用户ID，无法保存到服务器')
+      return
+    }
+
+    // 1) 写回后端用户表
+    const { fetchUpdateUser } = await import('@/api/system-manage')
+    // 后端 PUT /api/users/:id 支持 :id 为数字 userId 或 Mongo ObjectId（当前实现对 ObjectId 更友好）
+    await fetchUpdateUser(String(id) as any, { avatar: newAvatarUrl } as any)
+
+    // 2) 刷新用户信息（Pinia 持久化），避免刷新页面还原
+    await userStore.refreshUserInfo()
+
+    // 3) 更新本地展示（以 store 为准，也可直接用 newAvatarUrl）
+    userProfile.value.avatar = newAvatarUrl
+
+    ElMessage.success('头像更新成功')
+  } catch (error: any) {
+    console.error('头像保存失败:', error)
+    ElMessage.error(error?.message || '头像保存失败')
+  }
 }
 
 // 显示编辑资料弹窗

@@ -13,6 +13,7 @@ import '@styles/el-dark.scss'                       // Element 自定义主题�
 import '@styles/dark.scss'                          // 系统主题
 import '@icons/system/iconfont.js'                  // 系统彩色图标
 import '@icons/system/iconfont.css'                 // 系统图标
+import 'cropperjs/dist/cropper.css'
 
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 import { setupGlobDirectives } from '@/directives'

@@ -9,6 +9,7 @@
       :on-error="handleAvatarError"
       :before-upload="beforeAvatarUpload"
       :on-progress="handleProgress"
+      
     >
       <div class="avatar-container" @click="handleClick">
         <el-image
@@ -53,6 +54,7 @@
             ref="cropImage"
             :src="originalImageUrl"
             alt="待裁剪图片"
+            @load="handleImageLoaded"
             style="max-width: 100%; display: block;"
           />
         </div>
@@ -84,7 +86,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, nextTick, onUnmounted } from 'vue'
+import { ref, computed, onUnmounted, nextTick } from 'vue'
 import { ElMessage, type UploadProps } from 'element-plus'
 import { Plus, Camera } from '@element-plus/icons-vue'
 import Cropper from 'cropperjs'
@@ -109,7 +111,7 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<Emits>()
 
 // 上传相关
-const uploadUrl = computed(() => '/api/upload/avatar')
+const uploadUrl = computed(() => '/api/uploads')
 const uploadHeaders = computed(() => ({
   'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
 }))
@@ -134,6 +136,21 @@ const avatarUrl = computed({
 const cropImage = ref<HTMLImageElement | null>(null)
 let cropper: any = null
 
+// 图片加载完成后再初始化 Cropper
+const handleImageLoaded = () => {
+  // 图片加载但还未显示
+  if (!cropDialogVisible.value) return
+  nextTick(() => {
+    if (!cropImage.value) return
+    // 如果已存在，直接替换图片
+    if (cropper) {
+      cropper.replace(originalImageUrl.value)
+    } else {
+      initCropper()
+    }
+  })
+}
+
 // 点击上传
 const handleClick = () => {
   if (props.disabled) return
@@ -155,23 +172,19 @@ const beforeAvatarUpload: UploadProps['beforeUpload'] = (rawFile) => {
     return false
   }
 
-  // 显示裁剪弹窗
-  const reader = new FileReader()
-  reader.onload = (e) => {
-    originalImageUrl.value = e.target?.result as string
-    cropDialogVisible.value = true
-    
-    nextTick(() => {
-      initCropper()
-    })
+  // 使用 URL.createObjectURL 更稳定地生成可预览地址
+  if (originalImageUrl.value) {
+    URL.revokeObjectURL(originalImageUrl.value)
   }
-  reader.readAsDataURL(rawFile)
+  originalImageUrl.value = URL.createObjectURL(rawFile)
+  cropDialogVisible.value = true
 
   return false // 阻止自动上传
 }
 
 // 初始化裁剪器
 const initCropper = () => {
+  if (cropper) return
   if (!cropImage.value) return
 
   // 使用 any 以兼容不同版本的类型定义
@@ -211,7 +224,9 @@ const destroyCropper = () => {
 const handleCropClose = () => {
   cropDialogVisible.value = false
   destroyCropper()
+  if (originalImageUrl.value) URL.revokeObjectURL(originalImageUrl.value)
   originalImageUrl.value = ''
+  cropImage.value = null
 }
 
 // 确认裁剪
@@ -261,15 +276,22 @@ const handleCropConfirm = async () => {
     uploadProgress.value = 100
 
     if (!response.ok) {
-      throw new Error('上传失败')
+      const text = await response.text().catch(() => '')
+      throw new Error(`上传失败：${response.status} ${response.statusText}${text ? ` - ${text}` : ''}`)
     }
 
     const result = await response.json()
+
+    // 兼容后端返回字段：url / data / data.url
+    const nextUrl = result?.url || result?.data?.url || result?.data?.path || result?.data?.fileUrl || result?.data?.location
+    if (!nextUrl) {
+      throw new Error('上传成功但未返回头像地址(url)')
+    }
+
+    // 后端返回的是相对路径 /uploads/xxx，需要转成字符串
+    avatarUrl.value = String(nextUrl)
     
-    // 更新头像URL
-    avatarUrl.value = result.url
-    
-    ElMessage.success('头像更新成功')
+    // // ElMessage.success('头像更新成功')
     handleCropClose()
 
   } catch (error) {
@@ -285,7 +307,7 @@ const handleCropConfirm = async () => {
 // 上传成功回调
 const handleAvatarSuccess: UploadProps['onSuccess'] = (response) => {
   avatarUrl.value = response.url
-  ElMessage.success('头像更新成功')
+  // ElMessage.success('头像更新成功')
 }
 
 // 上传失败回调
@@ -407,6 +429,8 @@ onUnmounted(() => {
 }
 
 .crop-area {
+  position: relative;
+  width: 100%;
   flex: 1;
   display: flex;
   align-items: center;
@@ -414,6 +438,7 @@ onUnmounted(() => {
   background-color: #f5f5f5;
   border-radius: 8px;
   overflow: hidden;
+  min-height: 360px;
 }
 
 .crop-preview {
@@ -496,13 +521,12 @@ onUnmounted(() => {
 
 :deep(.cropper-container img) {
   display: block;
-  height: 100%;
+  /* 移除强制 100% 填充，保持 cropper 默认尺寸，避免高度为 0 导致只剩棋盘格 */
   image-orientation: 0deg;
   max-height: none;
   max-width: none;
   min-height: 0;
   min-width: 0;
-  width: 100%;
 }
 
 :deep(.cropper-wrap-box),

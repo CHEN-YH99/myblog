@@ -20,7 +20,7 @@ export function fetchCreateUser(data: Partial<Api.SystemManage.UserListItem>) {
 }
 
 // 更新用户
-export function fetchUpdateUser(id: number, data: Partial<Api.SystemManage.UserListItem>) {
+export function fetchUpdateUser(id: number | string, data: Partial<Api.SystemManage.UserListItem>) {
   return request.put<Api.SystemManage.UserListItem>({
     url: `/api/users/${id}`,
     data

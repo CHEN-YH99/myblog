@@ -573,11 +573,8 @@
       // 调用更新用户头像的API
       await fetchUpdateUser(currentAvatarUser.value.id, { avatar: newAvatarUrl })
       
-      // 更新表格中的头像
-      const userIndex = data.value.findIndex(user => user.id === currentAvatarUser.value!.id)
-      if (userIndex !== -1) {
-        data.value[userIndex].avatar = newAvatarUrl
-      }
+      // 刷新整个表格数据以确保所有信息（包括更新时间等）都是最新的
+      refreshData()
       
       ElMessage.success('头像更新成功')
       avatarDialogVisible.value = false
