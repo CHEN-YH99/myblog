@@ -975,6 +975,22 @@ onBeforeUnmount(() => {
   pointer-events: none;
 }
 
+
+/* 深色主题文字修正：防止被浅色覆盖 */
+:global(.dark) {
+  /* 桌面菜单 */
+  .navbar :deep(.el-menu-item),
+  .navbar :deep(.el-sub-menu__title),
+  .navbar .menu-text,
+  .navbar .user-name {
+    color: rgba(255, 255, 255, 0.9) !important;
+  }
+  /* 悬浮 / 激活颜色保持亮度 */
+  .navbar :deep(.el-menu-item:hover),
+  .navbar :deep(.el-sub-menu__title:hover) {
+    color: #fff !important;
+  }
+}
 </style>
 
 <!-- 全局样式：确保挂载到 body 的弹出层也能生效 -->

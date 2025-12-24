@@ -60,7 +60,15 @@ const footlist = reactive([
   margin-top: 48px; /* 和上面内容保持合理距离 */
   padding: 20px 12px 40px;
   background: transparent; /* 保持与页面背景一致 */
+  --footer-text-color: #000;
+  --footer-link-color: #000;
 }
+/* 深色主题（如果你是通过给 html/body 或根节点加 .dark 来切换主题） */
+:global(.dark) .footer {
+  --footer-text-color: #fff;
+  --footer-link-color: #fff;
+}
+
 .footer-inner {
   max-width: 1200px;
   margin: 0 auto;
@@ -68,6 +76,23 @@ const footlist = reactive([
   flex-direction: column;
   align-items: center;
   gap: 10px;
+}
+.footer {
+  --footer-text-color: #000; /* 浅色默认黑 */
+  --footer-link-color: #000;
+}
+:global(.dark) .footer {
+  --footer-text-color: #fff; /* 深色白 */
+  --footer-link-color: #fff;
+}
+.footer {
+  --footer-text-color: #000;
+  --footer-link-color: #000;
+}
+:root.dark .footer,
+.dark .footer {
+  --footer-text-color: #fff;
+  --footer-link-color: #fff;
 }
 .meta {
   line-height: 1.6;
@@ -79,7 +104,7 @@ const footlist = reactive([
 .meta p {
   margin: 0;
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.82);
+  color: var(--footer-text-color);
   white-space: nowrap;        /* 避免断行 */
 }
 .icp {
@@ -87,7 +112,7 @@ const footlist = reactive([
   margin-top: 2px;
 }
 .icp a {
-  color: rgba(255, 255, 255, 0.82);
+  color: var(--footer-link-color);
   text-decoration: none;
 }
 .icp a:hover {
