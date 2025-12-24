@@ -23,7 +23,7 @@
                 v-for="item in articleTypes"
                 :key="item.id"
                 :label="item.name"
-                :value="item.id"
+                :value="item.name"
               />
             </ElSelect>
           </ElCol>
@@ -699,7 +699,11 @@
         localStorage.removeItem(storageKey)
 
         articleName.value = article.title || ''
-        articleType.value = article.category || ''
+        // 兼容历史数据：后端可能存的是分类 _id / id / name
+        // 统一让表单里存分类名称（用于文章列表正确归类与展示）
+        const savedCategory = article.category || ''
+        const matched = articleTypes.value.find((t) => t.id === savedCategory || t.slug === savedCategory || t.name === savedCategory)
+        articleType.value = matched ? matched.name : savedCategory
         // 优先使用 Markdown 内容，如果没有则使用 HTML 内容
         markdownContent.value = article.content || ''
         editorHtml.value = article.contentHtml || article.content || ''

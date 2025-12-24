@@ -165,6 +165,7 @@
 
 <script setup lang="ts">
   import { Picture as IconPicture, Delete } from '@element-plus/icons-vue'
+import { getCategories } from '@/api/articles'
   import { ElMessage, ElMessageBox } from 'element-plus'
 
   import { ref, onMounted, onActivated, computed, watch, onUnmounted } from 'vue'
@@ -212,6 +213,43 @@
   const options = generateYearOptions()
 
   const searchVal = ref('')
+
+  // 分类映射：用于把后端返回的 category(_id/name/slug) 统一显示为分类名称
+  const categoryNameMap = ref<Record<string, string>>({})
+  const loadCategoryMap = async () => {
+    try {
+      const res: any = await getCategories({ status: 'active' as any })
+      const list: any[] = Array.isArray(res)
+        ? res
+        : Array.isArray(res?.categories)
+          ? res.categories
+          : Array.isArray(res?.data)
+            ? res.data
+            : []
+
+      const map: Record<string, string> = {}
+      for (const c of list) {
+        const name = c?.name
+        const id = c?._id || c?.id
+        const slug = c?.slug
+        if (name) {
+          map[String(name)] = String(name)
+          if (id) map[String(id)] = String(name)
+          if (slug) map[String(slug)] = String(name)
+        }
+      }
+      categoryNameMap.value = map
+    } catch (e) {
+      // 不影响正常使用：加载失败则保持空映射，列表仍按原字段显示
+      categoryNameMap.value = {}
+    }
+  }
+
+  const resolveCategoryName = (v: any) => {
+    if (!v) return '默认分类'
+    const key = String(v)
+    return categoryNameMap.value[key] || key
+  }
   const articleList = ref<Article[]>([])
   const currentPage = ref(1)
   const pageSize = ref(40)
@@ -244,7 +282,9 @@
     return ''
   })
 
-  onMounted(() => {
+  onMounted(async () => {
+    // 先加载分类映射，避免列表显示分类ID
+    await loadCategoryMap()
     getArticleListData({ backTop: false })
   })
 
@@ -478,7 +518,7 @@
           id: item._id || item.id,
           title: item.title,
           home_img: item.image || item.home_img,
-          type_name: item.category || item.type_name || '默认分类',
+          type_name: resolveCategoryName(item.category || item.type_name),
           create_time: item.publishDate || item.create_time || item.updateDate, // 显示时间保持原字段
           count: item.views || item.count || 0,
           brief: item.excerpt || item.brief || '',
@@ -509,7 +549,7 @@
           // 调试信息：显示文章的年份信息
           if (transformedArticles.length > 0) {
             // console.log('筛选后的文章年份信息:')
-            transformedArticles.slice(0, 5).forEach((item: Article) => {
+            transformedArticles.slice(0, 5).forEach((_item: Article) => { // eslint-disable-line @typescript-eslint/no-unused-vars
               // console.log(`- ${item.title}: p_date=${item.p_date}, publishDate=${item.create_time}`)
             })
           }

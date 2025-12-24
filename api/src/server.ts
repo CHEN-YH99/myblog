@@ -67,14 +67,65 @@ app.use(express.json())
 // 静态文件服务
 app.use('/uploads', express.static(uploadDir))
 
-// 通用请求日志（保留详细调试信息，可在生产下按需移除）
+// 安全请求日志：避免泄露 Authorization/Cookie 等敏感信息。
+// - 默认仅输出必要字段，保证项目正常运转与排障。
+// - 通过 LOG_VERBOSE=true 可临时开启更详细但仍会脱敏的日志。
+const LOG_VERBOSE = String(process.env.LOG_VERBOSE || '').toLowerCase() === 'true'
+
+function maskValue(v: any): any {
+  if (v === undefined || v === null) return v
+  const s = String(v)
+  if (s.length <= 8) return '***'
+  return `${s.slice(0, 3)}***${s.slice(-3)}`
+}
+
+function sanitizeHeaders(headers: Record<string, any>) {
+  const out: Record<string, any> = {}
+  for (const [k, v] of Object.entries(headers || {})) {
+    const key = String(k).toLowerCase()
+    if (key === 'authorization' || key === 'cookie' || key === 'set-cookie' || key === 'x-api-key') {
+      out[k] = maskValue(v)
+      continue
+    }
+    // 避免日志爆炸：限制单个 header 长度
+    const valStr = Array.isArray(v) ? v.join(',') : String(v)
+    out[k] = valStr.length > 200 ? `${valStr.slice(0, 200)}…` : v
+  }
+  return out
+}
+
+function sanitizeQuery(query: any) {
+  if (!query || typeof query !== 'object') return query
+  const out: Record<string, any> = {}
+  for (const [k, v] of Object.entries(query)) {
+    const key = String(k).toLowerCase()
+    // 常见敏感字段脱敏
+    if (key.includes('token') || key.includes('password') || key.includes('secret')) {
+      out[k] = maskValue(v)
+      continue
+    }
+    const valStr = typeof v === 'string' ? v : JSON.stringify(v)
+    out[k] = valStr.length > 200 ? `${valStr.slice(0, 200)}…` : v
+  }
+  return out
+}
+
 app.use((req, _res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`)
-  console.log('请求头:', req.headers)
-  console.log('查询参数:', req.query)
-  console.log('客户端IP:', req.ip)
-  console.log('连接远程地址:', req.connection?.remoteAddress)
-  console.log('Socket远程地址:', req.socket?.remoteAddress)
+  // morgan('combined') 已输出核心访问信息；这里补充必要调试信息并脱敏。
+  const meta: any = {
+    method: req.method,
+    url: req.originalUrl,
+    ip: req.ip,
+  }
+
+  if (LOG_VERBOSE) {
+    meta.headers = sanitizeHeaders(req.headers as any)
+    meta.query = sanitizeQuery(req.query)
+    meta.remoteAddress = (req.connection as any)?.remoteAddress
+    meta.socketRemoteAddress = (req.socket as any)?.remoteAddress
+  }
+
+  console.log(`[${new Date().toISOString()}] request`, meta)
   next()
 })
 
