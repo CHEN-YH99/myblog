@@ -47,6 +47,9 @@
             :class="{ 'is-top': talk.isTop }"
             :style="{ '--delay': (index % 12) * 40 + 'ms' }"
           >
+            <!-- 发布者头像（左上角） -->
+            <el-avatar class="talk-author-avatar" :size="40" :src="avatarUrl" alt="avatar" />
+
             <!-- 置顶标识 -->
             <div class="top-badge" v-if="talk.isTop">
               <i class="icon-pin">📌</i>
@@ -167,6 +170,8 @@
               >
                 <!-- 回复表单 -->
                 <div class="reply-form">
+                  <!-- 当前登录用户头像 -->
+                  <el-avatar class="reply-form-avatar" :size="34" :src="displayAvatar" alt="avatar" />
                   <div class="form-header">
                     <h4>发表回复</h4>
                     <button
@@ -456,6 +461,7 @@ import { useUserStore } from '@/stores/user'
 import { useTalkLikes } from '@/composables/useTalkLikes'
 import { useTalksStore } from '@/stores/talks'
 import WaveContainer from '@/components/WaveContainer.vue'
+import avatarUrl from '@/assets/images/v2-df52ef03e0e38da113052148ef1ff2a6_r.jpg'
 import '@/assets/style/common/headpicture.scss'
 import Footer from '@/components/Footer.vue'
 import { debounce, debounceAsync } from '@/utils/debounce'
@@ -500,6 +506,20 @@ const router = useRouter()
 const userStore = useUserStore()
 const talksStore = useTalksStore()
 const { isLiked: isLikedByStore, handleLike: handleLikeByStore } = useTalkLikes()
+
+// 当前登录用户头像（用于回复表单展示），逻辑与 NavBar 组件保持一致
+const getDefaultAvatar = (name: string) => {
+  const safeName = name || 'User'
+  const colors = ['409eff', '67c23a', 'e6a23c', 'f56c6c', '909399']
+  const color = colors[safeName.length % colors.length]
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(safeName)}&background=${color}&color=fff&size=200`
+}
+const displayAvatar = computed(() => {
+  const user = userStore.userInfo
+  if (user && user.avatar) return user.avatar
+  const name = user?.nickname || user?.username || (user?.id ? String(user.id) : 'User')
+  return getDefaultAvatar(name)
+})
 
 // ==================== 基础响应式数据 ====================
 const loading = ref(false)
@@ -1417,6 +1437,12 @@ onUnmounted(() => {
   padding: 2rem 1rem 3rem;
 }
 
+/* 说说列表容器宽度（比页面容器略窄一些） */
+.talk-list {
+  max-width: 980px;
+  margin: 0 auto;
+}
+
 /* 现代响应式网格卡片布局 */
 .talk-list {
   display: grid;
@@ -1432,8 +1458,17 @@ onUnmounted(() => {
 .talk-item {
   position: relative;
   padding: 1.5rem; /* 调整内边距以获得更好的观感 */
+  padding-left: 4.25rem; /* 给左上角头像留空间 */
   transition: background-color 0.3s ease;
   border-bottom: 1px solid var(--divider-color);
+}
+
+/* 说说发布者头像（左上角） */
+.talk-author-avatar {
+  position: absolute;
+  top: 1.15rem;
+  left: 1.15rem;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.08);
 }
 
 .talk-list > .talk-item:last-child {
@@ -1568,7 +1603,12 @@ onUnmounted(() => {
 
 /* 回复区域 */
 .reply-section { margin-top: 1rem; padding-top: 1rem; }
-.reply-form {  border: 1px solid rgba(148,163,184,0.25); border-radius: 12px; padding: 1rem; margin-bottom: 1rem; }
+.reply-form {  position: relative; border: 1px solid rgba(148,163,184,0.25); border-radius: 12px; padding: 1rem; padding-left: 3.6rem; margin-bottom: 1rem; }
+.reply-form-avatar {
+  position: absolute;
+  top: 0.95rem;
+  left: 0.95rem;
+}
 .form-header { display:flex; align-items:center; justify-content: space-between; margin-bottom: 0.75rem; }
 .form-header h4 { margin: 0;  font-size: 1rem; }
 .close-btn { background: none; border: none; font-size: 1.1rem; cursor:pointer;  padding: 0.25rem; border-radius: 6px; transition: background 0.2s ease, color 0.2s ease; }

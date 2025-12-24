@@ -250,7 +250,7 @@ import {
   SwitchButton,
 } from '@element-plus/icons-vue'
 
-import avatarUrl from '@/assets/images/hui.svg'
+import avatarUrl from '@/assets/images/v2-df52ef03e0e38da113052148ef1ff2a6_r.jpg'
 import { mapPathToMenu } from '@/utils/routerMap'
 
 const router = useRouter()
@@ -875,23 +875,9 @@ onBeforeUnmount(() => {
 
 /* 头像光环：不影响点击区域 */
 .navbar__avatar { position: relative; }
+/* 清除头像表面的彩色遮罩/光环（避免影响照片真实颜色） */
 .navbar__avatar::after {
-  content: '';
-  position: absolute;
-  inset: -2px;
-  border-radius: 50%;
-  background: conic-gradient(
-    from 0deg,
-    rgba(99,102,241,.55),
-    rgba(59,130,246,.55),
-    rgba(56,189,248,.55),
-    rgba(99,102,241,.55)
-  );
-  -webkit-mask: radial-gradient(circle calc(50% - 2px), transparent 99%, #000 100%);
-          mask: radial-gradient(circle calc(50% - 2px), transparent 99%, #000 100%);
-  filter: blur(.4px);
-  opacity: .65;
-  pointer-events: none;
+  content: none;
 }
 
 /* 用户弹层：圆角投影 + 小箭头 */
