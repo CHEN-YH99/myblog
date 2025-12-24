@@ -566,7 +566,7 @@ const closeChangelog = () => {
 
 // 快捷操作
 const goToUserManagement = () => {
-  router.push('/system/user')
+  router.push(RoutesAlias.User)
 }
 
 const goToArticleManagement = () => {

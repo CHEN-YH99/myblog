@@ -759,6 +759,58 @@ app.delete('/api/categories/:id', async (req: Request, res: Response) => {
   }
 })
 
+// ==================== 用户同步到后台（register -> admin） ====================
+app.post('/api/user/sync-to-admin', async (req: Request, res: Response) => {
+  try {
+    const body = req.body || {}
+    const username = body.username || body.userName
+    if (!username) return res.status(400).json(createErrorResponse('用户名不能为空', 400))
+
+    // 若用户已存在则直接返回
+    const exists = await User.findOne({ username })
+    if (exists) return res.json(createResponse(null, '用户已存在，跳过同步'))
+
+    // 准备角色：确保 USER 角色存在
+    let roleDoc = await Role.findOne({ roleCode: 'USER' })
+    if (!roleDoc) {
+      const lastRole = await Role.findOne().sort({ roleId: -1 }).lean()
+      const nextRoleId = (lastRole?.roleId ?? 100) + 1
+      roleDoc = await Role.create({
+        roleId: nextRoleId,
+        roleName: '普通用户',
+        roleCode: 'USER',
+        enabled: true,
+        permissions: deriveDefaultPermissions('USER'),
+      })
+    }
+
+    // 自增 userId
+    const lastUser = await User.findOne().sort({ userId: -1 }).lean()
+    const nextUserId = (lastUser?.userId ?? 1000) + 1
+
+    const userData: any = {
+      userId: nextUserId,
+      username,
+      nickname: body.nickname || body.nickName || username,
+      email: body.email || '',
+      password: body.password ? await bcrypt.hash(body.password, 10) : await bcrypt.hash('a123456', 10),
+      roleId: roleDoc.roleId,
+      roleName: roleDoc.roleName,
+      enabled: true,
+      registerSource: 'admin-sync',
+      createTime: new Date(),
+      updateTime: new Date(),
+    }
+    const saved = await User.create(userData)
+    const safe = saved.toObject()
+    delete (safe as any).password
+    res.json(createResponse(safe, '同步用户成功'))
+  } catch (error) {
+    console.error('同步用户失败:', error)
+    res.status(500).json(createErrorResponse('同步用户失败', 500))
+  }
+})
+
 // ==================== 用户路由 ====================
 app.get('/api/users', async (req: Request, res: Response) => {
   try {
@@ -1157,17 +1209,20 @@ app.post('/api/auth/register', async (req: Request, res: Response) => {
     if (exists) return res.status(400).json(createErrorResponse('用户名已存在', 400))
 
     // 准备角色：优先 READER -> VIEWER；若都不存在则创建一个 READER
-    let roleDoc = await Role.findOne({ roleCode: 'READER' })
+        // 优先使用 USER 角色，其次 READER、VIEWER；若都不存在则创建 USER
+    let roleDoc = await Role.findOne({ roleCode: 'USER' })
+    if (!roleDoc) roleDoc = await Role.findOne({ roleCode: 'READER' })
     if (!roleDoc) roleDoc = await Role.findOne({ roleCode: 'VIEWER' })
+
     if (!roleDoc) {
       const lastRole = await Role.findOne().sort({ roleId: -1 }).lean()
       const nextRoleId = (lastRole?.roleId ?? 100) + 1
       roleDoc = await Role.create({
         roleId: nextRoleId,
-        roleName: '读者',
-        roleCode: 'READER',
+        roleName: '普通用户',
+        roleCode: 'USER',
         enabled: true,
-        permissions: deriveDefaultPermissions('READER')
+        permissions: deriveDefaultPermissions('USER')
       })
     }
 
