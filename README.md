@@ -21,14 +21,13 @@
   - 文章详情
   ![文章详情](https://i.imgur.com/zEYIekr.png)
   - 其他
-  ![其他]( https://i.imgur.com/uxrlDOs.png  
-           https://i.imgur.com/PbYWMEj.png  
-           https://i.imgur.com/EwA12VW.png
-           https://i.imgur.com/d1r8L8h.png
-           https://i.imgur.com/nGaTwmr.png
-           https://i.imgur.com/EEScWQa.png
-           https://i.imgur.com/GPfyAwu.png  
-        )
+  ![其他](https://i.imgur.com/uxrlDOs.png) 
+         ![1](https://i.imgur.com/PbYWMEj.png)    
+         ![2](https://i.imgur.com/EwA12VW.png) 
+         ![3](https://i.imgur.com/d1r8L8h.png)
+         ![4](https://i.imgur.com/nGaTwmr.png)
+         ![5](https://i.imgur.com/EEScWQa.png)
+         ![6](https://i.imgur.com/GPfyAwu.png)
 ### 管理端
  。。。
 ### 前台博客展示
