@@ -370,26 +370,27 @@ import { getCategories } from '@/api/articles'
     }
   )
 
-  // 监听query参数变化，检测refresh参数
+  // 监听 query.refresh：仅用于“发布成功/需要刷新列表”的显式场景。
+  // 注意：这里不要 immediate: true。
+  // immediate 会在组件挂载/激活时立即执行一次回调；而主题切换可能触发路由/视图重新渲染，
+  // 从而导致这里误判并重新请求列表，出现短暂空白。
   watch(
     () => route.query.refresh,
     (newRefresh) => {
       if (newRefresh) {
-        // console.log('检测到refresh参数，刷新图片缓存和数据')
         // 强制刷新图片缓存
         forceRefreshKey.value = Date.now()
         // 刷新数据
         setTimeout(() => {
           getArticleListData({ backTop: false })
         }, 100)
-        // 清除refresh参数，避免重复触发
-        router.replace({ 
+        // 清除 refresh 参数，避免重复触发
+        router.replace({
           path: route.path,
           query: { ...route.query, refresh: undefined }
         })
       }
-    },
-    { immediate: true }
+    }
   )
 
   // 监听年份变化，实现动态渲染
@@ -598,33 +599,29 @@ import { getCategories } from '@/api/articles'
     })
   }
 
-  // 处理图片URL，确保本地图片使用正确的端口
+  // 处理图片URL：生产环境禁止拼接 localhost，/uploads 必须走当前站点域名（Nginx 静态资源）
   const getImageUrl = (imageUrl?: string, forceRefresh = false) => {
     if (!imageUrl) return ''
 
-    let finalUrl = imageUrl
+    let finalUrl = String(imageUrl)
 
-    // 如果是本地上传的图片且是开发口本地完整URL，转换为基于环境变量的相对路径
-    if (imageUrl.includes('localhost:3006')) {
-      try {
-        const u = new URL(imageUrl)
-        // 仅对 uploads 路径做转换，其他保持原样
-        if (u.pathname.startsWith('/uploads/')) {
-          finalUrl = `${import.meta.env.VITE_API_URL || ''}${u.pathname}${u.search || ''}${u.hash || ''}`
-        }
-      } catch (e) {
-        // 回退：去掉域名部分再拼接
-        finalUrl = `${import.meta.env.VITE_API_URL || ''}${imageUrl.replace(/^https?:\/\/[^/]+/, '')}`
-      }
+    // 1) 若是绝对 URL：允许 https/http，但如果是 localhost（开发遗留）则转换成相对路径
+    if (/^https?:\/\//i.test(finalUrl)) {
+      // 将 http://localhost:xxxx/uploads/xxx 转为 /uploads/xxx
+      finalUrl = finalUrl.replace(/^https?:\/\/localhost:\d+/, '')
     }
 
-    // 如果是相对路径，添加正确的基础URL
-    if (imageUrl.startsWith('/uploads/')) {
-      finalUrl = `${import.meta.env.VITE_API_URL || ''}${imageUrl}`
+    // 2) 统一 /uploads 路径：不要拼接 VITE_API_URL（避免生产环境被注入 localhost）
+    if (finalUrl.startsWith('uploads/')) {
+      finalUrl = `/${finalUrl}`
     }
 
-    // 移除时间戳参数，避免图片加载错误
-    // 如果需要强制刷新，使用版本号而不是时间戳
+    // 3) 如果是 /api/uploads（后台某些地方可能返回这种），也转成 /uploads（静态资源）
+    if (finalUrl.startsWith('/api/uploads/')) {
+      finalUrl = finalUrl.replace(/^\/api/, '')
+    }
+
+    // 4) 强制刷新：加版本号参数
     if (forceRefresh) {
       const separator = finalUrl.includes('?') ? '&' : '?'
       finalUrl += `${separator}v=${forceRefreshKey.value}`

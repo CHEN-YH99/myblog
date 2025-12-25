@@ -728,8 +728,26 @@ const formatContent = (content: string) => {
  */
 const getImageUrl = (image: string) => {
   if (!image) return ''
-  if (image.startsWith('http')) return image
-  return `http://localhost:3001${image}`
+
+  let url = String(image)
+
+  // 绝对地址：允许 http/https，但如果是 localhost（开发遗留）则转为相对路径
+  if (/^https?:\/\//i.test(url)) {
+    url = url.replace(/^https?:\/\/localhost:\d+/, '')
+  }
+
+  // 兼容 /api/uploads -> /uploads（静态资源建议走 Nginx）
+  if (url.startsWith('/api/uploads/')) {
+    url = url.replace(/^\/api/, '')
+  }
+
+  // 兼容 uploads/xxx（缺少前导 /）
+  if (url.startsWith('uploads/')) {
+    url = `/${url}`
+  }
+
+  // 相对路径（如 /uploads/...）直接返回，让浏览器走当前域名
+  return url
 }
 
 /**
@@ -1498,7 +1516,43 @@ onUnmounted(() => {
   align-items: center;
   gap: 0.3rem;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  z-index: 1;
+  z-index: 2;
+}
+
+/* 小屏（<=768px）：置顶标签往右上角靠，避免与文案同一水平线 */
+@media (max-width: 768px) {
+  .top-badge {
+    top: 0.8rem;
+    right: 0.8rem;
+    padding: 0.22rem 0.58rem;
+    font-size: 0.68rem;
+    gap: 0.22rem;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.14);
+  }
+}
+
+/* 超小屏（<=576px）：进一步靠右上角并缩小 */
+@media (max-width: 576px) {
+  .top-badge {
+    top: 0.6rem;
+    right: 0.6rem;
+    padding: 0.18rem 0.5rem;
+    font-size: 0.64rem;
+    gap: 0.2rem;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.14);
+  }
+}
+
+/* 超小屏（<=420px）：最靠右上角并等比例缩小，避免与内容文字同一水平线 */
+@media (max-width: 420px) {
+  .top-badge {
+    top: 0.55rem;
+    right: 0.55rem;
+    padding: 0.16rem 0.46rem;
+    font-size: 0.62rem;
+    gap: 0.2rem;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.14);
+  }
 }
 
 /* 内容 */
