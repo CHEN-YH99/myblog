@@ -16,16 +16,30 @@
 - 📚 **完整文档** - 详细的API文档和开发指南
 
 ## 📸 项目预览
-
+ ### 客户端
+  ![首页](https://i.imgur.com/BRPE5ic.png)
+  - 文章详情
+  ![文章详情](https://i.imgur.com/zEYIekr.png)
+  - 其他
+  ![其他]( https://i.imgur.com/uxrlDOs.png  
+           https://i.imgur.com/PbYWMEj.png  
+           https://i.imgur.com/EwA12VW.png
+           https://i.imgur.com/d1r8L8h.png
+           https://i.imgur.com/nGaTwmr.png
+           https://i.imgur.com/EEScWQa.png
+           https://i.imgur.com/GPfyAwu.png  
+        )
+### 管理端
+ 。。。
 ### 前台博客展示
-- 🌐 **访问地址**: [http://localhost:5173](http://localhost:5173) (开发环境)
+- 🌐 **访问地址**: [https://xhui886.online/](生产环境);[http://localhost:5173] (开发环境)
 - 📱 **响应式设计**: 支持桌面端和移动端访[object Object]**现代化UI**: 简洁美观的用户界面，支持暗黑模式
 - ✨ **动画效果**: 流畅的页面过渡和交互动画
 - 🔍 **全文搜索**: 支持文章内容全文搜索和关键词高亮
 - 💬 **互动功能**: 文章点赞、浏览量统计、评论功能
 
 ### 后台管理系统
-- 🔧 **访问地址**: [http://localhost:5174](http://localhost:5174) (开发环境)
+- 🔧 **访问地址**: [https://xiaohui88.site/](生产环境);[http://localhost:5174] (开发环境)
 - 📊 **数据统计**: 文章、访问量、用户等数据可视化
 - ✏️ **内容管理**: 富文本编辑器，支持Markdown和可视化编辑
 - 🖼️ **媒体管理**: 图片上传、相册管理、图片分类
